@@ -8,9 +8,11 @@ Download from http://example.com/FIXME.
 
 ## Usage
 
-FIXME: explanation
-
-    $ java -jar witchazzan-0.1.0-standalone.jar [args]
+# create a configuration file
+    cp config/.config.clj.default config/config.clj
+# run the server interactivly
+    lein repl
+this starts the server, and also plunks you down into a console where you can manually interact with the code. This will allow the administrator to invoke top level functions, such as setting the framerate of the game or making a player invincible.
 
 ## Options
 
