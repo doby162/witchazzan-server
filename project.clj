@@ -6,6 +6,7 @@
   :dependencies [
                  [org.clojure/clojure "1.10.0"]
                  [http-kit "2.3.0"]
+                 [org.clojure/data.json "0.2.6"]
                  ]
   :main ^:skip-aot witchazzan.core
   :target-path "target/%s"

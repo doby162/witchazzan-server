@@ -1,4 +1,5 @@
 (ns witchazzan.core
+  (:require [clojure.data.json :as json])
   (:gen-class))
 
 (defn -main
@@ -22,3 +23,5 @@
     (server/on-receive channel (fn [data] ;; echo it back
                           (server/send! channel data)))))
 (server/run-server handler {:port (:port settings)})
+
+(def map1 (json/read-str (slurp (str (:tilemap-path settings) (first (:tilemaps settings))))))
