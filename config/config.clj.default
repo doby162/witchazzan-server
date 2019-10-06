@@ -3,7 +3,7 @@
 (def settings
   {
     :port 8080
-    :tilemap-path "../witchazzan-client/src/assets/"
+    :tilemap-path "../witchazzan-client/src/assets/tileMaps"
     :tilemaps ("openingScene.json" "openingSceneRight1.json")
   }
 )
