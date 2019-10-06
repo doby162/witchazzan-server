@@ -18,7 +18,7 @@
   (server/with-channel request channel
     (def channels (conj channels channel)); add this to our collection of channels
     (server/on-close channel (fn [status]
-                               #_(def channels (filter (map #(= % channel) channels)))
+                               (def channels (filter #(not (= % channel)) channels))
                                (println "channel closed: " status)))
     (server/on-receive channel (fn [data] ;; echo it back
                           (server/send! channel data)))))
