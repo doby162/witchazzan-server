@@ -1,34 +1,46 @@
-# witchazzan
+# Witchazzan - A Game!
 
-FIXME: description
+This is the start of a game that [doby162](https://github.com/doby162) and [chrisl8](https://github.com/chrisl8) are building.  
 
-## Installation
+The game exists in two parts:  
+1. This is the Clojure based server
+2. [A Phaser 3 based web front end](https://github.com/chrisl8/witchazzan-client)
 
-Download from http://example.com/FIXME.
+Both parts are required for the game to function.
 
-## Usage
+# Server Installation for Running and Development
 
-# create a configuration file
+The Witchazzen Game server is written Clojure, which is required to run the server, along with [Leiningen](https://leiningen.org/).
+
+You can run the `installDependencies.sh` script to attempt to perform these steps automatically. It works on my Digital Ocean droplet, but results can be mixed on personal systems, depending on your environment.
+
+The steps to get this going on your development system are:
+1. Install OpenJDK 11 (See below)
+2. [Install Clojure](https://clojure.org/guides/getting_started)
+3. [Install Leiningen](https://leiningen.org/#install)
+
+## Installing Java (Java Runtime Environment aka. JRE)
+
+The Java Runtime Environment (JRE) is required by Clojure.  
+
+We have had success using OpenJDK 11, which you can install on Ubuntu with:
+`sudo apt install openjdk-11-jre`
+
+Make sure it works:
+```bash
+java --version
+```
+
+# Usage
+
+## Create a configuration file
     cp config/.config.clj.default config/config.clj
-# run the server interactivly
+
+## Run the server interactively
     lein repl
 this starts the server, and also plunks you down into a console where you can manually interact with the code. This will allow the administrator to invoke top level functions, such as setting the framerate of the game or making a player invincible.
 
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+Use `Ctrl+d` to quit.
 
 ## License
 
