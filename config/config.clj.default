@@ -5,5 +5,7 @@
     :port 8080
     :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
     :tilemaps ["openingScene.json" "openingSceneRight1.json"]
+    :frame-time 100
+    :pause false
   }
 )

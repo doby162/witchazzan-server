@@ -37,13 +37,23 @@
                             (broadcast players
                                        (str "chat,"
                                             (:name @(first (filter #(= (:sock @%) channel) players)))
-                                            ": " (last (str/split data  #"msg,")))))))))
+                                            ": " (last (str/split data  #"msg,")))))
+                          #_(when (re-find #"loc,"))
+                          ))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
+;;game loop
+(defn update-clients []
+  (broadcast players (json/write-str
+                       {:players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)})))
 
-;;create a functional object to store client state on a per instance basis
-;;specify an api of commands and document it in the readme. We need to be able to recieve 1) inputs like the keyboard 2) state updates like an x coord 3)chat broadcasts 4)nicknames and login credentials
-;;simulate movement based on keyboard, update on client state commands, try to aproximate the front end based on only input
-;;broadcast function that specifies the physical state of all game pieces, sends chats, welcomes new players, etc
-;;
+(defn game-loop []
+  (future
+    (loop []
+      (let [start-ms (System/currentTimeMillis)]
+        (update-clients)
+        (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
+      (when (not (:pause settings)) (recur)))))
+(when (not (:pause settings)) (game-loop))
+;;game loop
