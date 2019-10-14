@@ -9,7 +9,8 @@
 ;;configuration and global state
 (load-file "config/config.clj")
 (def players []) ; should this also be an atom?
-(def anon-names ["arc" "clojure" "clojurescript" "common-lisp" "pico lisp" "scheme" "chicken" "emacs lisp" "maclisp" "racket"])
+(def anon-names ["arc" "clojure" "clojurescript" "common-lisp" "pico lisp" "scheme" "chicken"
+                 "emacs lisp" "maclisp" "racket"])
 (defn get-anon-name [] (let [first-name (first anon-names) rest-names (rest anon-names)]
                          (def anon-names rest-names)
                          first-name))
@@ -21,7 +22,7 @@
 (defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name)}));definition of a player
 
 (defn broadcast [players data]
-  (dorun (map (fn [player] (server/send! (:sock @player) data)) players))); dorun in this context is bad form but I want to get this commit out
+  (dorun (map (fn [player] (server/send! (:sock @player) data)) players)))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -31,15 +32,20 @@
     (server/on-close channel (fn [status]
                                (def players (filter #(not (= (:sock @%) channel)) players))
                                (println "channel closed: " status)))
-    (server/on-receive channel (fn [data] ;; echo it back
-                          ;(server/send! channel data)
-                          (when (re-find #"^msg," data)
-                            (broadcast players
-                                       (str "chat,"
-                                            (:name @(first (filter #(= (:sock @%) channel) players)))
-                                            ": " (last (str/split data  #"msg,")))))
-                          #_(when (re-find #"loc,"))
-                          ))))
+    (server/on-receive channel (fn [data]
+                                 (when (re-find #"^msg," data); handle an incoming chat
+                                   (broadcast players
+                                              (str "chat,"
+                                                   (:name @(first (filter #(= (:sock @%) channel) players)))
+                                                   ": " (last (str/split data  #"msg,")))))
+                                 (when (re-find #"loc," data); handle a basic location update
+                                   (let [player (first (filter #(= (:sock @%) channel) players))
+                                         ; if there is ever a problem with floats that don't fit in a "float"
+                                         ; try edn library reader
+                                         new-x (Float/parseFloat  (nth (str/split data #",") 1))
+                                         new-y (Float/parseFloat (nth (str/split data #",") 2))]
+                                     (swap! player
+                                            #(merge-with + % {:x new-x :y new-y}))))))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
