@@ -45,7 +45,11 @@
                                          new-x (Float/parseFloat  (nth (str/split data #",") 1))
                                          new-y (Float/parseFloat (nth (str/split data #",") 2))]
                                      (swap! player
-                                            #(merge-with + % {:x new-x :y new-y}))))))))
+                                            #(merge % {:x new-x :y new-y}))))
+                                 (when (re-find #"log," data); "log,username,password
+                                   (let [player (first (filter #(= (:sock @%) channel) players)) username (nth (str/split data #",") 1) password (nth (str/split data #",") 2)]
+                                     (swap! player #(merge % {:name username}))))
+                                 ))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
