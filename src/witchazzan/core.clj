@@ -24,6 +24,19 @@
 (defn broadcast [players data]
   (dorun (map (fn [player] (server/send! (:sock @player) data)) players)))
 
+(defn handle-chat [player split]; cat the split together with commas?
+  (broadcast players
+             (str "chat," (:name @player) ": " (last split))))
+
+(defn handle-location-update [player split]
+  (let [new-x (Float/parseFloat  (nth split 1)) new-y (Float/parseFloat (nth split 2))]
+    (swap! player #(merge % {:x new-x :y new-y}))))
+
+(defn handle-login [player split];communicationsObject.socket.send("log,uname,pword");
+  (let [username (nth split 1) password (nth split 2)]
+    (swap! player #(merge % {:name username}))))
+
+
 (defn handler [request]
   (println "A new player has entered Witchazzan")
   (println request)
@@ -33,23 +46,11 @@
                                (def players (filter #(not (= (:sock @%) channel)) players))
                                (println "channel closed: " status)))
     (server/on-receive channel (fn [data]
-                                 (when (re-find #"^msg," data); handle an incoming chat
-                                   (broadcast players
-                                              (str "chat,"
-                                                   (:name @(first (filter #(= (:sock @%) channel) players)))
-                                                   ": " (last (str/split data  #"msg,")))))
-                                 (when (re-find #"loc," data); handle a basic location update
-                                   (let [player (first (filter #(= (:sock @%) channel) players))
-                                         ; if there is ever a problem with floats that don't fit in a "float"
-                                         ; try edn library reader
-                                         new-x (Float/parseFloat  (nth (str/split data #",") 1))
-                                         new-y (Float/parseFloat (nth (str/split data #",") 2))]
-                                     (swap! player
-                                            #(merge % {:x new-x :y new-y}))))
-                                 (when (re-find #"log," data); "log,username,password
-                                   (let [player (first (filter #(= (:sock @%) channel) players)) username (nth (str/split data #",") 1) password (nth (str/split data #",") 2)]
-                                     (swap! player #(merge % {:name username}))))
-                                 ))))
+                                 (let [player (first (filter #(= (:sock @%) channel) players))
+                                       split (str/split data #",")]
+                                   (when (= "msg" (first split)) (handle-chat player split))
+                                   (when (= "loc" (first split)) (handle-location-update player split))
+                                   (when (= "log" (first split)) (handle-login player split)))))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
