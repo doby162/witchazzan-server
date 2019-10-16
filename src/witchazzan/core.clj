@@ -26,7 +26,7 @@
 
 (defn handle-chat [player split]; cat the split together with commas?
   (broadcast players
-             (str "chat," (:name @player) ": " (last split))))
+             (str "chat," (:name @player) ": " (clojure.string/join (rest split)))))
 
 (defn handle-location-update [player split]
   (let [new-x (Float/parseFloat  (nth split 1)) new-y (Float/parseFloat (nth split 2))]
