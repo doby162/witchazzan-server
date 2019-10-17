@@ -21,12 +21,13 @@
 ;;websocket infrastructure
 (defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name)}));definition of a player
 
-(defn broadcast [players data]
-  (dorun (map (fn [player] (server/send! (:sock @player) data)) players)))
+(defn broadcast [data]
+  "takes an n-level map and distributes it to all clients as josn"
+  (dorun (map (fn [player] (server/send! (:sock @player) (json/write-str data))) players)))
 
-(defn handle-chat [player split]; cat the split together with commas?
-  (broadcast players
-             (str "chat," (:name @player) ": " (clojure.string/join (rest split)))))
+(defn handle-chat [player split]
+  "broadcasts chats as json"
+  (broadcast  {:message-type "chat" :name (:name @player) :content (clojure.string/join (rest split))}))
 
 (defn handle-location-update [player split]
   (let [new-x (Float/parseFloat  (nth split 1)) new-y (Float/parseFloat (nth split 2))]
@@ -56,8 +57,7 @@
 ;;
 ;;game loop
 (defn update-clients []
-  (broadcast players (json/write-str
-                       {:players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)})))
+  (broadcast {:message-type "player-state" :players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)}))
 
 (defn game-loop []
   (future
