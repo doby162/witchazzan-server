@@ -25,18 +25,21 @@
   "takes an n-level map and distributes it to all clients as josn"
   (dorun (map (fn [player] (server/send! (:sock @player) (json/write-str data))) players)))
 
-(defn handle-chat [player split]
+(defn handle-chat [player message]
   "broadcasts chats as json"
-  (broadcast  {:message-type "chat" :name (:name @player) :content (clojure.string/join (rest split))}))
+  (broadcast  {:message-type "chat" :name (:name @player) :content (get message "text")}))
 
-(defn handle-location-update [player split]
-  (let [new-x (Float/parseFloat  (nth split 1)) new-y (Float/parseFloat (nth split 2))]
+(defn handle-location-update [player message]
+  (let [new-x (get message "x") new-y (get message "y")]
     (swap! player #(merge % {:x new-x :y new-y}))))
 
-(defn handle-login [player split];communicationsObject.socket.send("log,uname,pword");
-  (let [username (nth split 1) password (nth split 2)]
+(defn handle-login [player message]
+  (let [username (get message "username") password (get message "password")]
     (swap! player #(merge % {:name username}))))
 
+(defn call-func-by-string [name args]
+  "(call-func-by-string \"+\" [5 5]) => 10"
+  (apply (resolve (symbol name)) args))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -47,11 +50,19 @@
                                (def players (filter #(not (= (:sock @%) channel)) players))
                                (println "channel closed: " status)))
     (server/on-receive channel (fn [data]
-                                 (let [player (first (filter #(= (:sock @%) channel) players))
-                                       split (str/split data #",")]
-                                   (when (= "msg" (first split)) (handle-chat player split))
-                                   (when (= "loc" (first split)) (handle-location-update player split))
-                                   (when (= "log" (first split)) (handle-login player split)))))))
+                                 (try ; checking for bad json and that a handler can be found
+                                   (let [player (first (filter #(= (:sock @%) channel) players))
+                                         message (json/read-str data)
+                                         message-type (get message "message_type")]
+                                     (try ;checking if the function exists
+                                       (call-func-by-string
+                                         (str "witchazzan.core/handle-" message-type) [player message])
+                                       (catch java.lang.NullPointerException e (println e)))
+                                     ;here we are interpreting the "messasge_type" json value as
+                                     ;the second half of a function name and calling that function
+                                     )(catch java.lang.Exception e
+                                        (println "invalid json: " data) (println e)))
+                                 ))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
