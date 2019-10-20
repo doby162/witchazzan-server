@@ -19,11 +19,14 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
-(defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name)}));definition of a player
+(defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {}}));definition of a player
+
+(defn message-player [data player]
+  (server/send! (:sock @player) (json/write-str data)))
 
 (defn broadcast [data]
   "takes an n-level map and distributes it to all clients as josn"
-  (dorun (map (fn [player] (server/send! (:sock @player) (json/write-str data))) players)))
+  (dorun (map #(message-player data %) players)))
 
 (defn handle-chat [player message]
   "broadcasts chats as json"
@@ -36,6 +39,23 @@
 (defn handle-login [player message]
   (let [username (get message "username") password (get message "password")]
     (swap! player #(merge % {:name username}))))
+
+(defn handle-keyboard-update [player message]
+  (swap! player #(merge
+                   %
+                   {:keys (merge
+                            (:keys %)
+                            {(str ":" (get message "key")) (get message "state")})})))
+
+(defn handle-command [player message]
+  "this handler is a bit of a switch case inside of a switch case, it handles all of the text commands entered
+  via the command bar on the client"
+  (when (re-find #"^look" (get message "command"))
+    (message-player {"response" "You see a rhelm of unimaginable possibility."} player))
+  (when (re-find #"^listen" (get message "command"))
+    (message-player {"response" "You hear the distant chatter of a keyboard. A developer is hard at work."} player))
+  )
+
 
 (defn call-func-by-string [name args]
   "(call-func-by-string \"+\" [5 5]) => 10"
