@@ -30,7 +30,7 @@
 
 (defn handle-chat [player message]
   "broadcasts chats as json"
-  (broadcast  {:message-type "chat" :name (:name @player) :content (get message "text")}))
+  (broadcast  {:messageType "chat" :name (:name @player) :content (get message "text")}))
 
 (defn handle-location-update [player message]
   (let [new-x (get message "x") new-y (get message "y")]
@@ -88,7 +88,7 @@
 ;;
 ;;game loop
 (defn update-clients []
-  (broadcast {:message-type "player-state" :players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)}))
+  (broadcast {:messageType "player-state" :players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)}))
 
 (defn game-loop []
   (future
