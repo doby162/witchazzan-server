@@ -9,6 +9,12 @@
 ;;configuration and global state
 (load-file "config/config.clj")
 (def players []) ; should this also be an atom?
+(def objects (atom []))
+(def id (atom 0))
+(let [id (atom 0)]
+  (defn gen-id []
+    (swap! id inc)
+    @id))
 (def anon-names ["arc" "clojure" "clojurescript" "common-lisp" "pico lisp" "scheme" "chicken"
                  "emacs lisp" "maclisp" "racket"])
 (defn get-anon-name [] (let [first-name (first anon-names) rest-names (rest anon-names)]
@@ -29,7 +35,7 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
-(defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {}}));definition of a player
+(defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {} :id (gen-id)}));definition of a player
 
 (defn message-player [data player]
   (server/send! (:sock @player) (json/write-str data)))
@@ -66,6 +72,9 @@
     (message-player {"response" "You hear the distant chatter of a keyboard. A developer is hard at work."} player))
   )
 
+(defn handle-fireball [player message]
+  (swap! objects conj {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
+                       :direction (get message "direction") :owner player}) )
 
 (defn call-func-by-string [name args]
   "(call-func-by-string \"+\" [5 5]) => 10"
