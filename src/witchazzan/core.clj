@@ -15,7 +15,17 @@
                          (def anon-names rest-names)
                          first-name))
 ;some names for those who do not have logins to borrow. Probably not a permanent fixture of the game.
-(def map1 (json/read-str (slurp (str (:tilemap-path settings) (first (:tilemaps settings))))))
+(defn process-map [map name]
+  "returns an immutable representation of a single tilemap, inclusing a helper for collisions"
+  (let [width (get map "width") height (get map "height")
+        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")]
+  {:name (first (str/split name #"\."))
+   :width width :height height :syri syri
+   :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
+(def tilemaps (map
+                #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
+                (:tilemaps settings)))
+
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
