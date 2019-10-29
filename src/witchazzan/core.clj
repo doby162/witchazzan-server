@@ -35,7 +35,7 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
-(defn make-player [x y sock] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {} :id (gen-id)}));definition of a player
+(defn make-player [x y sock scene] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {} :id (gen-id) :scene scene}));definition of a player
 
 (defn message-player [data player]
   (server/send! (:sock @player) (json/write-str data)))
@@ -49,8 +49,8 @@
   (broadcast  {:messageType "chat" :name (:name @player) :content (get message "text")}))
 
 (defn handle-location-update [player message]
-  (let [new-x (get message "x") new-y (get message "y")]
-    (swap! player #(merge % {:x new-x :y new-y}))))
+  (let [new-x (get message "x") new-y (get message "y") new-scene (get message "scene")]
+    (swap! player #(merge % {:x new-x :y new-y :scene new-scene}))))
 
 (defn handle-login [player message]
   (let [username (get message "username") password (get message "password")]
@@ -84,7 +84,7 @@
   (println "A new player has entered Witchazzan")
   (println request)
   (server/with-channel request channel
-    (def players (conj players (make-player 0 0 channel))); add this to our collection of players
+    (def players (conj players (make-player 0 0 channel ""))); add this to our collection of players
     (server/on-close channel (fn [status]
                                (def players (filter #(not (= (:sock @%) channel)) players))
                                (println "channel closed: " status)))
@@ -108,7 +108,7 @@
 ;;game loop
 (defn update-clients []
   (when (< 0 (count objects)) (broadcast {:messageType "object-state" :objects (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :type (:type @q)}) objects)}))
-  (when (< 0 (count players)) (broadcast {:messageType "player-state" :players (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q)}) players)})))
+  (when (< 0 (count players)) (broadcast {:messageType "player-state" :players (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q) :scene (:scene @q)}) players)})))
 
 (defn game-loop []
   (future
