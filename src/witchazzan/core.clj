@@ -9,7 +9,7 @@
 ;;configuration and global state
 (load-file "config/config.clj")
 (def players []) ; should this also be an atom?
-(def objects (atom []))
+(def objects [])
 (def id (atom 0))
 (let [id (atom 0)]
   (defn gen-id []
@@ -73,8 +73,8 @@
   )
 
 (defn handle-fireball [player message]
-  (swap! objects conj {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
-                       :direction (get message "direction") :owner player}) )
+  (def objects (conj objects (atom {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
+                       :direction (get message "direction") :owner player}))))
 
 (defn call-func-by-string [name args]
   "(call-func-by-string \"+\" [5 5]) => 10"
@@ -107,7 +107,8 @@
 ;;
 ;;game loop
 (defn update-clients []
-  (broadcast {:messageType "player-state" :players (map (fn [q] {:name (:name @q) :x (:x @q) :y (:y @q)}) players)}))
+  (when (< 0 (count objects)) (broadcast {:messageType "object-state" :objects (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :type (:type @q)}) objects)}))
+  (when (< 0 (count players)) (broadcast {:messageType "player-state" :players (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q)}) players)})))
 
 (defn game-loop []
   (future
