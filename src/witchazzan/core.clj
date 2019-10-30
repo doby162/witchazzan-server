@@ -44,6 +44,9 @@
   "takes an n-level map and distributes it to all clients as json"
   (dorun (map #(message-player data %) players)))
 
+(defn establish-identity [player]
+  (message-player {:messageType "identity" :id (:id @player) :name (:name @player)} player))
+
 (defn handle-chat [player message]
   "broadcasts chats as json"
   (broadcast  {:messageType "chat" :name (:name @player) :content (get message "text")}))
@@ -54,7 +57,8 @@
 
 (defn handle-login [player message]
   (let [username (get message "username") password (get message "password")]
-    (swap! player #(merge % {:name username}))))
+    (swap! player #(merge % {:name username}))
+    (establish-identity player)))
 
 (defn handle-keyboard-update [player message]
   (swap! player #(merge
@@ -89,6 +93,7 @@
   (println request)
   (server/with-channel request channel
     (def players (conj players (make-player 0 0 channel ""))); add this to our collection of players
+    (establish-identity (first (filter #(= (:sock @%) channel) players)))
     (server/on-close channel (fn [status]
                                (def players (filter #(not (= (:sock @%) channel)) players))
                                (println "channel closed: " status)))
@@ -119,6 +124,7 @@
     (loop []
       (let [start-ms (System/currentTimeMillis)]
         (update-clients)
+;        (process-object-behavior)
         (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
       (when (not (:pause settings)) (recur)))))
 (when (not (:pause settings)) (game-loop))
