@@ -7,27 +7,23 @@
 ;;namespace
 ;;
 ;;configuration and global state
-(load-file "config/config.clj")
+(load-file "config/config.clj") ; todo: add defaults and setters
 (def players []) ; should this also be an atom?
 (def objects [])
-(def id (atom 0))
 (let [id (atom 0)]
   (defn gen-id []
     (swap! id inc)
     @id))
 (def anon-names ["arc" "clojure" "clojurescript" "common-lisp" "pico lisp" "scheme" "chicken"
                  "emacs lisp" "maclisp" "racket"])
-(defn get-anon-name [] (let [first-name (first anon-names) rest-names (rest anon-names)]
-                         (def anon-names rest-names)
-                         first-name))
-;some names for those who do not have logins to borrow. Probably not a permanent fixture of the game.
+
 (defn process-map [map name]
   "returns an immutable representation of a single tilemap, inclusing a helper for collisions"
   (let [width (get map "width") height (get map "height")
         syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")]
-  {:name (first (str/split name #"\."))
-   :width width :height height :syri syri
-   :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
+    {:name (first (str/split name #"\."))
+     :width width :height height :syri syri
+     :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
 (def tilemaps (map
                 #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
                 (:tilemaps settings)))
@@ -35,13 +31,17 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
-(defn make-player [x y sock scene] (atom {:x x :y y :sock sock :name (get-anon-name) :keys {} :id (gen-id) :scene scene}));definition of a player
+(defn make-player [x y sock scene]
+  (atom {:x x :y y :sock sock :name "unknown-human" :keys {} :id (gen-id) :scene scene}));definition of a player
+(defn make-object [x y scene type attributes behaviors]
+  (atom {:x x :y y :type type :attributes attributes :behaviors behaviors :id (gen-id) :scene scene}));definition of an object.
+; Objects are very general, but they will all have some things in common
 
 (defn message-player [data player]
   (server/send! (:sock @player) (json/write-str data)))
 
 (defn broadcast [data]
-  "takes an n-level map and distributes it to all clients as josn"
+  "takes an n-level map and distributes it to all clients as json"
   (dorun (map #(message-player data %) players)))
 
 (defn handle-chat [player message]
@@ -73,8 +73,12 @@
   )
 
 (defn handle-fireball [player message]
-  (def objects (conj objects (atom {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
-                       :direction (get message "direction") :owner player}))))
+  (def objects (conj objects (make-object (:x @player) (:y @player) (:scene @player) "fireball"
+                                          {:direction (get message "direction") :owner player} {}))))
+
+
+;(atom {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
+;                                   :direction (get message "direction") :owner player})
 
 (defn call-func-by-string [name args]
   "(call-func-by-string \"+\" [5 5]) => 10"
@@ -90,17 +94,17 @@
                                (println "channel closed: " status)))
     (server/on-receive channel (fn [data]
                                  (try ; checking for bad json and that a handler can be found
-                                   (let [player (first (filter #(= (:sock @%) channel) players))
-                                         message (json/read-str data)
-                                         message-type (get message "message_type")]
-                                     (try ;checking if the function exists
-                                       (call-func-by-string
-                                         (str "witchazzan.core/handle-" message-type) [player message])
-                                       (catch java.lang.NullPointerException e (println e)))
-                                     ;here we are interpreting the "messasge_type" json value as
-                                     ;the second half of a function name and calling that function
-                                     )(catch java.lang.Exception e
-                                        (println "invalid json: " data) (println e)))
+                                      (let [player (first (filter #(= (:sock @%) channel) players))
+                                            message (json/read-str data)
+                                            message-type (get message "message_type")]
+                                        (try ;checking if the function exists
+                                             (call-func-by-string
+                                               (str "witchazzan.core/handle-" message-type) [player message])
+                                             (catch java.lang.NullPointerException e (println e)))
+                                        ;here we are interpreting the "messasge_type" json value as
+                                        ;the second half of a function name and calling that function
+                                        )(catch java.lang.Exception e
+                                           (println "invalid json: " data) (println e)))
                                  ))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
