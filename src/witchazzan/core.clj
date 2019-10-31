@@ -33,8 +33,8 @@
 ;;websocket infrastructure
 (defn make-player [x y sock scene]
   (atom {:x x :y y :sock sock :name "unknown-human" :keys {} :id (gen-id) :scene scene}));definition of a player
-(defn make-object [x y scene type attributes behaviors]
-  (atom {:x x :y y :type type :attributes attributes :behaviors behaviors :id (gen-id) :scene scene}));definition of an object.
+(defn make-object [x y scene type attributes behavior]
+  (atom {:x x :y y :type type :attributes attributes :behavior behavior :id (gen-id) :scene scene}));definition of an object.
 ; Objects are very general, but they will all have some things in common
 
 (defn message-player [data player]
@@ -78,11 +78,14 @@
 
 (defn handle-fireball [player message]
   (def objects (conj objects (make-object (:x @player) (:y @player) (:scene @player) "fireball"
-                                          {:direction (get message "direction") :owner player} {}))))
-
-
-;(atom {:id (gen-id) :type "fireball" :x (:x @player) :y (:y @player)
-;                                   :direction (get message "direction") :owner player})
+                                          {:direction (get message "direction") :owner player}
+                                          ; the brains of an object is a lambda that returns an altered copy of the object
+                                          (fn [this] (cond
+                                                       (= "north" (:direction (:attributes this))) (conj this {:y (inc (:y this))})
+                                                       (= "south" (:direction (:attributes this))) (conj this {:y (dec (:y this))})
+                                                       (= "east" (:direction (:attributes this))) (conj this {:x (inc (:x this))})
+                                                       (= "west" (:direction (:attributes this))) (conj this {:x (dec (:x this))})
+                                                       :else this))))))
 
 (defn call-func-by-string [name args]
   "(call-func-by-string \"+\" [5 5]) => 10"
@@ -119,12 +122,16 @@
   (when (< 0 (count objects)) (broadcast {:messageType "object-state" :objects (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :type (:type @q)}) objects)}))
   (when (< 0 (count players)) (broadcast {:messageType "player-state" :players (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q) :scene (:scene @q)}) players)})))
 
+(defn process-object-behavior []
+  (dorun (map #(swap! % (:behavior @%)) objects)))
+
 (defn game-loop []
   (future
     (loop []
       (let [start-ms (System/currentTimeMillis)]
         (update-clients)
-;        (process-object-behavior)
+        (process-object-behavior)
+        (broadcast {:hey "you"})
         (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
       (when (not (:pause settings)) (recur)))))
 (when (not (:pause settings)) (game-loop))
