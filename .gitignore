@@ -23,3 +23,4 @@ config.clj
 
 # Ignore lein if we install it in the repo folder
 lein
+.eastwood

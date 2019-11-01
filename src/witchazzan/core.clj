@@ -15,8 +15,9 @@
     (swap! id inc)
     @id))
 
-(defn process-map [map name]
+(defn process-map
   "returns an immutable representation of a single tilemap, inclusing a helper for collisions"
+  [map name]
   (let [width (get map "width") height (get map "height")
         syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")]
     {:name (first (str/split name #"\."))
@@ -38,15 +39,17 @@
 (defn message-player [data player]
   (server/send! (:sock @player) (json/write-str data)))
 
-(defn broadcast [data]
+(defn broadcast
   "takes an n-level map and distributes it to all clients as json"
+  [data]
   (dorun (map #(message-player data %) players)))
 
 (defn establish-identity [player]
   (message-player {:messageType "identity" :id (:id @player) :name (:name @player)} player))
 
-(defn handle-chat [player message]
+(defn handle-chat
   "broadcasts chats as json"
+  [player message]
   (broadcast  {:messageType "chat" :name (:name @player) :content (get message "text")}))
 
 (defn handle-location-update [player message]
@@ -65,9 +68,10 @@
                           (:keys %)
                           {(str ":" (get message "key")) (get message "state")})})))
 
-(defn handle-command [player message]
+(defn handle-command
   "this handler is a bit of a switch case inside of a switch case, it handles all of the text commands entered
   via the command bar on the client"
+  [player message]
   (when (re-find #"^look" (get message "command"))
     (message-player {"response" "You see a rhelm of unimaginable possibility."} player))
   (when (re-find #"^listen" (get message "command"))
@@ -84,8 +88,9 @@
                                                        (= "west" (:direction (:attributes this))) (conj this {:x (dec (:x this))})
                                                        :else this))))))
 
-(defn call-func-by-string [name args]
+(defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
+  [name args]
   (apply (resolve (symbol name)) args))
 
 (defn handler [request]
