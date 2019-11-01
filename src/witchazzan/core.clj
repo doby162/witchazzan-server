@@ -14,8 +14,6 @@
   (defn gen-id []
     (swap! id inc)
     @id))
-(def anon-names ["arc" "clojure" "clojurescript" "common-lisp" "pico lisp" "scheme" "chicken"
-                 "emacs lisp" "maclisp" "racket"])
 
 (defn process-map [map name]
   "returns an immutable representation of a single tilemap, inclusing a helper for collisions"
@@ -131,7 +129,6 @@
       (let [start-ms (System/currentTimeMillis)]
         (update-clients)
         (process-object-behavior)
-        (broadcast {:hey "you"})
         (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
       (when (not (:pause settings)) (recur)))))
 (when (not (:pause settings)) (game-loop))
