@@ -42,6 +42,15 @@ this starts the server, and also plunks you down into a console where you can ma
 
 Use `Ctrl+d` to quit.
 
+## Contribution
+
+### Format your code like we did
+`lein cljfmt fix`
+
+### Lint your code
+`lein eastwood`  
+But don't be a slave to it, we aren't.
+
 ## License
 
 Copyright © 2019 FIXME
