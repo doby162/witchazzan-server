@@ -23,8 +23,8 @@
      :width width :height height :syri syri
      :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
 (def tilemaps (map
-                #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
-                (:tilemaps settings)))
+               #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
+               (:tilemaps settings)))
 
 ;;configuration and global state
 ;;
@@ -60,10 +60,10 @@
 
 (defn handle-keyboard-update [player message]
   (swap! player #(merge
-                   %
-                   {:keys (merge
-                            (:keys %)
-                            {(str ":" (get message "key")) (get message "state")})})))
+                  %
+                  {:keys (merge
+                          (:keys %)
+                          {(str ":" (get message "key")) (get message "state")})})))
 
 (defn handle-command [player message]
   "this handler is a bit of a switch case inside of a switch case, it handles all of the text commands entered
@@ -71,8 +71,7 @@
   (when (re-find #"^look" (get message "command"))
     (message-player {"response" "You see a rhelm of unimaginable possibility."} player))
   (when (re-find #"^listen" (get message "command"))
-    (message-player {"response" "You hear the distant chatter of a keyboard. A developer is hard at work."} player))
-  )
+    (message-player {"response" "You hear the distant chatter of a keyboard. A developer is hard at work."} player)))
 
 (defn handle-fireball [player message]
   (def objects (conj objects (make-object (:x @player) (:y @player) (:scene @player) "fireball"
@@ -100,18 +99,17 @@
                                (println "channel closed: " status)))
     (server/on-receive channel (fn [data]
                                  (try ; checking for bad json and that a handler can be found
-                                      (let [player (first (filter #(= (:sock @%) channel) players))
-                                            message (json/read-str data)
-                                            message-type (get message "message_type")]
-                                        (try ;checking if the function exists
-                                             (call-func-by-string
-                                               (str "witchazzan.core/handle-" message-type) [player message])
-                                             (catch java.lang.NullPointerException e (println e)))
+                                   (let [player (first (filter #(= (:sock @%) channel) players))
+                                         message (json/read-str data)
+                                         message-type (get message "message_type")]
+                                     (try ;checking if the function exists
+                                       (call-func-by-string
+                                        (str "witchazzan.core/handle-" message-type) [player message])
+                                       (catch java.lang.NullPointerException e (println e)))
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
-                                        )(catch java.lang.Exception e
-                                           (println "invalid json: " data) (println e)))
-                                 ))))
+                                     )(catch java.lang.Exception e
+                                        (println "invalid json: " data) (println e)))))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
