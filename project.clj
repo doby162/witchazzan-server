@@ -5,6 +5,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :plugins [[lein-cljfmt "0.6.4"][jonase/eastwood "0.3.5"]]
   :dependencies [[org.clojure/clojure "1.10.0"]
+                 [cljfmt "0.5.1"]
                  [http-kit "2.3.0"]
                  [org.clojure/data.json "0.2.6"]]
   :main ^:skip-aot witchazzan.core
