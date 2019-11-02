@@ -32,8 +32,8 @@
 ;;websocket infrastructure
 (defn make-player [x y sock scene]
   (atom {:x x :y y :sock sock :name "unknown-human" :keys {} :id (gen-id) :scene scene}));definition of a player
-(defn make-object [x y scene type attributes behavior]
-  (atom {:x x :y y :type type :attributes attributes :behavior behavior :id (gen-id) :scene scene}));definition of an object.
+(defn make-object [x y type scene behavior attributes]
+  (atom {:x x :y y :type type :scene scene :id (gen-id) :behavior behavior :attributes attributes}));definition of an object.
 ; Objects are very general, but they will all have some things in common
 
 (defn message-player [data player]
@@ -77,16 +77,18 @@
   (when (re-find #"^listen" (get message "command"))
     (message-player {"response" "You hear the distant chatter of a keyboard. A developer is hard at work."} player)))
 
-(defn handle-fireball [player message]
-  (def objects (conj objects (make-object (:x @player) (:y @player) (:scene @player) "fireball"
-                                          {:direction (get message "direction") :owner player}
-                                          ; the brains of an object is a lambda that returns an altered copy of the object
-                                          (fn [this] (cond
-                                                       (= "north" (:direction (:attributes this))) (conj this {:y (inc (:y this))})
-                                                       (= "south" (:direction (:attributes this))) (conj this {:y (dec (:y this))})
-                                                       (= "east" (:direction (:attributes this))) (conj this {:x (inc (:x this))})
-                                                       (= "west" (:direction (:attributes this))) (conj this {:x (dec (:x this))})
-                                                       :else this))))))
+(def objects [])
+(defn handle-fireball
+  [player message]
+  "generate a fireball object and add it to the object registry"
+  (def objects (conj objects (make-object (:x @player) (:y @player) "fireball" (:scene @player) #((:move (:attributes %)) %) ;this row are the standard game object properties
+                                          {:owner player
+                                           :move (cond                                               ;these special properties go in :attributes
+                                                   (= "north" (get message "direction")) #(conj % {:y (inc (:y %))})
+                                                   (= "south" (get message "direction")) #(conj % {:y (dec (:y %))})
+                                                   (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
+                                                   :else #(conj % {:x (dec (:x %))})) ; west is default because we need a default
+                                           :collide-wall #(not true)}))))
 
 (defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
