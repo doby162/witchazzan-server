@@ -50,7 +50,7 @@
 (defn handle-chat
   "broadcasts chats as json"
   [player message]
-  (broadcast  {:messageType "chat" :name (:name @player) :content (get message "text")}))
+  (broadcast  {:messageType "chat" :name (:name @player) :id (:id @player) :content (get message "text")}))
 
 (defn handle-location-update [player message]
   (let [new-x (get message "x") new-y (get message "y") new-scene (get message "scene")]
