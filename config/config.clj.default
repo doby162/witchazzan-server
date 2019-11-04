@@ -1,11 +1,8 @@
 ; we're storing settings in a map, add ':index value' on a line to add settings
 ; retreive with (:index settings)
 (def settings
-  {
-    :port 8080
-    :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
-    :tilemaps ["openingScene.json" "openingSceneRight1.json"]
-    :frame-time 100
-    :pause false
-  }
-)
+  {:port 8080
+   :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
+   :tilemaps '("openingScene.json" "openingSceneRight1.json" "arena1.json" "testScene1.json")
+   :frame-time 100
+   :pause false})
