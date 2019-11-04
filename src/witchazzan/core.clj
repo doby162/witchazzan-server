@@ -22,11 +22,20 @@
         syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")]
     {:name (first (str/split name #"\."))
      :width width :height height :syri syri
+     :tilewidth (get map "tilewidth")
      :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
 (def tilemaps (map
                #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
                (:tilemaps settings)))
 
+(defn name->scene [name]
+  (first (filter #(= name (:name %)) tilemaps)))
+
+(defn tile-location
+  "takes a player or game object and returns an x and y offset"
+  [object]
+  (let [tilewidth (:tilewidth (name->scene (:scene object)))]
+    {:x (Math/floor (/ (:x object) tilewidth)) :y (Math/floor (/ (:y object) tilewidth))}))
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
