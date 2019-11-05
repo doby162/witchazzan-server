@@ -23,7 +23,8 @@
     {:name (first (str/split name #"\."))
      :width width :height height :syri syri
      :tilewidth (get map "tilewidth")
-     :get-tile-walkable #(= 0 (get syri (+ %1 (* width %2))))}))
+     :get-tile-walkable (fn [coords]
+                          (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 (def tilemaps (map
                #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
                (:tilemaps settings)))
@@ -90,11 +91,15 @@
 (defn handle-fireball
   [player message]
   "generate a fireball object and add it to the object registry"
-  (def objects (conj objects (make-object (:x @player) (:y @player) "fireball" (:scene @player) #((:move (:attributes %)) %) ;this row are the standard game object properties
-                                          {:owner player
-                                           :move (cond                                               ;these special properties go in :attributes
-                                                   (= "north" (get message "direction")) #(conj % {:y (inc (:y %))})
-                                                   (= "south" (get message "direction")) #(conj % {:y (dec (:y %))})
+  (def objects (conj objects (make-object (:x @player) (:y @player) "fireball" (:scene @player) ;standard properties
+                                          (fn [this]
+                                            ((:move (:attributes this)) this))
+                                          {:owner player ;attributes
+                                           :collide (fn [this]
+                                                      (not ((:get-tile-walkable (name->scene (:scene @this))) (tile-location @this))))
+                                           :move (cond
+                                                   (= "north" (get message "direction")) #(conj % {:y (dec (:y %))})
+                                                   (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
                                                    (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
                                                    :else #(conj % {:x (dec (:x %))})) ; west is default because we need a default
                                            :collide-wall #(not true)}))))
