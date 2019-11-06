@@ -89,14 +89,16 @@
 
 (def objects [])
 (defn handle-fireball
-  [player message]
   "generate a fireball object and add it to the object registry"
+  [player message]
   (def objects (conj objects (make-object (:x @player) (:y @player) "fireball" (:scene @player) ;standard properties
                                           (fn [this]
-                                            ((:move (:attributes this)) this))
+                                            (cond
+                                              ((:collide (:attributes this)) this) nil
+                                              :else ((:move (:attributes this)) this)))
                                           {:owner player ;attributes
                                            :collide (fn [this]
-                                                      (not ((:get-tile-walkable (name->scene (:scene @this))) (tile-location @this))))
+                                                      (not ((:get-tile-walkable (name->scene (:scene this))) (tile-location this))))
                                            :move (cond
                                                    (= "north" (get message "direction")) #(conj % {:y (dec (:y %))})
                                                    (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
@@ -140,6 +142,7 @@
   (when (< 0 (count players)) (broadcast {:messageType "player-state" :players (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q) :scene (:scene @q) :direction (:direction @q)}) players)})))
 
 (defn process-object-behavior []
+  (def objects (remove #(nil? @%) objects))
   (dorun (map #(swap! % (:behavior @%)) objects)))
 
 (defn game-loop []
