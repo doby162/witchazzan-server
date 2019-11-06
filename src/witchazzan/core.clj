@@ -143,12 +143,15 @@
   (dorun (map #(swap! % (:behavior @%)) objects)))
 
 (defn game-loop []
-  (future
-    (loop []
-      (let [start-ms (System/currentTimeMillis)]
-        (update-clients)
-        (process-object-behavior)
-        (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
-      (when (not (:pause settings)) (recur)))))
-(when (not (:pause settings)) (game-loop))
+  (loop []
+    (let [start-ms (System/currentTimeMillis)]
+        ;(def objects (filter (fn [object] @object) objects))
+      (update-clients)
+      (process-object-behavior)
+      (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
+    (when (not (:pause settings)) (recur))))
+
+(defn threadify [func] (future (func)))
+
+(when (not (:pause settings)) (threadify game-loop))
 ;;game loop
