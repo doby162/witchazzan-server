@@ -3,5 +3,5 @@
             [witchazzan.core :refer :all]))
 
 (deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+  (testing "Tests should pass. That is how they work."
+    (is (= 1 1))))
