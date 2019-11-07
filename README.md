@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/doby162/witchazzan-server.png)](https://travis-ci.com/doby162/witchazzan-server)
+
 # Witchazzan - A Game!
 
 This is the start of a game that [doby162](https://github.com/doby162) and [chrisl8](https://github.com/chrisl8) are building.  
