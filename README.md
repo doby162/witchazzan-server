@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/doby162/witchazzan-server.png)](https://travis-ci.com/doby162/witchazzan-server)
+[![Build Status](https://travis-ci.com/doby162/witchazzan-server.svg?branch=master)](https://travis-ci.com/doby162/witchazzan-server.svg?branch=master)
 
 # Witchazzan - A Game!
 
