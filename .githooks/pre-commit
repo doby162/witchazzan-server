@@ -1,0 +1,7 @@
+#!
+
+lein cljfmt fix
+lein eastwood
+lein bikeshed
+lein cloverage
+lein test
