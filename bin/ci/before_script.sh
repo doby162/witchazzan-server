@@ -23,5 +23,8 @@ if ! (command -v java >/dev/null); then
   exit 1
 fi
 
+cd "${SCRIPTDIR}/../../../"
+git clone https://github.com/chrisl8/witchazzan-client.git
+
 cd "${SCRIPTDIR}/../../config"
 cp config.clj.default config.clj
