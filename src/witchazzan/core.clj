@@ -15,6 +15,15 @@
     (swap! id inc)
     @id))
 
+(def game-state (atom {:game-pieces []}))
+;this is a map to leave room for other types of game state
+(defn add-game-piece
+  "adds a game piece to the global game state"
+  [new-object]
+  (swap!
+   game-state
+   #(merge % {:game-pieces (conj (:game-pieces %) [(merge new-object {:id  (gen-id)})])})))
+
 (defn process-map
   "returns an immutable representation of a single tilemap, inclusing a helper
   for collisions"
