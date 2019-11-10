@@ -43,10 +43,10 @@
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
-        existing-user (filter #(= username (:name %)) (:game-pieces @game-state))]
+        existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene" :behavior #()
                                                   :name username :sock channel :keys {}}))
-    #_(when (not (empty? existing-user)))
+    (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
     #_(establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel])

@@ -15,16 +15,25 @@
     (swap! id inc)
     @id))
 
-(def game-state (atom {:game-pieces []}))
+(def game-state (atom {:game-pieces {}}))
 ;this is a map to leave room for other types of game state
 (defn add-game-piece
   "adds a game piece to the global game state
   game pieces must have, at a minumum:
   x y type scene behavior"
   [new-object]
-  (swap! ; todo, throw exception when object is invalid
+  (let [id (gen-id) obj (merge new-object {:id  id})]
+    (swap! ; todo, throw exception when object is invalid
+     game-state
+     #(merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))))
+
+(defn update-game-piece
+  "adds or replaces attribues in a game-piece
+  setting an attribute to null is equivilant to deleting it"
+  [id vals]
+  (swap!
    game-state
-   #(merge % {:game-pieces (conj (:game-pieces %) (merge new-object {:id  (gen-id)}))})))
+   (fn [state] (update-in state [:game-pieces (keyword (str id))] #(merge % vals)))))
 
 (load-file "src/witchazzan/json-handlers.clj")
 
