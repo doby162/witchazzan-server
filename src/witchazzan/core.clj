@@ -24,7 +24,7 @@
   [new-object]
   (swap! ; todo, throw exception when object is invalid
    game-state
-   #(merge % {:game-pieces (conj (:game-pieces %) [(merge new-object {:id  (gen-id)})])})))
+   #(merge % {:game-pieces (conj (:game-pieces %) (merge new-object {:id  (gen-id)}))})))
 
 (load-file "src/witchazzan/json-handlers.clj")
 
@@ -78,24 +78,20 @@
   (println "A new player has entered Witchazzan")
   (println request)
   (server/with-channel request channel
-    (def players (conj players (make-player 0 0 channel "" ""))); add this to our collection of players
-    (establish-identity (first (filter #(= (:sock @%) channel) players)))
-    (server/on-close channel (fn [status]
-                               (def players (filter #(not (= (:sock @%) channel)) players))
-                               (println "channel closed: " status)))
-    (server/on-receive channel (fn [data]
-                                 (try ; checking for bad json and that a handler can be found
-                                   (let [player (first (filter #(= (:sock @%) channel) players))
-                                         message (json/read-str data)
-                                         message-type (get message "message_type")]
-                                     (try ;checking if the function exists
-                                       (call-func-by-string
-                                        (str "witchazzan.core/handle-" message-type) [player message])
-                                       (catch java.lang.NullPointerException e (println e)))
+    (server/on-receive
+     channel
+     (fn [data]
+       (try ; checking for bad json and that a handler can be found
+         (let [message (json/read-str data)
+               message-type (get message "message_type")]
+           (try ;checking if the function exists
+             (call-func-by-string
+              (str "witchazzan.core/handle-" message-type) [message channel])
+             (catch java.lang.NullPointerException e (println e)))
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
-                                     )(catch java.lang.Exception e
-                                        (println "invalid json: " data) (println e)))))))
+           )(catch java.lang.Exception e
+              (println "invalid json: " data) (println e)))))))
 (server/run-server handler {:port (:port settings)})
 ;;websocket infrastructure
 ;;
