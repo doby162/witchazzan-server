@@ -11,10 +11,10 @@
 ;;namespace
 
 (defn sock->player [sock]
-  (first (filter #(= (:sock @%) sock) players)))
+  (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
 (defn message-player [data player]
-  (server/send! (:sock @player) (json/write-str data)))
+  (server/send! (:sock player) (json/write-str data)))
 
 (defn broadcast
   "takes an n-level map and distributes it to all clients as json"
@@ -24,15 +24,14 @@
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
   [player]
-  (message-player {:messageType "identity" :id (:id @player)
-                   :name (:name @player)} player))
-(defn handle-chat [a b])
-#_(defn handle-chat
-    "broadcasts chats as json"
-    [message channel]
-    (let [player (sock->player channel)]
-      (broadcast  {:messageType "chat" :name (:name @player) :id (:id @player)
-                   :content (get message "text")})))
+  (message-player {:messageType "identity" :id (:id player)
+                   :name (:name player)} player))
+(defn handle-chat
+  "broadcasts chats as json"
+  [message channel]
+  (let [player (sock->player channel)]
+    (broadcast  {:messageType "chat" :name (:name @player) :id (:id @player)
+                 :content (get message "text")})))
 
 (defn handle-location-update [message channel])
 #_(defn handle-location-update [message channel]
@@ -47,7 +46,7 @@
     (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene" :behavior #()
                                                   :name username :sock channel :keys {}}))
     (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
-    #_(establish-identity (sock->player channel))))
+    (establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel])
 #_(defn handle-keyboard-update [message channel]
