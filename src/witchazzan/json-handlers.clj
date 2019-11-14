@@ -19,7 +19,7 @@
 (defn broadcast
   "takes an n-level map and distributes it to all clients as json"
   [data]
-  (dorun (map #(message-player data %) players)))
+  (run! #(message-player data %) (filter #(= "player" (:type %)) (vals (:game-pieces @game-state)))))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -30,15 +30,14 @@
   "broadcasts chats as json"
   [message channel]
   (let [player (sock->player channel)]
-    (broadcast  {:messageType "chat" :name (:name @player) :id (:id @player)
+    (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")})))
 
-(defn handle-location-update [message channel])
-#_(defn handle-location-update [message channel]
-    #_(let [new-x (get message "x") new-y (get message "y")
-            new-scene (get message "scene") new-direction (get message "direction")
-            player (sock->player channel)]
-        (swap! player #(merge % {:x new-x :y new-y :scene new-scene :direction new-direction}))))
+(defn handle-location-update [message channel]
+  (let [new-x (get message "x") new-y (get message "y")
+        new-scene (get message "scene") new-direction (get message "direction")
+        player (sock->player channel)]
+    (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction})))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
@@ -48,53 +47,46 @@
     (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
     (establish-identity (sock->player channel))))
 
-(defn handle-keyboard-update [message channel])
-#_(defn handle-keyboard-update [message channel]
-    (let [player (sock->player channel)]
-      (swap! player
-             #(merge %
-                     {:keys
-                      (merge
-                       (:keys %)
-                       {(str ":" (get message "key")) (get message "state")})}))))
+(defn handle-keyboard-update [message channel]
+  (let [player (sock->player channel)]
+    (update-game-piece
+     (:id player)
+     {:keys (merge (:keys player) {(str ":" (get message "key")) (get message "state")})})))
 
-(defn handle-command [a b])
-#_(defn handle-command
-    "this handler is a bit of a switch case inside of a switch case,
+(defn handle-command
+  "this handler is a bit of a switch case inside of a switch case,
   it handles all of the text commands entered
   via the command bar on the client"
-    [message channel]
-    (let [player (sock->player channel)]
-      (when (re-find #"^look" (get message "command"))
-        (message-player {"response"
-                         "You see a rhelm of unimaginable possibility."}
-                        player))
-      (when (re-find #"^listen" (get message "command"))
-        (message-player {"response"
-                         "You hear the distant chatter of a keyboard.
+  [message channel]
+  (let [player (sock->player channel)]
+    (when (re-find #"^look" (get message "command"))
+      (message-player {"response"
+                       "You see a rhelm of unimaginable possibility."}
+                      player))
+    (when (re-find #"^listen" (get message "command"))
+      (message-player {"response"
+                       "You hear the distant chatter of a keyboard.
                      A developer is hard at work."}
-                        player))))
+                      player))))
 
-(defn handle-fireball [a b])
-#_(defn handle-fireball
-    "generate a fireball object and add it to the object registry"
-    [message channel]
-    (let [player (sock->player channel)]
-      (def objects (conj
-                    objects
-                    (make-object (:x @player) (:y @player) "fireball" (:scene @player) ;standard properties
-                                 (fn [this]
-                                   (cond
-                                     ((:collide (:attributes this)) this) nil
-                                     :else ((:move (:attributes this)) this)))
-                                 {:owner player ;attributes
-                                  :collide (fn [this]
-                                             (not
-                                              ((:get-tile-walkable
-                                                (name->scene (:scene this))) (tile-location this))))
-                                  :move (cond
-                                          (= "north" (get message "direction")) #(conj % {:y (dec (:y %))})
-                                          (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
-                                          (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
-                                          :else #(conj % {:x (dec (:x %))}))
-                                  :collide-wall #(not true)})))))
+(defn handle-fireball
+  "generate a fireball object and add it to the object registry"
+  [message channel]
+  (let [player (sock->player channel)]
+    (add-game-piece {:x (:x player) :y (:y player) :type "fireball"
+                     :scene (:scene player) ;standard properties
+                     :behavior (fn [this]
+                                 (cond
+                                   ((:collide (:attributes this)) this) nil
+                                   :else ((:move (:attributes this)) this)))
+                     :owner player ;attributes
+                     :collide (fn [this]
+                                (not
+                                 ((:get-tile-walkable
+                                   (name->scene (:scene this))) (tile-location this))))
+                     :move (cond
+                             (= "north" (get message "direction")) #(conj % {:y (dec (:y %))})
+                             (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
+                             (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
+                             :else #(conj % {:x (dec (:x %))}))
+                     :collide-wall #(not true)})))
