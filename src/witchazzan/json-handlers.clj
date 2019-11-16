@@ -14,12 +14,12 @@
   (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
 (defn message-player [data player]
-  (server/send! (:sock player) (json/write-str data)))
+  (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
 
 (defn broadcast
   "takes an n-level map and distributes it to all clients as json"
   [data]
-  (run! #(message-player data %) (filter #(= "player" (:type %)) (vals (:game-pieces @game-state)))))
+  (run! #(message-player data %) (players)))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"

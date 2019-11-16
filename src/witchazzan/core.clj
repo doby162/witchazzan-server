@@ -9,14 +9,17 @@
 ;;
 ;;configuration and global state
 (load-file "config/config.clj") ; todo: add defaults and setters
-(def players []) ; should this also be an atom?
-(def objects [])
-(let [id (atom 0)]
-  (defn gen-id []
-    (swap! id inc)
-    @id))
 
-(def game-state (atom {:game-pieces {}}))
+(def game-state (atom {:game-pieces {} :auto-increment-id 0}))
+
+(defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
+
+(defn players [] (filter #(= "player" (:type %))) (vals (:game-pieces @game-state)))
+
+(defn gen-id []
+  (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
+  (:auto-increment-id @game-state))
+
 ;this is a map to leave room for other types of game state
 (defn add-game-piece
   "adds a game piece to the global game state
@@ -68,17 +71,6 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
-(defn make-player ; deprecated
-  "defines the structure of a player object"
-  [x y sock scene direction]
-  (atom {:x x :y y :sock sock :name "unknown-human" :keys {} :id (gen-id)
-         :scene scene :direction direction}))
-(defn make-object ; deprecated
-  "defines the structure of a game piece"
-  [x y type scene behavior attributes]
-  (atom {:x x :y y :type type :scene scene :id (gen-id) :behavior behavior
-         :attributes attributes}))
-
 (defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
   [name args]
@@ -106,28 +98,29 @@
 ;;websocket infrastructure
 ;;
 ;;game loop
+
 (defn update-clients []
-  (when (< 0 (count objects))
+  (when (< 0 (count (objects)))
     (broadcast
      {:messageType "object-state" :objects
-      (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :type (:type @q)})
-           objects)}))
-  (when (< 0 (count players))
+      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type) :scene (:scene %)})
+           (objects))}))
+  (when (< 0 (count (players)))
     (broadcast
      {:messageType "player-state" :players
-      (map (fn [q] {:id (:id @q) :x (:x @q) :y (:y @q) :name (:name @q)
-                    :scene (:scene @q) :direction (:direction @q)})
-           players)})))
+      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :name (:name %)
+                    :scene (:scene %) :direction (:direction %)})
+           (players))})))
 
-(defn process-object-behavior []
-  (def objects (remove #(nil? @%) objects))
-  (dorun (map #(swap! % (:behavior @%)) objects)))
+;;this func needs totally redone
+#_(defn process-object-behavior []
+    (dorun (map #(swap! % (:behavior @%)) (objects))))
 
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-      (process-object-behavior)
+;      (process-object-behavior)
       (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
     (when (not (:pause settings)) (recur))))
 
