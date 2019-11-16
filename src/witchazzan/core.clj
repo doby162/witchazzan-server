@@ -26,7 +26,7 @@
   game pieces must have, at a minumum:
   x y type scene behavior"
   [new-object]
-  (let [id (gen-id) obj (merge new-object {:id  id})]
+  (let [id (gen-id) obj (merge new-object {:id  id :delete-me false})]
     (swap! ; todo, throw exception when object is invalid
      game-state
      #(merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))))
@@ -40,6 +40,21 @@
    (fn [state] (update-in state [:game-pieces (keyword (str id))] #(merge % vals)))))
 
 (load-file "src/witchazzan/json-handlers.clj")
+
+(defn collect-garbage
+  "removes game-pieces with the delete-me attribute set to true"
+  []
+  (swap! game-state trash-filter))
+
+(defn trash-filter
+  "does all the work for collect-garbage"
+  [game-state]
+  (merge ; replace the game-pieces structure with one that is missing deleted pieces
+   game-state
+   {:game-pieces
+    (into {} (filter (fn [piece]
+                       (= false (:delete-me (second piece))))
+                     (:game-pieces game-state)))}))
 
 (defn process-map
   "returns an immutable representation of a single tilemap,
@@ -112,16 +127,23 @@
                     :scene (:scene %) :direction (:direction %)})
            (players))})))
 
-;;this func needs totally redone
-#_(defn process-object-behavior []
-    (dorun (map #(swap! % (:behavior @%)) (objects))))
+(defn process-object-behavior
+  "run the :behavior method of every game-piece, it takes a state
+  and returns a new state"
+  []
+  (run!
+   (fn [object]
+     (update-game-piece (:id object) ((:behavior object) object)))
+   (vals (:game-pieces @game-state))))
 
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-;      (process-object-behavior)
-      (Thread/sleep (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))))
+      (process-object-behavior)
+      (collect-garbage)
+      (try (Thread/sleep
+            (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
     (when (not (:pause settings)) (recur))))
 
 (defn threadify [func] (future (func)))

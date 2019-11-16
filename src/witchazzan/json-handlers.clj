@@ -5,7 +5,6 @@
 ;alter the api of the handlers to accomodate ththis change
 (ns witchazzan.core
   (:gen-class))
-(declare make-object)
 (declare name->scene)
 (declare tile-location)
 ;;namespace
@@ -42,7 +41,8 @@
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
-    (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene" :behavior #()
+    (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
+                                                  :behavior (fn [this] this)
                                                   :name username :sock channel :keys {}}))
     (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
     (establish-identity (sock->player channel))))
@@ -77,8 +77,8 @@
                      :scene (:scene player) ;standard properties
                      :behavior (fn [this]
                                  (cond
-                                   ((:collide (:attributes this)) this) nil
-                                   :else ((:move (:attributes this)) this)))
+                                   ((:collide this) this) (merge this {:delete-me true})
+                                   :else ((:move this) this)))
                      :owner player ;attributes
                      :collide (fn [this]
                                 (not
