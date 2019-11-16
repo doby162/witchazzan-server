@@ -41,11 +41,6 @@
 
 (load-file "src/witchazzan/json-handlers.clj")
 
-(defn collect-garbage
-  "removes game-pieces with the delete-me attribute set to true"
-  []
-  (swap! game-state trash-filter))
-
 (defn trash-filter
   "does all the work for collect-garbage"
   [game-state]
@@ -55,6 +50,11 @@
     (into {} (filter (fn [piece]
                        (= false (:delete-me (second piece))))
                      (:game-pieces game-state)))}))
+
+(defn collect-garbage
+  "removes game-pieces with the delete-me attribute set to true"
+  []
+  (swap! game-state trash-filter))
 
 (defn process-map
   "returns an immutable representation of a single tilemap,
