@@ -14,7 +14,7 @@
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
-(defn players [] (filter #(= "player" (:type %))) (vals (:game-pieces @game-state)))
+(defn players [] (filter #(= "player" (:type %)) (vals (:game-pieces @game-state))))
 
 (defn gen-id []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
@@ -117,13 +117,13 @@
 (defn update-clients []
   (when (< 0 (count (objects)))
     (broadcast
-     {:messageType "object-state" :objects
-      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type) :scene (:scene %)})
+     {:messageType "objects-state" :objects
+      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :scene (:scene %)})
            (objects))}))
   (when (< 0 (count (players)))
     (broadcast
-     {:messageType "player-state" :players
-      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :name (:name %)
+     {:messageType "players-state" :players
+      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :name (:name %)
                     :scene (:scene %) :direction (:direction %)})
            (players))})))
 
