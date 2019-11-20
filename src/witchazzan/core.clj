@@ -115,14 +115,19 @@
 ;;game loop
 
 (defn update-clients []
+  (broadcast
+   {:messageType "game-piece-list"
+    :pieces (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :scene (:scene %)
+                          :name (:name %) :direction (:direction %)})
+                 (vals (:game-pieces @game-state)))})
   (when (< 0 (count (objects)))
     (broadcast
-     {:messageType "objects-state" :objects
+     {:messageType "object-state" :objects
       (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :scene (:scene %)})
            (objects))}))
   (when (< 0 (count (players)))
     (broadcast
-     {:messageType "players-state" :players
+     {:messageType "player-state" :players
       (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :name (:name %)
                     :scene (:scene %) :direction (:direction %)})
            (players))})))
