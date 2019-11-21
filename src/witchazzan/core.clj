@@ -16,6 +16,10 @@
 
 (defn players [] (filter #(= "player" (:type %)) (vals (:game-pieces @game-state))))
 
+(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
+
+(defn scene->pieces [scene] (filter #(= (:scene %) scene) (vals (:game-pieces @game-state))))
+
 (defn gen-id []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
