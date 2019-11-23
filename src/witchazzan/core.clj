@@ -119,22 +119,15 @@
 ;;game loop
 
 (defn update-clients []
-  (broadcast
-   {:messageType "game-piece-list"
-    :pieces (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :scene (:scene %)
-                          :name (:name %) :direction (:direction %)})
-                 (vals (:game-pieces @game-state)))})
-  (when (< 0 (count (objects)))
-    (broadcast
-     {:messageType "object-state" :objects
-      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :scene (:scene %)})
-           (objects))}))
-  (when (< 0 (count (players)))
-    (broadcast
-     {:messageType "player-state" :players
-      (map (fn [%] {:id (:id %) :x (:x %) :y (:y %) :type (:type %) :name (:name %)
-                    :scene (:scene %) :direction (:direction %)})
-           (players))})))
+  (run!
+   (fn [tilemap] (broadcast
+                  {:messageType "game-piece-list"
+                   :pieces (map (fn [%] {:id (:id %) :x (:x %) :y (:y %)
+                                         :type (:type %) :scene (:scene %)
+                                         :name (:name %) :direction (:direction %)})
+                                (scene->pieces (:name tilemap)))}
+                  (scene->players (:name tilemap))))
+   tilemaps))
 
 (defn process-object-behavior
   "run the :behavior method of every game-piece, it takes a state

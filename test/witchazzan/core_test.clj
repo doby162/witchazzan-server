@@ -7,12 +7,11 @@
   (testing "Tests should pass. That is how they work."
     (is (= 1 1))))
 
-(deftest check-name->scene []
+(deftest check-name->scene
   (is (name->scene (str/replace (first (:tilemaps settings)) #".json" ""))))
 
 (deftest check-settings
-  "makes sure the settings file being loaded has reasonable values"
-  []
+  ;makes sure the settings file being loaded has reasonable values
   (is (integer? (:port settings)))
   (is (contains?  settings :tilemap-path))
   (is (contains?  settings :tilemaps))

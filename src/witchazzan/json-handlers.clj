@@ -17,8 +17,8 @@
 
 (defn broadcast
   "takes an n-level map and distributes it to all clients as json"
-  [data]
-  (run! #(message-player data %) (players)))
+  [data players]
+  (run! #(message-player data %) players))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -30,7 +30,7 @@
   [message channel]
   (let [player (sock->player channel)]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                 :content (get message "text")})))
+                 :content (get message "text")} (players))))
 
 (defn handle-location-update [message channel]
   (let [new-x (get message "x") new-y (get message "y")
