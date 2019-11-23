@@ -75,6 +75,7 @@
   (let [player (sock->player channel)]
     (add-game-piece {:x (:x player) :y (:y player) :type "fireball"
                      :scene (:scene player) ;standard properties
+                     :direction (:direction player)
                      :behavior (fn [this]
                                  (cond
                                    ((:collide this) this) (merge this {:delete-me true})
