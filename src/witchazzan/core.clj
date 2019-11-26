@@ -124,6 +124,7 @@
                   {:messageType "game-piece-list"
                    :pieces (map (fn [%] {:id (:id %) :x (:x %) :y (:y %)
                                          :type (:type %) :scene (:scene %)
+                                         :health (:health %)
                                          :name (:name %) :direction (:direction %)})
                                 (scene->pieces (:name tilemap)))}
                   (scene->players (:name tilemap))))

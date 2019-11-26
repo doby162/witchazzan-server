@@ -1,8 +1,4 @@
 ;;namespace
-;this update: 
-;establish identity used to create/load a new player instead of
-;on socket connect
-;alter the api of the handlers to accomodate ththis change
 (ns witchazzan.core
   (:gen-class))
 (declare name->scene)
@@ -42,6 +38,7 @@
   (let [username (get message "username") password (get message "password")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
+                                                  :health 3
                                                   :behavior (fn [this] this)
                                                   :name username :sock channel :keys {}}))
     (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
@@ -78,6 +75,12 @@
                      :direction (:direction player)
                      :behavior (fn [this]
                                  (cond
+                                   ((:collide-players this) this)
+                                   (do
+                                     (update-game-piece
+                                       (:id ((:collide-players this) this))
+                                       {:health (dec (:health ((:collide-players this) this)))})
+                                     (merge this {:delete-me true}))
                                    ((:collide this) this) (merge this {:delete-me true})
                                    :else ((:move this) this)))
                      :owner player ;attributes
@@ -90,4 +93,12 @@
                              (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
                              (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
                              :else #(conj % {:x (dec (:x %))}))
-                     :collide-wall #(not true)})))
+                     :collide-players
+                     (fn [this]
+                       (first
+                        (filter #(and
+                                  (=
+                                   (tile-location %)
+                                   (tile-location this))
+                                  (not (= (:id %) (:id (:owner this)))))
+                                (scene->players (:scene this)))))})))
