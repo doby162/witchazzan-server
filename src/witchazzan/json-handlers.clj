@@ -30,16 +30,19 @@
 
 (defn handle-location-update [message channel]
   (let [new-x (get message "x") new-y (get message "y")
+        sprite (get message "sprite")
         new-scene (get message "scene") new-direction (get message "direction")
         player (sock->player channel)]
-    (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction})))
+    (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
+                                     :sprite sprite})))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
+        sprite (get message "sprite")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
                                                   :health 3
-                                                  :defence 0
+                                                  :defence 0 :sprite sprite
                                                   :behavior (fn [this] this)
                                                   :hit (fn
                                                          [this strength]
@@ -48,7 +51,8 @@
                                                           {:health
                                                            (- (:health this) (- strength (:defence this)))}))
                                                   :name username :sock channel :keys {}}))
-    (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
+    (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user))
+                                                          {:sock channel :sprite sprite}))
     (establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel]
@@ -76,10 +80,11 @@
 (defn handle-fireball
   "generate a fireball object and add it to the object registry"
   [message channel]
-  (let [player (sock->player channel)]
+  (let [player (sock->player channel) sprite (get message "sprite")]
     (add-game-piece {:x (:x player) :y (:y player) :type "fireball"
                      :scene (:scene player) ;standard properties
                      :direction (:direction player)
+                     :sprite sprite
                      :behavior (fn [this]
                                  (cond
                                    ((:collide-players this) this)
