@@ -39,7 +39,14 @@
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
                                                   :health 3
+                                                  :defence 0
                                                   :behavior (fn [this] this)
+                                                  :hit (fn
+                                                         [this strength]
+                                                         (update-game-piece
+                                                          (:id this)
+                                                          {:health
+                                                           (- (:health this) (- strength (:defence this)))}))
                                                   :name username :sock channel :keys {}}))
     (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user)) {:sock channel}))
     (establish-identity (sock->player channel))))
@@ -77,9 +84,7 @@
                                  (cond
                                    ((:collide-players this) this)
                                    (do
-                                     (update-game-piece
-                                       (:id ((:collide-players this) this))
-                                       {:health (dec (:health ((:collide-players this) this)))})
+                                     ((:hit ((:collide-players this) this)) ((:collide-players this) this) 1)
                                      (merge this {:delete-me true}))
                                    ((:collide this) this) (merge this {:delete-me true})
                                    :else ((:move this) this)))
