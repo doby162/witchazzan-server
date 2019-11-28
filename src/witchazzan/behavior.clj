@@ -28,7 +28,7 @@
              (=
               (tile-location %)
               (tile-location this))
-             (not (= (:id %) (:id (:owner this)))))
+             (not (= (:id %) (:owner this))))
            (scene->players (:scene this)))))
 (defn fireball-move
   [this]

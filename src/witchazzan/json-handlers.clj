@@ -85,7 +85,7 @@
       :direction (get message "direction")
       :sprite sprite
       :behavior "witchazzan.core/fireball-behavior"
-      :owner player ;attributes
+      :owner (:id player) ;attributes
       :collide "witchazzan.core/fireball-collide"
       :move "witchazzan.core/fireball-move"
       :collide-players "witchazzan.core/fireball-collide-players"})))

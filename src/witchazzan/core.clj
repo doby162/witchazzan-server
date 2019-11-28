@@ -13,6 +13,25 @@
 
 (def game-state (atom {:game-pieces {} :auto-increment-id 0}))
 
+;this function is a big oof. the clojure reader can't
+;handle socket literals, for good reasons, and since
+;the game state is full of 'em, I have to filter them out.
+;using a regex for this is probably the worst idea
+;but hey, it works for now!
+(defn save
+  "Serializes the entire state of play. All mutable state exists in the resulting file"
+  []
+  (spit "config/save.clj"
+        (str "(def game-state (atom " @game-state "))"))
+  (spit "config/save.clj"
+        (clojure.string/replace (slurp "config/save.clj") #":sock #object\[(.*?)\]," ""))
+  (slurp "config/save.clj"))
+
+(defn load-game
+  "reads and executes the code stored in config/save.clj, repopulating the game-state"
+  []
+  (load-string (slurp "config/save.clj")))
+
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
 (defn players [] (filter #(= "player" (:type %)) (vals (:game-pieces @game-state))))
@@ -158,5 +177,6 @@
 
 (defn threadify [func] (future (func)))
 
-(when (not (:pause settings)) (threadify game-loop))
+(when (not (:pause settings))
+  (do (try (load-game) (catch Exception e (println "game not loaded"))) (threadify game-loop)))
 ;;game loop

@@ -20,6 +20,7 @@ pom.xml.asc
 .hg/
 
 config.clj
+save.clj
 
 # Ignore lein if we install it in the repo folder
 lein
