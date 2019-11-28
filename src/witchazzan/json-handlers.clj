@@ -3,6 +3,7 @@
   (:gen-class))
 (declare name->scene)
 (declare tile-location)
+(declare call-func-by-string)
 ;;namespace
 
 (defn sock->player [sock]
@@ -40,19 +41,16 @@
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
-    (when (empty? existing-user) (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
-                                                  :health 3
-                                                  :defence 0 :sprite sprite
-                                                  :behavior (fn [this] this)
-                                                  :hit (fn
-                                                         [this strength]
-                                                         (update-game-piece
-                                                          (:id this)
-                                                          {:health
-                                                           (- (:health this) (- strength (:defence this)))}))
-                                                  :name username :sock channel :keys {}}))
-    (when (not (empty? existing-user)) (update-game-piece (:id (first existing-user))
-                                                          {:sock channel :sprite sprite}))
+    (when (empty? existing-user)
+      (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
+                       :health 3
+                       :defence 0 :sprite sprite
+                       :behavior "witchazzan.core/player-behavior"
+                       :hit "witchazzan.core/player-hit"
+                       :name username :sock channel :keys {}}))
+    (when (not (empty? existing-user))
+      (update-game-piece (:id (first existing-user))
+                         {:sock channel :sprite sprite}))
     (establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel]
@@ -81,34 +79,13 @@
   "generate a fireball object and add it to the object registry"
   [message channel]
   (let [player (sock->player channel) sprite (get message "sprite")]
-    (add-game-piece {:x (:x player) :y (:y player) :type "fireball"
-                     :scene (:scene player) ;standard properties
-                     :direction (:direction player)
-                     :sprite sprite
-                     :behavior (fn [this]
-                                 (cond
-                                   ((:collide-players this) this)
-                                   (do
-                                     ((:hit ((:collide-players this) this)) ((:collide-players this) this) 1)
-                                     (merge this {:delete-me true}))
-                                   ((:collide this) this) (merge this {:delete-me true})
-                                   :else ((:move this) this)))
-                     :owner player ;attributes
-                     :collide (fn [this]
-                                (not
-                                 ((:get-tile-walkable
-                                   (name->scene (:scene this))) (tile-location this))))
-                     :move (cond
-                             (= "north" (get message "direction")) #(conj % {:y (dec (:y %))})
-                             (= "south" (get message "direction")) #(conj % {:y (inc (:y %))})
-                             (= "east" (get message "direction")) #(conj % {:x (inc (:x %))})
-                             :else #(conj % {:x (dec (:x %))}))
-                     :collide-players
-                     (fn [this]
-                       (first
-                        (filter #(and
-                                  (=
-                                   (tile-location %)
-                                   (tile-location this))
-                                  (not (= (:id %) (:id (:owner this)))))
-                                (scene->players (:scene this)))))})))
+    (add-game-piece
+     {:x (:x player) :y (:y player) :type "fireball"
+      :scene (:scene player) ;standard properties
+      :direction (get message "direction")
+      :sprite sprite
+      :behavior "witchazzan.core/fireball-behavior"
+      :owner player ;attributes
+      :collide "witchazzan.core/fireball-collide"
+      :move "witchazzan.core/fireball-move"
+      :collide-players "witchazzan.core/fireball-collide-players"})))

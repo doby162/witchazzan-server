@@ -9,6 +9,7 @@
 ;;
 ;;configuration and global state
 (load-file "config/config.clj") ; todo: add defaults and setters
+(load-file "src/witchazzan/behavior.clj")
 
 (def game-state (atom {:game-pieces {} :auto-increment-id 0}))
 
@@ -95,6 +96,11 @@
   [name args]
   (apply (resolve (symbol name)) args))
 
+(defn method
+  "shorthand to call game-piece methods"
+  [object key args]
+  (call-func-by-string (get object key) (conj args object)))
+
 (defn handler [request]
   (println "A new player has entered Witchazzan")
   (println request)
@@ -137,7 +143,7 @@
   []
   (run!
    (fn [object]
-     (update-game-piece (:id object) ((:behavior object) object)))
+     (update-game-piece (:id object) (method object :behavior (list))))
    (vals (:game-pieces @game-state))))
 
 (defn game-loop []
