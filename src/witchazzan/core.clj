@@ -48,7 +48,9 @@
 (defn hourglass []
   (swap! game-state #(merge % {:clock (inc (:clock %))}))
   (when (< 23 (:clock @game-state))
-    (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
+    (do
+      (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
+    (save))
   (when (= (:clock @game-state) 6)
     (broadcast
      {:messageType "chat" :name "Witchazzan.core" :id -1
