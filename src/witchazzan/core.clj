@@ -5,13 +5,14 @@
   (:require [clojure.string :as str])
   (:require [clojure.pprint :as pp])
   (:gen-class))
+(declare broadcast)
 ;;namespace
 ;;
 ;;configuration and global state
 (load-file "config/config.clj") ; todo: add defaults and setters
 (load-file "src/witchazzan/behavior.clj")
 
-(def game-state (atom {:game-pieces {} :auto-increment-id 0}))
+(def game-state (atom {:game-pieces {} :auto-increment-id 0 :clock 0 :calendar 0}))
 
 ;this function is a big oof. the clojure reader can't
 ;handle socket literals, for good reasons, and since
@@ -43,6 +44,22 @@
 (defn gen-id []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
+
+(defn hourglass []
+  (swap! game-state #(merge % {:clock (inc (:clock %))}))
+  (when (< 23 (:clock @game-state))
+    (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
+  (when (= (:clock @game-state) 6)
+    (broadcast
+     {:messageType "chat" :name "Witchazzan.core" :id -1
+      :content (str "Dawn of day " (:calendar @game-state))} (players)))
+  (when (= (:clock @game-state) 20)
+    (broadcast
+     {:messageType "chat" :name "Witchazzan.core" :id -1
+      :content "Night falls"} (players)))
+  (broadcast {:time (:clock @game-state)} (players))
+  (Thread/sleep 60000)
+  (recur))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece
@@ -178,5 +195,6 @@
 (defn threadify [func] (future (func)))
 
 (when (not (:pause settings))
-  (do (try (load-game) (catch Exception e (println "game not loaded"))) (threadify game-loop)))
+  (do (try (load-game) (catch Exception e (println "game not loaded")))
+      (threadify game-loop) (threadify hourglass)))
 ;;game loop
