@@ -22,11 +22,16 @@
 (defn save
   "Serializes the entire state of play. All mutable state exists in the resulting file"
   []
-  (spit "config/save.clj"
-        (str "(def game-state (atom " @game-state "))"))
-  (spit "config/save.clj"
-        (clojure.string/replace (slurp "config/save.clj") #":sock #object\[(.*?)\]," ""))
-  (slurp "config/save.clj"))
+  (let
+   [save-data
+    (merge @game-state {:game-pieces
+                        (apply merge (map (fn [object]
+                                            {(keyword (str (:id object))) object})
+                                          (map #(dissoc % :sock) (vals (:game-pieces @game-state)))))})]
+    (def step save-data)
+    (spit "config/save.clj"
+          (str "(def game-state (atom " save-data "))"))
+    (slurp "config/save.clj")))
 
 (defn load-game
   "reads and executes the code stored in config/save.clj, repopulating the game-state"
@@ -143,6 +148,9 @@
   (println "A new player has entered Witchazzan")
   (println request)
   (server/with-channel request channel
+    (server/on-close
+     channel
+     (fn []))
     (server/on-receive
      channel
      (fn [data]
