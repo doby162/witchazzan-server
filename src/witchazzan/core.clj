@@ -9,7 +9,8 @@
 ;;namespace
 ;;
 ;;configuration and global state
-(load-file "config/config.clj") ; todo: add defaults and setters
+(load-file "config/default-config.clj")
+(load-file "config/config.clj")
 (load-file "src/witchazzan/behavior.clj")
 
 (def game-state (atom {:game-pieces {} :auto-increment-id 0 :clock 0 :calendar 0}))
@@ -62,7 +63,7 @@
   (when (< 23 (:clock @game-state))
     (do
       (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
-    (save))
+    (when (setting "auto-save") (save)))
   (when (= (:clock @game-state) 6)
     (broadcast
      {:messageType "chat" :name "Witchazzan.core" :id -1
@@ -72,7 +73,7 @@
      {:messageType "chat" :name "Witchazzan.core" :id -1
       :content "Night falls"} (players)))
   (broadcast {:time (:clock @game-state)} (players))
-  (Thread/sleep 60000)
+  (Thread/sleep (setting "milis-per-hour"))
   (recur))
 
 ;this is a map to leave room for other types of game state
@@ -124,8 +125,8 @@
                           (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 
 (def tilemaps (map ; tilemaps don't go in the game state because they are immutable
-               #(process-map (json/read-str (slurp (str (:tilemap-path settings) %))) %)
-               (:tilemaps settings)))
+               #(process-map (json/read-str (slurp (str (setting "tilemap-path") %))) %)
+               (setting "tilemaps")))
 
 (defn name->scene [name]
   (first (filter #(= name (:name %)) tilemaps)))
@@ -173,7 +174,7 @@
                                         ;the second half of a function name and calling that function
            )(catch java.lang.Exception e
               (println "invalid json: " data) (println e)))))))
-(server/run-server handler {:port (:port settings)})
+(server/run-server handler {:port (setting "port")})
 ;;websocket infrastructure
 ;;
 ;;game loop
@@ -207,12 +208,12 @@
       (process-object-behavior)
       (collect-garbage)
       (try (Thread/sleep
-            (- (:frame-time settings) (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
-    (when (not (:pause settings)) (recur))))
+            (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
+    (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
 
-(when (not (:pause settings))
-  (do (try (load-game) (catch Exception e (println "game not loaded")))
+(when (not (setting "pause"))
+  (do (try (when (setting "auto-load") (load-game)) (catch Exception e (println "game not loaded")))
       (threadify game-loop) (threadify hourglass)))
 ;;game loop
