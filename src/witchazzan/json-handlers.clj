@@ -44,13 +44,14 @@
     (when (empty? existing-user)
       (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
                        :health 3
+                       :active true
                        :defence 0 :sprite sprite
                        :behavior "witchazzan.core/player-behavior"
                        :hit "witchazzan.core/player-hit"
                        :name username :sock channel :keys {}}))
     (when (not (empty? existing-user))
       (update-game-piece (:id (first existing-user))
-                         {:sock channel :sprite sprite}))
+                         {:sock channel :sprite sprite :active true}))
     (establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel]

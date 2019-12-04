@@ -42,9 +42,16 @@
 
 (defn players [] (filter #(= "player" (:type %)) (vals (:game-pieces @game-state))))
 
-(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
+;the scene-> functions filter players by active
+(defn scene->players [scene] (filter #(and
+                                       (= (:scene %) scene)
+                                       (not (= false (:active %))))
+                                     (players)))
 
-(defn scene->pieces [scene] (filter #(= (:scene %) scene) (vals (:game-pieces @game-state))))
+(defn scene->pieces [scene] (filter #(and
+                                      (= (:scene %) scene)
+                                      (not (= false (:active %))))
+                                    (vals (:game-pieces @game-state))))
 
 (defn gen-id []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
@@ -150,7 +157,8 @@
   (server/with-channel request channel
     (server/on-close
      channel
-     (fn []))
+     (fn [data]
+       (update-game-piece (:id (sock->player channel)) {:active false})))
     (server/on-receive
      channel
      (fn [data]
