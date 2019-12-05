@@ -32,6 +32,7 @@
 (defn handle-location-update [message channel]
   (let [new-x (get message "x") new-y (get message "y")
         sprite (get message "sprite")
+        animation (get message "animation")
         new-scene (get message "scene") new-direction (get message "direction")
         player (sock->player channel)]
     (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
@@ -44,6 +45,7 @@
     (when (empty? existing-user)
       (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
                        :health 3
+                       :animation nil
                        :active true
                        :defence 0 :sprite sprite
                        :behavior "witchazzan.core/player-behavior"
