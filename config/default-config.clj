@@ -6,8 +6,8 @@
                 :tilemaps '("openingScene.json" "openingSceneRight1.json" "arena1.json" "testScene1.json")
                 :frame-time 100
                 :pause false
-                :auto-save false
-                :auto-load false
+                :auto-save true
+                :auto-load true
                 :milis-per-hour 60000}))
 (defn setting
   ([key value]

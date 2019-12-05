@@ -10,7 +10,10 @@
 ;;
 ;;configuration and global state
 (load-file "config/default-config.clj")
-(load-file "config/config.clj")
+(try (load-file "config/config.clj")
+     (catch Exception e
+       (println "No custom configuration found at config/config.clj.
+                Add settings like (setting \"port\" 1234)")))
 (load-file "src/witchazzan/behavior.clj")
 
 (def game-state (atom {:game-pieces {} :auto-increment-id 0 :clock 0 :calendar 0}))
@@ -214,6 +217,8 @@
 (defn threadify [func] (future (func)))
 
 (when (not (setting "pause"))
-  (do (try (when (setting "auto-load") (load-game)) (catch Exception e (println "game not loaded")))
-      (threadify game-loop) (threadify hourglass)))
+  (do
+    (try (when (setting "auto-load") (load-game))
+         (catch Exception e (println "Failed to load save file")))
+    (threadify game-loop) (threadify hourglass)))
 ;;game loop
