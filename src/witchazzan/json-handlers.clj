@@ -85,6 +85,7 @@
     (add-game-piece
      {:x (:x player) :y (:y player) :type "fireball"
       :scene (:scene player) ;standard properties
+      :hit "witchazzan.core/blank-behavior"
       :direction (get message "direction")
       :sprite sprite
       :behavior "witchazzan.core/fireball-behavior"

@@ -28,8 +28,8 @@
              (=
               (tile-location %)
               (tile-location this))
-             (not (= (:id %) (:owner this))))
-           (scene->players (:scene this)))))
+             (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
+           (scene->pieces (:scene this)))))
 (defn fireball-move
   [this]
   (cond
@@ -51,3 +51,5 @@
 (defn player-behavior
   [this]
   this)
+
+(defn blank-behavior [& args] true)
