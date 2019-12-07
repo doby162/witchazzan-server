@@ -222,3 +222,22 @@
          (catch Exception e (println "Failed to load save file")))
     (threadify game-loop) (threadify hourglass)))
 ;;game loop
+;;nature
+
+(defn square-range
+  "like range but for coordinates"
+  [size]
+  (map
+   #(zipmap '(:x :y) (list (quot % size) (rem % size)))
+   (range (* size size))))
+
+(defn find-empty-tile
+  "returns the coordinates of a random empty tile from a map"
+  [scene]
+  (let [map (name->scene scene) size (max (:width map) (:height map))]
+    (rand-nth (filter #((:get-tile-walkable map) %) (square-range size)))))
+
+(defn spawn-carrot
+  "create a carrot in the world"
+  [scene])
+;;nature
