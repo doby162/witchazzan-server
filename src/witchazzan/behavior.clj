@@ -7,6 +7,7 @@
 (declare tile-location)
 (declare update-game-piece)
 (declare method)
+(declare game-state)
 ;todo: seperate namespace
 ;;namespace
 
@@ -16,6 +17,26 @@
    (:id this)
    {:health
     (- (:health this) (max 0 (- strength (:defence this))))}))
+(defn plant-hit
+  [this strength]
+  (update-game-piece
+   (:id this) ;drop items?
+   {:delete-me true}))
+
+(defn carrot-behavior
+  [this]
+  (merge this {:energy (method this :photosynth (list))}))
+
+(defn sunny?
+  "so how's the weather?"
+  []
+  (cond (and (>= (:clock @game-state) 6) (< (:clock @game-state) 20)) true
+        :else false))
+
+(defn photosynth
+  [this]
+  (cond (sunny?) (+ 2 (:energy this))
+        :else (dec (:energy this))))
 
 (defn fireball-collide [this]
   (not

@@ -142,6 +142,12 @@
   [object]
   (let [tilewidth (:tilewidth (name->scene (:scene object)))]
     {:x (Math/floor (/ (:x object) tilewidth)) :y (Math/floor (/ (:y object) tilewidth))}))
+
+(defn pixel-location
+  "takes a pair of coordinates and returns pixel values"
+  [coords scene]
+  (let [width (:width (name->scene scene)) height (:height (name->scene scene))]
+    {:x (* width (:x coords)) :y (* height (:y coords))}))
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
@@ -181,7 +187,6 @@
 ;;websocket infrastructure
 ;;
 ;;game loop
-
 (defn update-clients []
   (run!
    (fn [tilemap] (broadcast
@@ -215,15 +220,8 @@
     (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
-
-(when (not (setting "pause"))
-  (do
-    (try (when (setting "auto-load") (load-game))
-         (catch Exception e (println "Failed to load save file")))
-    (threadify game-loop) (threadify hourglass)))
 ;;game loop
 ;;nature
-
 (defn square-range
   "like range but for coordinates"
   [size]
@@ -235,9 +233,28 @@
   "returns the coordinates of a random empty tile from a map"
   [scene]
   (let [map (name->scene scene) size (max (:width map) (:height map))]
-    (rand-nth (filter #((:get-tile-walkable map) %) (square-range size)))))
+    (pixel-location (rand-nth (filter #((:get-tile-walkable map) %) (square-range size))) scene)))
 
 (defn spawn-carrot
   "create a carrot in the world"
-  [scene])
+  [scene]
+  (add-game-piece
+   (conj
+    (find-empty-tile scene)
+    {:scene scene
+     :sprite "carrot"
+     :type "type"
+     :hit "witchazzan.core/plant-hit"
+     :energy 1
+     :behavior "witchazzan.core/carrot-behavior"
+     :photosynth "witchazzan.core/photosynth"})))
+
+(defn seed-nature []
+  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 ;;nature
+;;basically the main function
+(when (not (setting "pause"))
+  (do
+    (try (when (setting "auto-load") (load-game))
+         (catch Exception e (println "Failed to load save file")))
+    (threadify game-loop) (threadify hourglass) (seed-nature)))
