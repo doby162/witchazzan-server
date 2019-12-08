@@ -159,7 +159,13 @@
 (defn method
   "shorthand to call game-piece methods"
   [object key args]
-  (call-func-by-string (get object key) (conj args object)))
+  (try
+    (call-func-by-string (get object key) (conj args object))
+    (catch Exception e
+      (pp/pprint "failed to call method")
+      (pp/pprint args)
+      (pp/pprint key)
+      (pp/pprint (:id object)))))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -232,7 +238,7 @@
 (defn find-empty-tile
   "returns the coordinates of a random empty tile from a map"
   [scene]
-  (let [map (name->scene scene) size (max (:width map) (:height map))]
+  (let [map (name->scene scene) size (:tilewidth map)]
     (pixel-location (rand-nth (filter #((:get-tile-walkable map) %) (square-range size))) scene)))
 
 (defn spawn-carrot
