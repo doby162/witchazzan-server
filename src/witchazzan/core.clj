@@ -162,6 +162,7 @@
   (try
     (call-func-by-string (get object key) (conj args object))
     (catch Exception e
+      ;(pp/pprint e)
       (pp/pprint "failed to call method")
       (pp/pprint args)
       (pp/pprint key)
@@ -253,6 +254,7 @@
      :hit "witchazzan.core/plant-hit"
      :energy 1
      :behavior "witchazzan.core/carrot-behavior"
+     :reproduce "witchazzan.core/plant-reproduce"
      :photosynth "witchazzan.core/photosynth"})))
 
 (defn seed-nature []

@@ -6,8 +6,10 @@
 (declare scene->pieces)
 (declare tile-location)
 (declare update-game-piece)
+(declare add-game-piece)
 (declare method)
 (declare game-state)
+(declare find-empty-tile)
 ;todo: seperate namespace
 ;;namespace
 
@@ -25,7 +27,18 @@
 
 (defn carrot-behavior
   [this]
-  (merge this {:energy (method this :photosynth (list))}))
+  (cond (> (:energy this) 10000)
+        (method this :reproduce (list))
+        :else
+        (merge this {:energy (method this :photosynth (list))})))
+
+(defn plant-reproduce [this]
+  (let [energy (/ (:energy this) 4)]
+    (add-game-piece
+     (-> this
+         (merge {:energy energy})
+         (merge (find-empty-tile (:scene this)))))
+    (merge this {:energy energy})))
 
 (defn sunny?
   "so how's the weather?"
