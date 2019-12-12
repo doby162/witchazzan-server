@@ -283,3 +283,11 @@
     (try (when (setting "auto-load") (load-game))
          (catch Exception e (println "Failed to load save file")))
     (threadify game-loop) (threadify hourglass) (seed-nature)))
+;;basically the main function
+;;admin stuff
+(defn ten-x []
+  (setting "milis-per-hour" (/ (setting "milis-per-hour") 10))
+  (setting "frame-time" (/ (setting "frame-time") 10)))
+(defn tenth-x []
+  (setting "milis-per-hour" (* (setting "milis-per-hour") 10))
+  (setting "frame-time" (* (setting "frame-time") 10)))
