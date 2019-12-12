@@ -29,6 +29,8 @@
   [this]
   (cond (> (:energy this) 10000)
         (method this :reproduce (list))
+        (< (:energy this) 0)
+        (merge this {:delete-me true})
         :else
         (merge this {:energy (method this :photosynth (list))})))
 

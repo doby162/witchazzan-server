@@ -141,13 +141,13 @@
   "takes a player or game object and returns an x and y offset"
   [object]
   (let [tilewidth (:tilewidth (name->scene (:scene object)))]
-    {:x (Math/floor (/ (:x object) tilewidth)) :y (Math/floor (/ (:y object) tilewidth))}))
+    {:x (int (Math/floor (/ (:x object) tilewidth))) :y (int (Math/floor (/ (:y object) tilewidth)))}))
 
 (defn pixel-location
   "takes a pair of coordinates and returns pixel values"
-  [coords scene]
-  (let [width (:width (name->scene scene)) height (:height (name->scene scene))]
-    {:x (* width (:x coords)) :y (* height (:y coords))}))
+  [scene coords]
+  (let [width (:tilewidth (name->scene scene))]
+    {:x (* width (:x coords)) :y (* width (:y coords))}))
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
@@ -163,10 +163,10 @@
     (call-func-by-string (get object key) (conj args object))
     (catch Exception e
       ;(pp/pprint e)
-      (pp/pprint "failed to call method")
-      (pp/pprint args)
-      (pp/pprint key)
-      (pp/pprint (:id object)))))
+      ;(pp/pprint "failed to call method")
+      ;(pp/pprint args)
+      ;(pp/pprint key)
+      #_(pp/pprint (:id object)))))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -236,11 +236,27 @@
    #(zipmap '(:x :y) (list (quot % size) (rem % size)))
    (range (* size size))))
 
+(defn tile-occupied
+  [scene coords]
+  (not (empty? (filter
+                (fn [object]
+                  (let [ob-coords (tile-location object)]
+                    (and
+                     (= (:x coords) (:x ob-coords))
+                     (= (:y coords) (:y ob-coords)))))
+                (scene->pieces scene)))))
+
 (defn find-empty-tile
+  ;this needs to somehow return nil instead of crashing on imossible requests
   "returns the coordinates of a random empty tile from a map"
   [scene]
-  (let [map (name->scene scene) size (:tilewidth map)]
-    (pixel-location (rand-nth (filter #((:get-tile-walkable map) %) (square-range size))) scene)))
+  (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
+    (->>
+     (square-range tile-size)
+     (filter #((:get-tile-walkable map) %))
+     (filter #(not (tile-occupied scene %)))
+     (rand-nth)
+     (pixel-location scene))))
 
 (defn spawn-carrot
   "create a carrot in the world"
@@ -252,10 +268,11 @@
      :sprite "carrot"
      :type "type"
      :hit "witchazzan.core/plant-hit"
-     :energy 1
+     :energy 4000
      :behavior "witchazzan.core/carrot-behavior"
      :reproduce "witchazzan.core/plant-reproduce"
-     :photosynth "witchazzan.core/photosynth"})))
+     :photosynth "witchazzan.core/photosynth"
+     :genes {}})))
 
 (defn seed-nature []
   (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
