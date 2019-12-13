@@ -25,7 +25,14 @@
    (:id this) ;drop items?
    {:delete-me true}))
 
-(defn carrot-behavior
+(defn hourly-behavior
+  "an abstraction for all objects running their code on the hour"
+  [this]
+  (cond (not (= (:clock @game-state) (:clock this)))
+        (method (merge this {:clock (:clock @game-state)}) :hourly (list))
+        :else this))
+
+(defn carrot-hourly
   [this]
   (cond (> (:energy this) 10000)
         (method this :reproduce (list))

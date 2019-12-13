@@ -288,10 +288,11 @@
      :type "type"
      :hit "witchazzan.core/plant-hit"
      :energy 24
-     :behavior "witchazzan.core/carrot-behavior"
+     :behavior "witchazzan.core/hourly-behavior"
+     :hourly "witchazzan.core/carrot-hourly"
      :reproduce "witchazzan.core/plant-reproduce"
      :photosynth "witchazzan.core/photosynth"
-     :hour 1 ;some things happen on the hour
+     :clock 1 ;some things happen on the hour
      :genes
      (generate-genes
       :repro-threshold :repro-chance)})))
