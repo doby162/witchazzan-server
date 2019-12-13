@@ -8,6 +8,7 @@
                 :pause false
                 :auto-save true
                 :auto-load true
+                :gene-max 255
                 :milis-per-hour 60000}))
 (defn setting
   ([key value]

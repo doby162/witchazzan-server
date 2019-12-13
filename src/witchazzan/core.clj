@@ -18,11 +18,6 @@
 
 (def game-state (atom {:game-pieces {} :auto-increment-id 0 :clock 0 :calendar 0}))
 
-;this function is a big oof. the clojure reader can't
-;handle socket literals, for good reasons, and since
-;the game state is full of 'em, I have to filter them out.
-;using a regex for this is probably the worst idea
-;but hey, it works for now!
 (defn save
   "Serializes the entire state of play. All mutable state exists in the resulting file"
   []
@@ -258,6 +253,30 @@
      (rand-nth)
      (pixel-location scene))))
 
+(defn generate-genes
+  "makes a list of keywords into a map of ints, arbitrarily limited by settings"
+  [& keywords]
+  (zipmap keywords
+          (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
+
+(defn mutate-genes
+  "each gene can be incremeneted, decremented or stay the same with equal chance"
+  [genes]
+  (zipmap (keys genes)
+          (map #(+ (- (rand-int 3) 1) %) (vals genes))))
+
+(defn normalize-genes
+  "prevent mutation from moving genes outside the 0-gene-max range"
+  [genes]
+  (zipmap (keys genes)
+          (map
+           #(cond (> % (setting "gene-max"))
+                  (- % (setting "gene-max"))
+                  (< % 0)
+                  (+ % (setting "gene-max"))
+                  :else %)
+           (vals genes))))
+
 (defn spawn-carrot
   "create a carrot in the world"
   [scene]
@@ -268,11 +287,14 @@
      :sprite "carrot"
      :type "type"
      :hit "witchazzan.core/plant-hit"
-     :energy 4000
+     :energy 24
      :behavior "witchazzan.core/carrot-behavior"
      :reproduce "witchazzan.core/plant-reproduce"
      :photosynth "witchazzan.core/photosynth"
-     :genes {}})))
+     :hour 1 ;some things happen on the hour
+     :genes
+     (generate-genes
+      :repro-threshold :repro-chance)})))
 
 (defn seed-nature []
   (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
