@@ -34,15 +34,17 @@
 
 (defn carrot-hourly
   [this]
-  (cond (> (:energy this) 10000)
+  (cond (and
+         (>= (:repro-chance (:genes this)) (rand-int (setting "gene-max")))
+         (>= (:energy this) (:repro-threshold (:genes this))))
         (method this :reproduce (list))
-        (< (:energy this) 0)
+        (<= (:energy this) 0)
         (merge this {:delete-me true})
         :else
         (merge this {:energy (method this :photosynth (list))})))
 
 (defn plant-reproduce [this]
-  (let [energy (/ (:energy this) 4)]
+  (let [energy (/ (:energy this) 3)]
     (add-game-piece
      (-> this
          (merge {:energy energy})
@@ -57,8 +59,8 @@
 
 (defn photosynth
   [this]
-  (cond (sunny?) (+ 2 (:energy this))
-        :else (dec (:energy this))))
+  (cond (sunny?) (+ (:energy this) 1)
+        :else (- (:energy this) 1)))
 
 (defn fireball-collide [this]
   (not
