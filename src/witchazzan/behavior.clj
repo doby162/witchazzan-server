@@ -12,6 +12,7 @@
 (declare find-empty-tile)
 (declare mutate-genes)
 (declare normalize-genes)
+(declare find-adjacent)
 ;todo: seperate namespace
 ;;namespace
 
@@ -62,8 +63,12 @@
 
 (defn photosynth
   [this]
-  (cond (sunny?) (+ (:energy this) 1)
-        :else (- (:energy this) 1)))
+  (cond
+    (sunny?)
+    (+ (:energy this); add to energy 1 energy minus 10% per adjacent item, not including the object
+       (* 0.1 (- 11 (count (find-adjacent this)))))
+    :else
+    (- (:energy this) 1)))
 
 (defn fireball-collide [this]
   (not

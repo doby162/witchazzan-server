@@ -52,6 +52,8 @@
                                       (not (= false (:active %))))
                                     (vals (:game-pieces @game-state))))
 
+(defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
+
 (defn gen-id []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
@@ -128,9 +130,6 @@
 
 (defn name->scene [name]
   (first (filter #(= name (:name %)) tilemaps)))
-
-(defn id->object [id]
-  (first (filter #(= id (:id %)) (:game-pieces @game-state))))
 
 (defn tile-location
   "takes a player or game object and returns an x and y offset"
@@ -278,6 +277,18 @@
                   :else %)
            (vals genes))))
 
+(defn within-n
+  [a b n]
+  (and (>= a (- b n)) (<= a (+ b n))))
+
+(defn find-adjacent
+  "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
+  [object]
+  (let [map (name->scene (:scene object)) n (:tilewidth map)]
+    (filter
+     #(and (within-n (:x %) (:x object) n) (within-n (:y %) (:y object) n))
+     (scene->pieces (:scene object)))))
+
 (defn spawn-carrot
   "create a carrot in the world"
   [scene]
@@ -297,17 +308,7 @@
      :genes
      (generate-genes
       :repro-threshold :repro-chance)})))
-
-(defn seed-nature []
-  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 ;;nature
-;;basically the main function
-(when (not (setting "pause"))
-  (do
-    (try (when (setting "auto-load") (load-game))
-         (catch Exception e (println "Failed to load save file")))
-    (threadify game-loop) (threadify hourglass) (seed-nature)))
-;;basically the main function
 ;;admin stuff
 (defn ten-x []
   (setting "milis-per-hour" (/ (setting "milis-per-hour") 10))
@@ -315,3 +316,15 @@
 (defn tenth-x []
   (setting "milis-per-hour" (* (setting "milis-per-hour") 10))
   (setting "frame-time" (* (setting "frame-time") 10)))
+(defn short-day []
+  (setting "milis-per-hour" 600))
+(defn seed-nature []
+  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
+;;admin stuff
+;;basically the main function
+(when (not (setting "pause"))
+  (do
+    (try (when (setting "auto-load") (load-game))
+         (catch Exception e (println "Failed to load save file")))
+    (threadify game-loop) (threadify hourglass) (seed-nature)))
+;;basically the main function
