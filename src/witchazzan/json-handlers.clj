@@ -95,4 +95,5 @@
       :owner (:id player) ;attributes
       :collide "witchazzan.core/fireball-collide"
       :move "witchazzan.core/fireball-move"
+      :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
       :collide-players "witchazzan.core/fireball-collide-players"})))

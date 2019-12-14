@@ -77,11 +77,12 @@
            (scene->pieces (:scene this)))))
 (defn fireball-move
   [this]
-  (cond
-    (= "north" (:direction this)) (conj this {:y (dec (:y this))})
-    (= "south" (:direction this)) (conj this {:y (inc (:y this))})
-    (= "east" (:direction this)) (conj this {:x (inc (:x this))})
-    :else (conj this {:x (dec (:x this))})))
+  (let [speed (:speed this)]
+    (cond
+      (= "north" (:direction this)) (conj this {:y (- (:y this) speed)})
+      (= "south" (:direction this)) (conj this {:y (+ (:y this) speed)})
+      (= "east" (:direction this)) (conj this {:x (+ (:x this) speed)})
+      :else (conj this {:x (- (:x this) speed)}))))
 
 (defn fireball-behavior
   [this]
