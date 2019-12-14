@@ -10,6 +10,8 @@
 (declare method)
 (declare game-state)
 (declare find-empty-tile)
+(declare mutate-genes)
+(declare normalize-genes)
 ;todo: seperate namespace
 ;;namespace
 
@@ -48,7 +50,8 @@
     (add-game-piece
      (-> this
          (merge {:energy energy})
-         (merge (find-empty-tile (:scene this)))))
+         (merge (find-empty-tile (:scene this)))
+         (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))
     (merge this {:energy energy})))
 
 (defn sunny?
