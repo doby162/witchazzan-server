@@ -197,6 +197,7 @@
                                          :type (:type %) :scene (:scene %)
                                          :health (:health %) :defence (:defence %)
                                          :sprite (:sprite %) :animation (:animation %)
+                                         :moving (:moving %)
                                          :name (:name %) :direction (:direction %)})
                                 (scene->pieces (:name tilemap)))}
                   (scene->players (:name tilemap))))
