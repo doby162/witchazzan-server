@@ -32,15 +32,17 @@
 (defn handle-location-update [message channel]
   (let [new-x (get message "x") new-y (get message "y")
         sprite (get message "sprite")
+        moving (get message "moving")
         animation (get message "animation")
         new-scene (get message "scene") new-direction (get message "direction")
         player (sock->player channel)]
     (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
-                                     :sprite sprite})))
+                                     :sprite sprite :moving moving})))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
+        moving (get message "moving")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user)
       (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
@@ -48,6 +50,7 @@
                        :animation nil
                        :active true
                        :defence 0 :sprite sprite
+                       :moving false
                        :behavior "witchazzan.core/player-behavior"
                        :hit "witchazzan.core/player-hit"
                        :name username :sock channel :keys {}}))
