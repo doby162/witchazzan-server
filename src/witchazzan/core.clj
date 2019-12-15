@@ -6,6 +6,7 @@
   (:require [clojure.pprint :as pp])
   (:gen-class))
 (declare broadcast)
+(declare within-n)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -124,7 +125,17 @@
      :width width :height height :syri syri
      :objects objects
      :tilewidth (get map "tilewidth")
-     :teleport (fn [coords])
+     :teleport
+     (fn [coords]
+       (let [tele (filter
+                   #(and
+                     (= "SwitchToScene" (get % "type"))
+                     (within-n (:x coords) (get % "x") (* 2 (get % "width")))
+                     (within-n (:y coords) (get % "y") (* 2 (get % "height"))))
+                   objects)]
+         (println tele)
+         (when (= 1 (count tele))
+           {:scene (get (first tele) "name")})))
      :get-tile-walkable (fn [coords]
                           (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 
