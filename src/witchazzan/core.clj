@@ -116,11 +116,15 @@
   "returns an immutable representation of a single tilemap,
   including a helper for collisions"
   [map name]
+  (def tmap map)
   (let [width (get map "width") height (get map "height")
-        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")]
+        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")
+        objects (get (first (filter #(= (get % "name") "Objects") (get tmap "layers"))) "objects")]
     {:name (first (str/split name #"\."))
      :width width :height height :syri syri
+     :objects objects
      :tilewidth (get map "tilewidth")
+     :teleport (fn [coords])
      :get-tile-walkable (fn [coords]
                           (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 
