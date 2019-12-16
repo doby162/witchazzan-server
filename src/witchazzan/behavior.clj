@@ -34,12 +34,11 @@
   (cond (not (= (:clock @game-state) (:clock this)))
         (method (merge this {:clock (:clock @game-state)}) :hourly (list))
         :else this))
-(defn teleport-rand [this]
+(defn teleport [this]
   "teleports to a random tile on the target scene"
-  (merge
-   this
-   ((:teleport (name->scene (:scene this))) this)
-   (find-empty-tile (name->scene (:scene this)))))
+  (when
+   (not (:teleport-debounce this))
+    ((:teleport (name->scene (:scene this))) this)))
 
 (defn carrot-hourly
   [this]
@@ -53,7 +52,7 @@
         (->
          this
          (merge {:energy (method this :photosynth (list))})
-         (merge (teleport-rand this)))))
+         (merge (teleport this)))))
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)]

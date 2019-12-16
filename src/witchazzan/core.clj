@@ -133,7 +133,6 @@
                      (within-n (:x coords) (get % "x") (* 2 (get % "width")))
                      (within-n (:y coords) (get % "y") (* 2 (get % "height"))))
                    objects)]
-         (def asdf tele)
          (when (= 1 (count tele))
            (let [result (first (filter #(and
                                          (= "Entrance" (get % "type"))
@@ -143,7 +142,8 @@
                                        (:objects (name->scene (get (first tele) "name")))))]
              {:scene (get (first tele) "name")
               :x (get result "x")
-              :y (get result "y")}))))
+              :y (get result "y")
+              :teleport-debounce true}))))
      :get-tile-walkable (fn [coords]
                           (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 
