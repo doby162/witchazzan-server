@@ -86,9 +86,8 @@
 (defn fireball-collide-players [this]
   (first
    (filter #(and
-             (=
-              (tile-location %)
-              (tile-location this))
+             (within-n (:x this) (:x %) (:tilewidth (name->scene (:scene this))))
+             (within-n (:y this) (:y %) (:tilewidth (name->scene (:scene this))))
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
            (scene->pieces (:scene this)))))
 (defn fireball-move
