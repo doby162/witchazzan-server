@@ -133,9 +133,17 @@
                      (within-n (:x coords) (get % "x") (* 2 (get % "width")))
                      (within-n (:y coords) (get % "y") (* 2 (get % "height"))))
                    objects)]
-         (println tele)
+         (def asdf tele)
          (when (= 1 (count tele))
-           {:scene (get (first tele) "name")})))
+           (let [result (first (filter #(and
+                                         (= "Entrance" (get % "type"))
+                                         (= (get (first (second (first (first tele)))) "value") (get % "name")))
+                     ;this line assumes that the Entrance's first property is it's name
+                     ;no, this is not a good assumption
+                                       (:objects (name->scene (get (first tele) "name")))))]
+             {:scene (get (first tele) "name")
+              :x (get result "x")
+              :y (get result "y")}))))
      :get-tile-walkable (fn [coords]
                           (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
 
