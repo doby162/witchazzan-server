@@ -225,20 +225,26 @@
                   (scene->players (:name tilemap))))
    tilemaps))
 
-(defn process-object-behavior
-  "run the :behavior method of every game-piece, it takes a state
-  and returns a new state"
+(defn process-behavior
+  "calls the behavior method on all pieces to calculate the next frame"
+  [this]
+  {(first this) (method (second this) :behavior (list))})
+
+(defn process-behaviors
+  "coordinates the process-behavior function accross the game-pieces"
   []
-  (run!
-   (fn [object]
-     (update-game-piece (:id object) (method object :behavior (list))))
-   (vals (:game-pieces @game-state))))
+  (swap! game-state
+         (fn [state] (merge state
+                            {:game-pieces
+                             (apply merge (pmap
+                                           #(process-behavior %)
+                                           (:game-pieces state)))}))))
 
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-      (process-object-behavior)
+      (process-behaviors)
       (collect-garbage)
       (try (Thread/sleep
             (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
