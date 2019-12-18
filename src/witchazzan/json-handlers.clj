@@ -36,8 +36,8 @@
         animation (get message "animation")
         new-scene (get message "scene") new-direction (get message "direction")
         player (sock->player channel)]
-    (update-game-piece (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
-                                     :sprite sprite :moving moving})))
+    (update-game-piece! (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
+                                      :sprite sprite :moving moving})))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
@@ -45,23 +45,23 @@
         moving (get message "moving")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user)
-      (add-game-piece {:x 0 :y 0 :type "player" :scene "openingScene"
-                       :health 3
-                       :animation nil
-                       :active true
-                       :defence 0 :sprite sprite
-                       :moving false
-                       :behavior "witchazzan.core/player-behavior"
-                       :hit "witchazzan.core/player-hit"
-                       :name username :sock channel :keys {}}))
+      (add-game-piece! {:x 0 :y 0 :type "player" :scene "openingScene"
+                        :health 3
+                        :animation nil
+                        :active true
+                        :defence 0 :sprite sprite
+                        :moving false
+                        :behavior "witchazzan.core/player-behavior"
+                        :hit "witchazzan.core/player-hit"
+                        :name username :sock channel :keys {}}))
     (when (not (empty? existing-user))
-      (update-game-piece (:id (first existing-user))
-                         {:sock channel :sprite sprite :active true}))
+      (update-game-piece! (:id (first existing-user))
+                          {:sock channel :sprite sprite :active true}))
     (establish-identity (sock->player channel))))
 
 (defn handle-keyboard-update [message channel]
   (let [player (sock->player channel)]
-    (update-game-piece
+    (update-game-piece!
      (:id player)
      {:keys (merge (:keys player) {(str ":" (get message "key")) (get message "state")})})))
 
@@ -85,7 +85,7 @@
   "generate a fireball object and add it to the object registry"
   [message channel]
   (let [player (sock->player channel) sprite (get message "sprite")]
-    (add-game-piece
+    (add-game-piece!
      {:x (:x player) :y (:y player) :type "fireball"
       :scene (:scene player) ;standard properties
       :hit "witchazzan.core/blank-behavior"

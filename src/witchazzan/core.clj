@@ -55,11 +55,11 @@
 
 (defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
 
-(defn gen-id []
+(defn gen-id! []
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
 
-(defn hourglass []
+(defn hourglass! []
   (swap! game-state #(merge % {:clock (inc (:clock %))}))
   (when (< 23 (:clock @game-state))
     (do
@@ -78,17 +78,17 @@
   (recur))
 
 ;this is a map to leave room for other types of game state
-(defn add-game-piece
+(defn add-game-piece!
   "adds a game piece to the global game state
   game pieces must have, at a minumum:
   x y type scene behavior"
   [new-object]
-  (let [id (gen-id) obj (merge new-object {:id  id :delete-me false})]
+  (let [id (gen-id!) obj (merge new-object {:id  id :delete-me false})]
     (swap! ; todo, throw exception when object is invalid
      game-state
      #(merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))))
 
-(defn update-game-piece
+(defn update-game-piece!
   "adds or replaces attribues in a game-piece
   setting an attribute to null is equivilant to deleting it"
   [id vals]
@@ -108,7 +108,7 @@
                        (= false (:delete-me (second piece))))
                      (:game-pieces game-state)))}))
 
-(defn collect-garbage
+(defn collect-garbage!
   "removes game-pieces with the delete-me attribute set to true"
   []
   (swap! game-state trash-filter))
@@ -178,12 +178,7 @@
   [object key args]
   (try
     (call-func-by-string (get object key) (conj args object))
-    (catch Exception e
-      ;(pp/pprint e)
-      ;(pp/pprint "failed to call method")
-      ;(pp/pprint args)
-      ;(pp/pprint key)
-      #_(pp/pprint (:id object)))))
+    (catch Exception e)))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -192,7 +187,7 @@
     (server/on-close
      channel
      (fn [data]
-       (update-game-piece (:id (sock->player channel)) {:active false})))
+       (update-game-piece! (:id (sock->player channel)) {:active false})))
     (server/on-receive
      channel
      (fn [data]
@@ -230,7 +225,7 @@
   [this]
   {(first this) (method (second this) :behavior (list))})
 
-(defn process-behaviors
+(defn process-behaviors!
   "coordinates the process-behavior function accross the game-pieces"
   []
   (swap!
@@ -247,8 +242,8 @@
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-      (process-behaviors)
-      (collect-garbage)
+      (process-behaviors!)
+      (collect-garbage!)
       (try (Thread/sleep
             (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
     (when (not (setting "pause")) (recur))))
@@ -324,7 +319,7 @@
 (defn spawn-carrot
   "create a carrot in the world"
   [scene]
-  (add-game-piece
+  (add-game-piece!
    (conj
     (find-empty-tile scene)
     {:scene scene
@@ -358,5 +353,5 @@
   (do
     (try (when (setting "auto-load") (load-game))
          (catch Exception e (println "Failed to load save file")))
-    (threadify game-loop) (threadify hourglass) (seed-nature)))
+    (threadify game-loop) (threadify hourglass!) (seed-nature)))
 ;;basically the main function

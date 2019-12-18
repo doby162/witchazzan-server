@@ -5,8 +5,6 @@
 (declare scene->players)
 (declare scene->pieces)
 (declare tile-location)
-(declare update-game-piece)
-(declare add-game-piece)
 (declare method)
 (declare game-state)
 (declare find-empty-tile)
@@ -18,15 +16,17 @@
 
 (defn player-hit
   [this strength]
-  (update-game-piece
-   (:id this)
-   {:health
-    (- (:health this) (max 0 (- strength (:defence this))))}))
+  ;TODO
+  #_(update-game-piece
+     (:id this)
+     {:health
+      (- (:health this) (max 0 (- strength (:defence this))))}))
 (defn plant-hit
   [this strength]
-  (update-game-piece
-   (:id this) ;drop items?
-   {:delete-me true}))
+  ;TODO
+  #_(update-game-piece
+     (:id this) ;drop items?
+     {:delete-me true}))
 
 (defn hourly-behavior
   "an abstraction for all objects running their code on the hour"
@@ -34,6 +34,7 @@
   (cond (not (= (:clock @game-state) (:clock this)))
         (method (merge this {:clock (:clock @game-state)}) :hourly (list))
         :else this))
+
 (defn teleport [this]
   "teleports to a random tile on the target scene"
   (when
@@ -56,11 +57,12 @@
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)]
-    (add-game-piece
-     (-> this
-         (merge {:energy energy})
-         (merge (find-empty-tile (:scene this)))
-         (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))
+  ;TODO
+    #_(add-game-piece
+       (-> this
+           (merge {:energy energy})
+           (merge (find-empty-tile (:scene this)))
+           (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))
     (merge this {:energy energy})))
 
 (defn sunny?
