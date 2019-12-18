@@ -233,12 +233,15 @@
 (defn process-behaviors
   "coordinates the process-behavior function accross the game-pieces"
   []
-  (swap! game-state
-         (fn [state] (merge state
-                            {:game-pieces
-                             (apply merge (pmap
-                                           #(process-behavior %)
-                                           (:game-pieces state)))}))))
+  (swap!
+   game-state
+   (fn [state]
+     (->>
+      (:game-pieces state)
+      (pmap #(process-behavior %))
+      (apply merge)
+      (vector :game-pieces)
+      (merge state)))))
 
 (defn game-loop []
   (loop []
