@@ -57,13 +57,16 @@
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)]
-  ;TODO
-    #_(add-game-piece
-       (-> this
-           (merge {:energy energy})
-           (merge (find-empty-tile (:scene this)))
-           (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))
-    (merge this {:energy energy})))
+    (merge
+     this
+     {:energy energy
+      :outbox (conj (:outbox this)
+                    (-> this
+                        (merge {:outbox nil}) ; newe objects don't get to start with mail
+                        (merge {:mail-to :new-object}) ;the new object handler will open this mail
+                        (merge {:energy energy})
+                        (merge (find-empty-tile (:scene this)))
+                        (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
 
 (defn sunny?
   "so how's the weather?"
