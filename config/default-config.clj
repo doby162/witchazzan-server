@@ -4,7 +4,7 @@
                {:port 8080
                 :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
                 :tilemaps '("openingScene.json" "openingSceneRight1.json" "arena1.json" "testScene1.json")
-                :frame-time 50
+                :frame-time 40
                 :pause false
                 :auto-save true
                 :auto-load true

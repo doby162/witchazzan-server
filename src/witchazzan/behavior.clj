@@ -118,4 +118,8 @@
   [this]
   this)
 
+(defn ignore-inbox
+  [this]
+  (merge this {:inbox nil}))
+
 (defn blank-behavior [& args] true)

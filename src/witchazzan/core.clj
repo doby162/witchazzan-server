@@ -225,15 +225,20 @@
   [this]
   {(first this) (method (second this) :behavior (list))})
 
-(defn process-behaviors!
+(defn process-mail
+  "calls the handle-mail method on all pieces to calculate the next frame"
+  [this]
+  {(first this) (method (second this) :handle-mail (list))})
+
+(defn process-objects!
   "coordinates the process-behavior function accross the game-pieces"
-  []
+  [fun]
   (swap!
    game-state
    (fn [state]
      (->>
       (:game-pieces state)
-      (pmap #(process-behavior %))
+      (pmap fun)
       (apply merge)
       (vector :game-pieces)
       (merge state)))))
@@ -242,7 +247,8 @@
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-      (process-behaviors!)
+      (process-objects! #(process-behavior %))
+      (process-objects! #(process-mail %))
       (collect-garbage!)
       (try (Thread/sleep
             (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
@@ -332,6 +338,7 @@
      :reproduce "witchazzan.core/plant-reproduce"
      :photosynth "witchazzan.core/photosynth"
      :clock 1 ;some things happen on the hour
+     :handle-mail "witchazzan.core/ignore-inbox"
      :genes
      (generate-genes
       :repro-threshold :repro-chance)})))

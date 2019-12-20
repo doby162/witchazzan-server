@@ -53,6 +53,7 @@
                         :moving false
                         :behavior "witchazzan.core/player-behavior"
                         :hit "witchazzan.core/player-hit"
+                        :handle-mail "witchazzan.core/ignore-inbox"
                         :name username :sock channel :keys {}}))
     (when (not (empty? existing-user))
       (update-game-piece! (:id (first existing-user))
@@ -96,4 +97,5 @@
       :collide "witchazzan.core/fireball-collide"
       :move "witchazzan.core/fireball-move"
       :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
+      :handle-mail "witchazzan.core/ignore-inbox"
       :collide-players "witchazzan.core/fireball-collide-players"})))
