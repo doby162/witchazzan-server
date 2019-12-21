@@ -4,6 +4,7 @@
   (:require [org.httpkit.server :as server])
   (:require [clojure.string :as str])
   (:require [clojure.pprint :as pp])
+  (:require [clojure.java.io :as io])
   (:gen-class))
 (declare broadcast)
 (declare within-n)
@@ -381,6 +382,9 @@
   (setting "millis-per-hour" 600))
 (defn seed-nature []
   (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
+(defn reset []
+  (io/delete-file "config/save.clj" true)
+  (System/exit 0))
 ;;admin stuff
 ;;basically the main function
 (when (not (setting "pause"))
