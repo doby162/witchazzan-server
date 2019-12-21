@@ -83,7 +83,7 @@
   game pieces must have, at a minumum:
   x y type scene behavior"
   [new-object]
-  (let [id (gen-id!) obj (merge new-object {:id  id :delete-me false})]
+  (let [id (gen-id!) obj (merge new-object {:id id :delete-me false})]
     (swap! ; todo, throw exception when object is invalid
      game-state
      #(merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))))
@@ -250,7 +250,10 @@
 
 (defn create-objects!
   [mail-queue]
-  (run! (fn [message] (println message)) mail-queue))
+  (run!
+   (fn [message]
+     (add-game-piece! message))
+   mail-queue))
 
 (defn mail-room
   "puts the mail where it needs to go"
