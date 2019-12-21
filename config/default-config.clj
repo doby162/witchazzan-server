@@ -4,12 +4,12 @@
                {:port 8080
                 :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
                 :tilemaps '("openingScene.json" "openingSceneRight1.json" "arena1.json" "testScene1.json")
-                :frame-time 40
+                :millis-per-frame 40
                 :pause false
                 :auto-save true
                 :auto-load true
                 :gene-max 255
-                :milis-per-hour 60000}))
+                :millis-per-hour 60000}))
 (defn setting
   ([key value]
    (swap! settings #(merge % {(keyword key) value})))

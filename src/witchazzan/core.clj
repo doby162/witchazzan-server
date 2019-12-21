@@ -17,7 +17,8 @@
                 Add settings like (setting \"port\" 1234)")))
 (load-file "src/witchazzan/behavior.clj")
 
-(def game-state (atom {:game-pieces {} :auto-increment-id 0 :clock 0 :calendar 0}))
+(def game-state
+  (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
 
 (defn save
   "Serializes the entire state of play. All mutable state exists in the resulting file"
@@ -59,23 +60,24 @@
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
 
+(>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+
 (defn hourglass! []
-  (swap! game-state #(merge % {:clock (inc (:clock %))}))
-  (when (< 23 (:clock @game-state))
-    (do
-      (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
-    (when (setting "auto-save") (save)))
-  (when (= (:clock @game-state) 6)
-    (broadcast
-     {:messageType "chat" :name "Witchazzan.core" :id -1
-      :content (str "Dawn of day " (:calendar @game-state))} (players)))
-  (when (= (:clock @game-state) 20)
-    (broadcast
-     {:messageType "chat" :name "Witchazzan.core" :id -1
-      :content "Night falls"} (players)))
-  (broadcast {:time (:clock @game-state)} (players))
-  (Thread/sleep (setting "milis-per-hour"))
-  (recur))
+  (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+    (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
+    (when (< 23 (:clock @game-state))
+      (do
+        (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
+      (when (setting "auto-save") (save)))
+    (when (= (:clock @game-state) 6)
+      (broadcast
+       {:messageType "chat" :name "Witchazzan.core" :id -1
+        :content (str "Dawn of day " (:calendar @game-state))} (players)))
+    (when (= (:clock @game-state) 20)
+      (broadcast
+       {:messageType "chat" :name "Witchazzan.core" :id -1
+        :content "Night falls"} (players)))
+    (broadcast {:time (:clock @game-state)} (players))))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!
@@ -259,14 +261,13 @@
 (defn mail-room
   "puts the mail where it needs to go"
   [mail-queue]
-  ;(println mail-queue)
-  ;this is getting nested lists so the map search isn't working
   (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue))))
 
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
+      (hourglass!)
       (process-objects! process-behavior)
       (let
        [mail-queue
@@ -277,7 +278,7 @@
       (process-objects! process-mail)
       (collect-garbage!)
       (try (Thread/sleep
-            (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
+            (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
     (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
@@ -371,13 +372,13 @@
 ;;nature
 ;;admin stuff
 (defn ten-x []
-  (setting "milis-per-hour" (/ (setting "milis-per-hour") 10))
-  (setting "frame-time" (/ (setting "frame-time") 10)))
+  (setting "millis-per-hour" (/ (setting "millis-per-hour") 10))
+  (setting "millis-per-frame" (/ (setting "millis-per-frame") 10)))
 (defn tenth-x []
-  (setting "milis-per-hour" (* (setting "milis-per-hour") 10))
-  (setting "frame-time" (* (setting "frame-time") 10)))
+  (setting "millis-per-hour" (* (setting "millis-per-hour") 10))
+  (setting "millis-per-frame" (* (setting "millis-per-frame") 10)))
 (defn short-day []
-  (setting "milis-per-hour" 600))
+  (setting "millis-per-hour" 600))
 (defn seed-nature []
   (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 ;;admin stuff
@@ -386,5 +387,5 @@
   (do
     (try (when (setting "auto-load") (load-game))
          (catch Exception e (println "Failed to load save file")))
-    (threadify game-loop) (threadify hourglass!) (seed-nature)))
+    (threadify game-loop) (seed-nature)))
 ;;basically the main function

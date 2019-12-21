@@ -16,5 +16,5 @@
   (is (contains?  @settings :tilemap-path))
   (is (contains?  @settings :tilemaps))
   (is (slurp (str (setting "tilemap-path") (first (setting "tilemaps")))))
-  (is (integer? (setting "frame-time")))
+  (is (integer? (setting "millis-per-frame")))
   (is (contains? @settings :pause)))
