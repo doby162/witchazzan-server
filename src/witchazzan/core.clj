@@ -230,6 +230,11 @@
   [this]
   {(first this) (method (second this) :handle-mail (list))})
 
+(defn clear-outbox
+  "clears outbox to avoid duplicate processing"
+  [this]
+  {(first this) (merge (second this) {:outbox nil})})
+
 (defn process-objects!
   "coordinates the process-behavior function accross the game-pieces"
   [fun]
@@ -243,11 +248,28 @@
       (vector :game-pieces)
       (merge state)))))
 
+(defn create-objects!
+  [mail-queue]
+  (run! (fn [message] (println message)) mail-queue))
+
+(defn mail-room
+  "puts the mail where it needs to go"
+  [mail-queue]
+  ;(println mail-queue)
+  ;this is getting nested lists so the map search isn't working
+  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue))))
+
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
       (process-objects! #(process-behavior %))
+      (let
+       [mail-queue
+        (filter (fn [item] (not (nil? item)))
+                (pmap #(:outbox (second %)) (:game-pieces @game-state)))]
+        (mail-room mail-queue))
+      (process-objects! #(clear-outbox %))
       (process-objects! #(process-mail %))
       (collect-garbage!)
       (try (Thread/sleep

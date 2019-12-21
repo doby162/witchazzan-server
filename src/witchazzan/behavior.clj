@@ -62,8 +62,8 @@
      {:energy energy
       :outbox (conj (:outbox this)
                     (-> this
-                        (merge {:outbox nil}) ; newe objects don't get to start with mail
-                        (merge {:mail-to :new-object}) ;the new object handler will open this mail
+                        (merge {:outbox nil :teleport-debounce nil :id nil})
+                        (merge {:mail-to "new-object"}) ;the new object handler will open this mail
                         (merge {:energy energy})
                         (merge (find-empty-tile (:scene this)))
                         (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
