@@ -86,7 +86,8 @@
   (let [id (gen-id!) obj (merge new-object {:id id :delete-me false})]
     (swap! ; todo, throw exception when object is invalid
      game-state
-     #(merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))))
+     (fn [%]
+       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})})))))
 
 (defn update-game-piece!
   "adds or replaces attribues in a game-piece
@@ -266,14 +267,14 @@
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (update-clients)
-      (process-objects! #(process-behavior %))
+      (process-objects! process-behavior)
       (let
        [mail-queue
         (filter (fn [item] (not (nil? item)))
                 (pmap #(:outbox (second %)) (:game-pieces @game-state)))]
         (mail-room mail-queue))
-      (process-objects! #(clear-outbox %))
-      (process-objects! #(process-mail %))
+      (process-objects! clear-outbox)
+      (process-objects! process-mail)
       (collect-garbage!)
       (try (Thread/sleep
             (- (setting "frame-time") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
