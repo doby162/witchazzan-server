@@ -14,6 +14,11 @@ done
 SCRIPTDIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 # echo "${SCRIPTDIR}" # For debugging
 
+if ! (command -v curl >/dev/null);then
+  echo "Installing curl"
+  sudo apt install -y curl
+fi
+
 if ! (command -v java >/dev/null); then
   echo "Installing OpenJDK 11"
   sudo apt install -y openjdk-11-jre
@@ -26,10 +31,11 @@ fi
 cd "${SCRIPTDIR}"
 if ! (command -v clj >/dev/null); then
   echo "Installing Clojure"
-  curl -O https://download.clojure.org/install/linux-install-1.10.1.469.sh
-  chmod +x linux-install-1.10.1.469.sh
-  sudo "${SCRIPTDIR}/linux-install-1.10.1.469.sh"
-  rm linux-install-1.10.1.469.sh
+  VERSION=1.10.1.492
+  curl -O "https://download.clojure.org/install/linux-install-${VERSION}.sh"
+  chmod +x "linux-install-${VERSION}.sh"
+  sudo "${SCRIPTDIR}/linux-install-${VERSION}.sh"
+  rm "linux-install-${VERSION}.sh"
 fi
 if ! (command -v clj >/dev/null); then
   echo "You must install Clojure before running this."
