@@ -53,7 +53,7 @@
                         :moving false
                         :behavior "witchazzan.core/player-behavior"
                         :hit "witchazzan.core/player-hit"
-                        :handle-mail "witchazzan.core/ignore-inbox"
+                        :handle-mail "witchazzan.core/player-inbox"
                         :name username :sock channel :keys {}}))
     (when (not (empty? existing-user))
       (update-game-piece! (:id (first existing-user))

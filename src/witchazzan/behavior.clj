@@ -121,6 +121,15 @@
   [this]
   this)
 
+(defn player-inbox
+  [this]
+  (let [hits (filter #(= (:method %) "hit") (:inbox this))]
+    (cond
+      (> (count hits) 0)
+      (merge this {:inbox nil :health (- (:health this) 1)})
+      :else
+      (merge this {:inbox nil}))))
+
 (defn carrot-inbox
   [this]
   (let [hits (filter #(= (:method %) "hit") (:inbox this))]
