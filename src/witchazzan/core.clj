@@ -259,10 +259,17 @@
      (add-game-piece! message))
    mail-queue))
 
+(defn attach-mail [mail-queue piece]
+  {(first piece)
+   (merge (second piece)
+          {:inbox
+           (filter #(= (:id (second piece)) (:mail-to %)) mail-queue)})})
+
 (defn mail-room
   "puts the mail where it needs to go"
   [mail-queue]
-  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue))))
+  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue)))
+  (process-objects! #(attach-mail mail-queue %)))
 
 (defn game-loop []
   (loop []
@@ -366,7 +373,7 @@
      :reproduce "witchazzan.core/plant-reproduce"
      :photosynth "witchazzan.core/photosynth"
      :clock 1 ;some things happen on the hour
-     :handle-mail "witchazzan.core/ignore-inbox"
+     :handle-mail "witchazzan.core/carrot-inbox"
      :genes
      (generate-genes
       :repro-threshold :repro-chance)})))

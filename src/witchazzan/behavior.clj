@@ -95,6 +95,7 @@
              (within-n (:y this) (:y %) (:tilewidth (name->scene (:scene this))))
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
            (scene->pieces (:scene this)))))
+
 (defn fireball-move
   [this]
   (let [speed (:speed this)]
@@ -106,17 +107,28 @@
 
 (defn fireball-behavior
   [this]
-  (cond
-    (method this :collide-players (list))
-    (do
-      (method (method this :collide-players (list)) :hit (list 1))
-      (merge this {:delete-me true}))
-    (method this :collide (list)) (merge this {:delete-me true})
-    :else (method this :move (list))))
+  (let [collide-player (:id (method this :collide-players (list)))]
+    (cond
+      collide-player
+      (merge this {:delete-me true
+                   :outbox
+                   {:mail-to collide-player :method "hit" :params '(1)}})
+      (method this :collide (list))
+      (merge this {:delete-me true})
+      :else (method this :move (list)))))
 
 (defn player-behavior
   [this]
   this)
+
+(defn carrot-inbox
+  [this]
+  (let [hits (filter #(= (:method %) "hit") (:inbox this))]
+    (cond
+      (> (count hits) 0)
+      (merge this {:delete-me true})
+      :else
+      (merge this {:inbox nil}))))
 
 (defn ignore-inbox
   [this]
