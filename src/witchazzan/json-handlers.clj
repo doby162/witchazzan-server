@@ -45,7 +45,7 @@
         moving (get message "moving")
         existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user)
-      (add-game-piece! {:x 0 :y 0 :type "player" :scene "openingScene"
+      (add-game-piece! {:x 0 :y 0 :type "player" :scene "LoruleH8"
                         :health 3
                         :animation nil
                         :active true
