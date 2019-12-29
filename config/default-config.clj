@@ -1,9 +1,9 @@
 ; we're storing settings in a map, add ':index value' on a line to add settings
-; retreive with (:index settings)
+; retrieve with (:index settings)
 (def settings (atom
                {:port 8080
                 :tilemap-path "../witchazzan-client/src/assets/tileMaps/"
-                :tilemaps '("openingScene.json" "openingSceneRight1.json" "arena1.json" "testScene1.json")
+                :tilemaps '("LoruleH8.json" "LoruleI8.json" "LoruleH7.json" "LoruleG7.json" "LoruleG8.json" "arena1.json" "testScene1.json")
                 :millis-per-frame 40
                 :pause false
                 :auto-save true
@@ -16,4 +16,4 @@
   ([key] ((keyword key) @settings)))
 ;add custom settings to config/config.clj with
 ;(setting "key" value)
-;if your setup is entirly standard, no settings are required
+;if your setup is entirely standard, no settings are required
