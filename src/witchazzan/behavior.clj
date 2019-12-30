@@ -154,7 +154,8 @@
   (->
    this
    (hourly-behavior)
-   (method :hunt (list))))
+   (method :hunt (list))
+   (merge (teleport this))))
 
 (defn slime-hourly
   [this]
