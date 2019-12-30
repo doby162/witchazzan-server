@@ -135,13 +135,15 @@
 
 (defn walk-towards-object
   [this that speed]
-  this)
+  (let [angle (Math/atan2 (- (:x this) (:x that)) (- (:y this) (:y that)))]
+    (merge this
+           {:x (- (:x this) (* speed (Math/sin angle))) :y (- (:y this) (* speed (Math/cos angle)))})))
 
 (defn slime-hunt
   [this]
   (cond
     (= (:scene (id->piece (:hunted this))) (:scene this))
-    (walk-towards-object this (id->piece (:hunted this)) 20)
+    (walk-towards-object this (id->piece (:hunted this)) 5)
     :else
     (merge this
            {:hunted

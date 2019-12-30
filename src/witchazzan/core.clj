@@ -326,7 +326,7 @@
      (square-range tile-size)
      (filter #((:get-tile-walkable map) %))
      (filter #(not (tile-occupied scene %)))
-     (rand-nth-safe)
+     (rand-nth)
      (pixel-location scene))))
 
 (defn generate-genes
