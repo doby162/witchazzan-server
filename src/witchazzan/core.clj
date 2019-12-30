@@ -11,6 +11,14 @@
 ;;namespace
 ;;
 ;;configuration and global state
+(defn rand-nth-safe ; put this somewhere
+  [list]
+  (cond
+    (= (count list) 0)
+    nil
+    :else
+    (rand-nth list)))
+
 (load-file "config/default-config.clj")
 (try (load-file "config/config.clj")
      (catch Exception e
@@ -318,7 +326,7 @@
      (square-range tile-size)
      (filter #((:get-tile-walkable map) %))
      (filter #(not (tile-occupied scene %)))
-     (rand-nth)
+     (rand-nth-safe)
      (pixel-location scene))))
 
 (defn generate-genes
@@ -357,6 +365,26 @@
      #(and (within-n (:x %) (:x object) n) (within-n (:y %) (:y object) n))
      (scene->pieces (:scene object)))))
 
+(defn spawn-slime
+  "create a carrot in the world"
+  [scene]
+  (add-game-piece!
+   (conj
+    (find-empty-tile scene)
+    {:scene scene
+     :sprite "gloob-scaryman"
+     :type "slime"
+     :energy 24
+     :behavior "witchazzan.core/slime-behavior"
+     :hourly "witchazzan.core/slime-hourly"
+     :reproduce "witchazzan.core/plant-reproduce"
+     :hunt "witchazzan.core/slime-hunt"
+     :clock 1
+     :handle-mail "witchazzan.core/slime-inbox"
+     :genes
+     (generate-genes
+      :repro-threshold :repro-chance)})))
+
 (defn spawn-carrot
   "create a carrot in the world"
   [scene]
@@ -365,8 +393,7 @@
     (find-empty-tile scene)
     {:scene scene
      :sprite "carrot"
-     :type "type"
-     :hit "witchazzan.core/plant-hit"
+     :type "carrot"
      :energy 24
      :behavior "witchazzan.core/hourly-behavior"
      :hourly "witchazzan.core/carrot-hourly"

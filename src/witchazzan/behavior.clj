@@ -11,22 +11,10 @@
 (declare mutate-genes)
 (declare normalize-genes)
 (declare find-adjacent)
+(declare id->piece)
+(declare rand-nth-safe)
 ;todo: seperate namespace
 ;;namespace
-
-(defn player-hit
-  [this strength]
-  ;TODO
-  #_(update-game-piece
-     (:id this)
-     {:health
-      (- (:health this) (max 0 (- strength (:defence this))))}))
-(defn plant-hit
-  [this strength]
-  ;TODO
-  #_(update-game-piece
-     (:id this) ;drop items?
-     {:delete-me true}))
 
 (defn hourly-behavior
   "an abstraction for all objects running their code on the hour"
@@ -112,7 +100,7 @@
       collide-player
       (merge this {:delete-me true
                    :outbox
-                   {:mail-to collide-player :method "hit" :params '(1)}})
+                   {:mail-to collide-player :method "hit"}})
       (method this :collide (list))
       (merge this {:delete-me true})
       :else (method this :move (list)))))
@@ -143,4 +131,32 @@
   [this]
   (merge this {:inbox nil}))
 
-(defn blank-behavior [& args] true)
+(defn blank-behavior [this & args] this)
+
+(defn walk-towards-object
+  [this that speed]
+  this)
+
+(defn slime-hunt
+  [this]
+  (cond
+    (= (:scene (id->piece (:hunted this))) (:scene this))
+    (walk-towards-object this (id->piece (:hunted this)) 20)
+    :else
+    (merge this
+           {:hunted
+            (:id (rand-nth-safe (scene->players (:scene this))))})))
+
+(defn slime-behavior
+  [this]
+  (->
+   this
+   (hourly-behavior)
+   (method :hunt (list))))
+
+(defn slime-hourly
+  [this]
+  this)
+
+(defn slime-inbox
+  [this] (carrot-inbox this))
