@@ -8,6 +8,8 @@
   (:gen-class))
 (declare broadcast)
 (declare within-n)
+(declare clear-corrupted)
+(declare log)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -190,7 +192,8 @@
   [object key args]
   (try
     (call-func-by-string (get object key) (conj args object))
-    (catch Exception e)))
+    (catch Exception e
+      (log (str "method failed: " e)))))
 
 (defn handler [request]
   (println "A new player has entered Witchazzan")
@@ -293,8 +296,16 @@
       (process-objects! clear-outbox)
       (process-objects! process-mail)
       (collect-garbage!)
+
+      ;temporary mesure to see if I can track down a bug
+      (when (> (count (filter (fn [object] (= nil (:x object))) (objects))) 0)
+        (clear-corrupted)
+        (log "detected corrupted objects"))
+
       (try (Thread/sleep
-            (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms))) (catch Exception e)))
+            (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms)))
+           (catch Exception e
+             (log "long frame"))))
     (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
@@ -406,16 +417,35 @@
       :repro-threshold :repro-chance)})))
 ;;nature
 ;;admin stuff
+(defn log [data]
+  (spit "config/log"
+        (str (System/currentTimeMillis) " : " data "\n")
+        :append true))
+
+(defn clear-corrupted []
+  (run! #(update-game-piece! (:id %) {:delete-me true})
+        (filter (fn [object] (= nil (:x object))) (objects))))
+
 (defn ten-x []
   (setting "millis-per-hour" (/ (setting "millis-per-hour") 10))
   (setting "millis-per-frame" (/ (setting "millis-per-frame") 10)))
+
 (defn tenth-x []
   (setting "millis-per-hour" (* (setting "millis-per-hour") 10))
   (setting "millis-per-frame" (* (setting "millis-per-frame") 10)))
+
 (defn short-day []
   (setting "millis-per-hour" 600))
+
 (defn seed-nature []
-  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
+  (try
+    (spawn-slime "LoruleG7")
+    (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps)
+    (catch Exception e
+      (println "seeding nature failed")
+      (log "seeding nature failed")
+      (clear-corrupted))))
+
 (defn reset []
   (io/delete-file "config/save.clj" true)
   (System/exit 0))

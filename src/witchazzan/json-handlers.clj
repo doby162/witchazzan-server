@@ -1,9 +1,6 @@
 ;;namespace
 (ns witchazzan.core
   (:gen-class))
-(declare name->scene)
-(declare tile-location)
-(declare call-func-by-string)
 ;;namespace
 
 (defn sock->player [sock]
