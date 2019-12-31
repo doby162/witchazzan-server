@@ -120,13 +120,14 @@
   [this]
   (let [hits (filter #(= (:method %) "hit") (:inbox this))
         location-updates (dissoc
-                          (apply merge (reverse (filter #(= (:method %) "location-update") (:inbox this))))
+                          (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
                           [:mail-to])]
     (as->
      this t
      (merge t {:inbox nil})
+     (merge t {:net-inbox nil})
      (cond (> (count hits) 0)
-           (merge t {:inbox nil :health (- (:health t) 1)})
+           (merge t {:health (- (:health t) 1)})
            :else t)
      (merge t location-updates))))
 

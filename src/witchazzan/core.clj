@@ -282,7 +282,7 @@
        (merge (second piece)
               {:inbox
                (filter filt mail-queue)}
-              {:inbox
+              {:net-inbox
                (filter filt net-mail)})})))
 
 (defn mail-room
@@ -392,7 +392,7 @@
    (conj
     (find-empty-tile scene)
     {:scene scene
-     :sprite "gloob-scaryman"
+     :sprite "gloobScaryman"
      :type "slime"
      :energy 24
      :behavior "witchazzan.core/slime-behavior"
