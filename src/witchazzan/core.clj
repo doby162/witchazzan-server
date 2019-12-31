@@ -28,6 +28,9 @@
                 Add settings like (setting \"port\" 1234)")))
 (load-file "src/witchazzan/behavior.clj")
 
+(def network-mail
+  (atom []))
+
 (def game-state
   (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
 
@@ -40,7 +43,6 @@
                         (apply merge (map (fn [object]
                                             {(keyword (str (:id object))) object})
                                           (map #(dissoc % :sock) (vals (:game-pieces @game-state)))))})]
-    (def step save-data)
     (spit "config/save.clj"
           (str "(def game-state (atom " save-data "))"))
     (slurp "config/save.clj")))
@@ -131,10 +133,9 @@
   "returns an immutable representation of a single tilemap,
   including a helper for collisions"
   [map name]
-  (def tmap map)
   (let [width (get map "width") height (get map "height")
         syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")
-        objects (get (first (filter #(= (get % "name") "Objects") (get tmap "layers"))) "objects")]
+        objects (get (first (filter #(= (get % "name") "Objects") (get map "layers"))) "objects")]
     {:name (first (str/split name #"\."))
      :width width :height height :syri syri
      :objects objects
@@ -271,10 +272,18 @@
    mail-queue))
 
 (defn attach-mail [mail-queue piece]
-  {(first piece)
-   (merge (second piece)
-          {:inbox
-           (filter #(= (:id (second piece)) (:mail-to %)) mail-queue)})})
+  (letfn [(filt [item] (= (:id (second piece)) (:mail-to item)))
+          (not-filt [item] (not (= (:id (second piece)) (:mail-to item))))]
+    (let [net-mail @network-mail]
+      (swap! network-mail
+           ;complement takes the boolean inverse of a function
+             #(filter not-filt %))
+      {(first piece)
+       (merge (second piece)
+              {:inbox
+               (filter filt mail-queue)}
+              {:inbox
+               (filter filt net-mail)})})))
 
 (defn mail-room
   "puts the mail where it needs to go"

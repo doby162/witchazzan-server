@@ -33,8 +33,10 @@
         animation (get message "animation")
         new-scene (get message "scene") new-direction (get message "direction")
         player (sock->player channel)]
-    (update-game-piece! (:id player) {:x new-x :y new-y :scene new-scene :direction new-direction
-                                      :sprite sprite :moving moving})))
+    (swap! network-mail #(conj % {:method "location-update"
+                                  :mail-to (:id player) :x new-x :y new-y
+                                  :scene new-scene :direction new-direction
+                                  :sprite sprite :moving moving}))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")

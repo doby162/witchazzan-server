@@ -109,14 +109,26 @@
   [this]
   this)
 
+;put this somewhere
+(defn thread-debug
+  "both print and return the value"
+  [x]
+  (pp/pprint x)
+  x)
+
 (defn player-inbox
   [this]
-  (let [hits (filter #(= (:method %) "hit") (:inbox this))]
-    (cond
-      (> (count hits) 0)
-      (merge this {:inbox nil :health (- (:health this) 1)})
-      :else
-      (merge this {:inbox nil}))))
+  (let [hits (filter #(= (:method %) "hit") (:inbox this))
+        location-updates (dissoc
+                          (apply merge (reverse (filter #(= (:method %) "location-update") (:inbox this))))
+                          [:mail-to])]
+    (as->
+     this t
+     (merge t {:inbox nil})
+     (cond (> (count hits) 0)
+           (merge t {:inbox nil :health (- (:health t) 1)})
+           :else t)
+     (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
