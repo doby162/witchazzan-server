@@ -294,7 +294,6 @@
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
-      (update-clients)
       (hourglass!)
       (process-objects! process-behavior)
       (let
@@ -305,6 +304,7 @@
       (process-objects! clear-outbox)
       (process-objects! process-mail)
       (collect-garbage!)
+      (update-clients)
 
       ;temporary mesure to see if I can track down a bug
       (when (> (count (filter (fn [object] (= nil (:x object))) (objects))) 0)
