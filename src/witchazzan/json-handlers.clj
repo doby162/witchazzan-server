@@ -56,11 +56,12 @@
                           {:sock channel :sprite sprite :active true}))
     (establish-identity (sock->player channel))))
 
-(defn handle-keyboard-update [message channel]
-  (let [player (sock->player channel)]
-    (update-game-piece!
-     (:id player)
-     {:keys (merge (:keys player) {(str ":" (get message "key")) (get message "state")})})))
+; this isn't currently how the client comunicates
+; (defn handle-keyboard-update [message channel]
+;   (let [player (sock->player channel)]
+;     (update-game-piece!
+;      (:id player)
+;      {:keys (merge (:keys player) {(str ":" (get message "key")) (get message "state")})})))
 
 (defn handle-command
   "this handler is a bit of a switch case inside of a switch case,
@@ -69,11 +70,13 @@
   [message channel]
   (let [player (sock->player channel)]
     (when (re-find #"^look" (get message "command"))
-      (message-player {"response"
-                       "You see a rhelm of unimaginable possibility."}
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
+                       "You see a realm of unimaginable possibility."}
                       player))
     (when (re-find #"^listen" (get message "command"))
-      (message-player {"response"
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
                        "You hear the distant chatter of a keyboard.
                      A developer is hard at work."}
                       player))))
