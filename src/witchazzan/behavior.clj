@@ -124,12 +124,12 @@
                           [:mail-to])]
     (as->
      this t
-     (merge t {:inbox nil})
-     (merge t {:net-inbox nil})
-     (cond (> (count hits) 0)
-           (merge t {:health (- (:health t) 1)})
-           :else t)
-     (merge t location-updates))))
+      (merge t {:inbox nil})
+      (merge t {:net-inbox nil})
+      (cond (> (count hits) 0)
+            (merge t {:health (- (:health t) 1)})
+            :else t)
+      (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
