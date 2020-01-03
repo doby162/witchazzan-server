@@ -10,6 +10,7 @@
 (declare within-n)
 (declare clear-corrupted)
 (declare log)
+(declare coordinate-spawns)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -77,10 +78,10 @@
 
 (defn hourglass! []
   (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+    (coordinate-spawns)
     (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
     (when (< 23 (:clock @game-state))
-      (do
-        (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))})))
+      (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
       (when (setting "auto-save") (save)))
     (when (= (:clock @game-state) 6)
       (broadcast
@@ -387,7 +388,7 @@
 
 (defn spawn-slime
   "create a carrot in the world"
-  [scene]
+  [scene & mods]
   (add-game-piece!
    (conj
     (find-empty-tile scene)
@@ -403,7 +404,8 @@
      :handle-mail "witchazzan.core/slime-inbox"
      :genes
      (generate-genes
-      :repro-threshold :repro-chance)})))
+      :repro-threshold :repro-chance)}
+    (first mods)))) ; passed params overwrite anything
 
 (defn spawn-carrot
   "create a carrot in the world"
@@ -448,7 +450,6 @@
 
 (defn seed-nature []
   (try
-    (spawn-slime "LoruleG7")
     (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps)
     (catch Exception e
       (println "seeding nature failed")
@@ -466,3 +467,26 @@
          (catch Exception e (println "Failed to load save file")))
     (threadify game-loop) (seed-nature)))
 ;;basically the main function
+;;
+
+(defn spawn-points
+  "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
+  [type]
+  (let [coord-pairs
+        (filter #(:x %) ;check if valid coords were returned
+                (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
+                       (let [properties
+                             (first
+                              (filter
+                               #(= (str "spawn-" type) (get % "name"))
+                               (:objects tilemap)))]
+                         {:scene (:name tilemap) :x (get properties "x") :y (get properties "y")}))
+                     tilemaps))]
+    (run! #(call-func-by-string (str "witchazzan.core/spawn-" type) (list (:scene %) %))
+          coord-pairs)))
+
+(defn coordinate-spawns []
+  (when (and
+         (< (:clock @game-state) 5)
+         (< (count (filter #(= (:type %) "slime") (objects))) 5))
+    (spawn-points "slime")))
