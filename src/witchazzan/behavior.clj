@@ -96,14 +96,17 @@
 (defn fireball-behavior
   [this]
   (let [collide-player (:id (method this :collide-players (list)))]
-    (cond
-      collide-player
-      (merge this {:delete-me true
-                   :outbox
-                   {:mail-to collide-player :method "hit"}})
-      (method this :collide (list))
-      (merge this {:delete-me true})
-      :else (method this :move (list)))))
+    (as->
+     this t
+     (cond
+       collide-player
+       (merge t {:delete-me true
+                 :outbox
+                 {:mail-to collide-player :method "hit"}})
+       (method t :collide (list))
+       (merge t {:delete-me true})
+       :else (method t :move (list)))
+     (merge t (teleport t)))))
 
 (defn player-behavior
   [this]
