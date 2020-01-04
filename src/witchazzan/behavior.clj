@@ -24,7 +24,7 @@
         :else this))
 
 (defn teleport [this]
-  "teleports to a random tile on the target scene"
+  "check for and apply teleports"
   (when
    (not (:teleport-debounce this))
     ((:teleport (name->scene (:scene this))) this)))
@@ -124,12 +124,12 @@
                           [:mail-to])]
     (as->
      this t
-      (merge t {:inbox nil})
-      (merge t {:net-inbox nil})
-      (cond (> (count hits) 0)
-            (merge t {:health (- (:health t) 1)})
-            :else t)
-      (merge t location-updates))))
+     (merge t {:inbox nil})
+     (merge t {:net-inbox nil})
+     (cond (> (count hits) 0)
+           (merge t {:health (- (:health t) 1)})
+           :else t)
+     (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
@@ -172,7 +172,7 @@
 
 (defn slime-hourly
   [this]
-  this)
+  (merge this {:teleport-debounce false}))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
