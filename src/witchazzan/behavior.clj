@@ -107,6 +107,11 @@
 
 (defn player-behavior
   [this]
+  ; (pp/pprint (teleport this))
+  ; (pp/pprint
+  ;  ((:get-tile-walkable
+  ;    (name->scene (:scene this)))
+  ;   (tile-location this)))
   this)
 
 ;put this somewhere

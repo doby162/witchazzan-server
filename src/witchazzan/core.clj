@@ -409,7 +409,7 @@
 
 (defn spawn-carrot
   "create a carrot in the world"
-  [scene]
+  [scene & mods]
   (add-game-piece!
    (conj
     (find-empty-tile scene)
@@ -425,7 +425,8 @@
      :handle-mail "witchazzan.core/carrot-inbox"
      :genes
      (generate-genes
-      :repro-threshold :repro-chance)})))
+      :repro-threshold :repro-chance)}
+    (first mods))))
 ;;nature
 ;;admin stuff
 (defn log [data]
@@ -470,7 +471,7 @@
 
 (defn spawn-points
   "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
-  [type]
+  [type & rand]
   (let [coord-pairs
         (filter #(:x %) ;check if valid coords were returned
                 (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
@@ -481,13 +482,23 @@
                                (:objects tilemap)))]
                          {:scene (:name tilemap) :x (get properties "x") :y (get properties "y")}))
                      tilemaps))]
-    (run! #(call-func-by-string (str "witchazzan.core/spawn-" type) (list (:scene %) %))
-          coord-pairs)))
+    (cond
+      rand
+      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type)
+                                  (list (:scene %) (find-empty-tile (:scene %))))
+            coord-pairs)
+      :else
+      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type) (list (:scene %) %))
+            coord-pairs))))
 
 (defn coordinate-spawns []
   (when (and
          (< (:clock @game-state) 5)
          (< (count (filter #(= (:type %) "slime") (objects))) 5))
-    (spawn-points "slime")))
+    (spawn-points "slime"))
+  (when (and
+         (> (:clock @game-state) 20)
+         (< (count (filter #(= (:type %) "carrot") (objects))) 5))
+    (spawn-points "carrot" true)))
 
 (-main)
