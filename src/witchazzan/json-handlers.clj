@@ -81,6 +81,11 @@
                        :content
                        "You hear the distant chatter of a keyboard.
                      A developer is hard at work."}
+                      player))
+    (when (re-find #"^who" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
+                       (apply str (map #(str (:name %) " ") (players)))}
                       player))))
 
 (defn handle-fireball
