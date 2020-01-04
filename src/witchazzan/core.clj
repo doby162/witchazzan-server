@@ -402,6 +402,7 @@
      :hunt "witchazzan.core/slime-hunt"
      :clock 1
      :handle-mail "witchazzan.core/slime-inbox"
+     :speed 2
      :genes
      (generate-genes
       :repro-threshold :repro-chance)}
