@@ -98,23 +98,19 @@
   (let [collide-player (:id (method this :collide-players (list)))]
     (as->
      this t
-     (cond
-       collide-player
-       (merge t {:delete-me true
-                 :outbox
-                 {:mail-to collide-player :method "hit"}})
-       (method t :collide (list))
-       (merge t {:delete-me true})
-       :else (method t :move (list)))
-     (merge t (teleport t)))))
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "hit"}})
+        (method t :collide (list))
+        (merge t {:delete-me true})
+        :else (method t :move (list)))
+      (merge t (teleport t)))))
 
 (defn player-behavior
   [this]
   ; (pp/pprint (teleport this))
-  ; (pp/pprint
-  ;  ((:get-tile-walkable
-  ;    (name->scene (:scene this)))
-  ;   (tile-location this)))
   this)
 
 ;put this somewhere
@@ -132,12 +128,12 @@
                           [:mail-to])]
     (as->
      this t
-     (merge t {:inbox nil})
-     (merge t {:net-inbox nil})
-     (cond (> (count hits) 0)
-           (merge t {:health (- (:health t) 1)})
-           :else t)
-     (merge t location-updates))))
+      (merge t {:inbox nil})
+      (merge t {:net-inbox nil})
+      (cond (> (count hits) 0)
+            (merge t {:health (- (:health t) 1)})
+            :else t)
+      (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
@@ -162,13 +158,20 @@
 
 (defn slime-hunt
   [this]
-  (cond
-    (= (:scene (id->piece (:hunted this))) (:scene this))
-    (walk-towards-object this (id->piece (:hunted this)) 5)
-    :else
-    (merge this
-           {:hunted
-            (:id (rand-nth-safe (scene->players (:scene this))))})))
+  (as->
+   this t
+    (cond
+      (= (:scene (id->piece (:hunted t))) (:scene t))
+      (walk-towards-object t (id->piece (:hunted t)) 5)
+      :else
+      (merge t
+             {:hunted
+              (:id (rand-nth-safe (scene->players (:scene t))))}))
+    (cond
+      (and (nil? (:hunted t)) (not (nil? (:roost t))))
+      (walk-towards-object t (:roost t) 5)
+      :else
+      t)))
 
 (defn slime-behavior
   [this]
@@ -180,7 +183,10 @@
 
 (defn slime-hourly
   [this]
-  (merge this {:teleport-debounce false}))
+  (merge this
+         {:energy (dec (:energy this))
+          :teleport-debounce false
+          :roost (find-empty-tile (:scene this))}))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
