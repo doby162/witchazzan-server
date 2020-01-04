@@ -460,14 +460,13 @@
   (io/delete-file "config/save.clj" true)
   (System/exit 0))
 ;;admin stuff
-;;basically the main function
-(when (not (setting "pause"))
-  (do
-    (try (when (setting "auto-load") (load-game))
-         (catch Exception e (println "Failed to load save file")))
-    (threadify game-loop) (seed-nature)))
-;;basically the main function
-;;
+(defn -main
+  [& args]
+  (when (not (setting "pause"))
+    (do
+      (try (when (setting "auto-load") (load-game))
+           (catch Exception e (println "Failed to load save file")))
+      (threadify game-loop) (seed-nature))))
 
 (defn spawn-points
   "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
@@ -490,3 +489,5 @@
          (< (:clock @game-state) 5)
          (< (count (filter #(= (:type %) "slime") (objects))) 5))
     (spawn-points "slime")))
+
+(-main)
