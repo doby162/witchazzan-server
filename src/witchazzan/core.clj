@@ -103,7 +103,7 @@
     (swap! ; todo, throw exception when object is invalid
      game-state
      (fn [%]
-       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})})))))
+       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))) id))
 
 (defn update-game-piece!
   "adds or replaces attribues in a game-piece
@@ -387,7 +387,7 @@
      (scene->pieces (:scene object)))))
 
 (defn spawn-slime
-  "create a carrot in the world"
+  "create a slime in the world"
   [scene & mods]
   (add-game-piece!
    (conj
@@ -402,10 +402,10 @@
      :hunt "witchazzan.core/slime-hunt"
      :clock 1
      :handle-mail "witchazzan.core/slime-inbox"
-     :speed 2
+     :max-speed 4
      :genes
      (generate-genes
-      :repro-threshold :repro-chance)}
+      :speed :repro-threshold :repro-chance)}
     (first mods)))) ; passed params overwrite anything
 
 (defn spawn-carrot

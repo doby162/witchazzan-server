@@ -16,6 +16,12 @@
 ;todo: seperate namespace
 ;;namespace
 
+(defn check-starve [t]
+  (cond
+    (>= 0 (:energy t))
+    (merge t {:delete-me true})
+    :else t))
+
 (defn hourly-behavior
   "an abstraction for all objects running their code on the hour"
   [this]
@@ -98,15 +104,15 @@
   (let [collide-player (:id (method this :collide-players (list)))]
     (as->
      this t
-     (cond
-       collide-player
-       (merge t {:delete-me true
-                 :outbox
-                 {:mail-to collide-player :method "hit"}})
-       (method t :collide (list))
-       (merge t {:delete-me true})
-       :else (method t :move (list)))
-     (merge t (teleport t)))))
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "hit"}})
+        (method t :collide (list))
+        (merge t {:delete-me true})
+        :else (method t :move (list)))
+      (merge t (teleport t)))))
 
 (defn player-behavior
   [this]
@@ -128,12 +134,12 @@
                           [:mail-to])]
     (as->
      this t
-     (merge t {:inbox nil})
-     (merge t {:net-inbox nil})
-     (cond (> (count hits) 0)
-           (merge t {:health (- (:health t) 1)})
-           :else t)
-     (merge t location-updates))))
+      (merge t {:inbox nil})
+      (merge t {:net-inbox nil})
+      (cond (> (count hits) 0)
+            (merge t {:health (- (:health t) 1)})
+            :else t)
+      (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
@@ -156,22 +162,30 @@
     (merge this
            {:x (- (:x this) (* speed (Math/sin angle))) :y (- (:y this) (* speed (Math/cos angle)))})))
 
+(defn gene-speed
+  "determines the speed a creature should have based
+  on speed stats and a hard max"
+  [this]
+  (quot
+   (:speed (:genes this))
+   (quot (setting "gene-max") (:max-speed this))))
+
 (defn slime-hunt
   [this]
   (as->
    this t
-   (cond
-     (= (:scene (id->piece (:hunted t))) (:scene t))
-     (walk-towards-object t (id->piece (:hunted t)) (:speed t))
-     :else
-     (merge t
-            {:hunted
-             (:id (rand-nth-safe (scene->players (:scene t))))}))
-   (cond
-     (and (nil? (:hunted t)) (not (nil? (:roost t))))
-     (walk-towards-object t (:roost t) (:speed t))
-     :else
-     t)))
+    (cond
+      (= (:scene (id->piece (:hunted t))) (:scene t))
+      (walk-towards-object t (id->piece (:hunted t)) (gene-speed t))
+      :else
+      (merge t
+             {:hunted
+              (:id (rand-nth-safe (scene->players (:scene t))))}))
+    (cond
+      (and (nil? (:hunted t)) (not (nil? (:roost t))))
+      (walk-towards-object t (:roost t) (gene-speed t))
+      :else
+      t)))
 
 (defn slime-behavior
   [this]
@@ -183,10 +197,13 @@
 
 (defn slime-hourly
   [this]
-  (merge this
-         {:energy (dec (:energy this))
-          :teleport-debounce false
-          :roost (find-empty-tile (:scene this))}))
+  (as->
+   this t
+    (merge t
+           {:energy (- (:energy t) (gene-speed t))
+            :teleport-debounce false
+            :roost (find-empty-tile (:scene t))})
+    (check-starve t)))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
