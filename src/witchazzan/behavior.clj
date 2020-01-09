@@ -164,11 +164,11 @@
 
 (defn gene-speed
   "determines the speed a creature should have based
-  on speed stats and a hard max"
+  on speed stats and a hard max, with 1 as a minimum"
   [this]
-  (quot
-   (:speed (:genes this))
-   (quot (setting "gene-max") (:max-speed this))))
+  (+ 1 (quot
+        (:speed (:genes this))
+        (- (quot (setting "gene-max") (:max-speed this)) 1))))
 
 (defn slime-hunt
   [this]
