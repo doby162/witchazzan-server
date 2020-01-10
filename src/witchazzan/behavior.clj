@@ -13,6 +13,8 @@
 (declare find-adjacent)
 (declare id->piece)
 (declare rand-nth-safe)
+(declare square-range)
+(declare name->scene)
 ;todo: seperate namespace
 ;;namespace
 
@@ -34,6 +36,20 @@
   (when
    (not (:teleport-debounce this))
     ((:teleport (name->scene (:scene this))) this)))
+
+(defn check-px-teleport
+  "creates a list of all pixels that qualify as being within range of a teleport"
+  [scene]
+  (let [map (name->scene scene)]
+    (filter #(not (nil? (:teleport-debounce %)))
+            (pmap
+             (fn [coords]
+               (try
+                 (conj (teleport
+                        (conj {:scene scene} coords)) coords)
+                 (catch Exception e nil)))
+     ;check every single pixel for teleports
+             (square-range (* (:tilewidth map) (max (:width map) (:height map))))))))
 
 (defn carrot-hourly
   [this]
