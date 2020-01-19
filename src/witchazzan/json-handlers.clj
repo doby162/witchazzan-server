@@ -86,6 +86,11 @@
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
                        (apply str (map #(str (:name %) " ") (players)))}
+                      player))
+    (when (re-find #"^debug-teleport" (get message "command"))
+      (message-player {:messageType "highlight_pixels"
+                       :content
+                       (check-px-teleport (:scene player))}
                       player))))
 
 (defn handle-fireball
