@@ -55,13 +55,13 @@
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
-(defn players [] (filter #(= "player" (:type %)) (vals (:game-pieces @game-state))))
+(defn players [] (filter
+                  #(and
+                    (not (= false (:active %)))
+                    (= "player" (:type %)))
+                  (vals (:game-pieces @game-state))))
 
-;the scene-> functions filter players by active
-(defn scene->players [scene] (filter #(and
-                                       (= (:scene %) scene)
-                                       (not (= false (:active %))))
-                                     (players)))
+(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
 
 (defn scene->pieces [scene] (filter #(and
                                       (= (:scene %) scene)
