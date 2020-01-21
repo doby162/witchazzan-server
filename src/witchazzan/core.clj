@@ -43,7 +43,9 @@
     (merge @game-state {:game-pieces
                         (apply merge (map (fn [object]
                                             {(keyword (str (:id object))) object})
-                                          (map #(dissoc % :sock) (vals (:game-pieces @game-state)))))})]
+                                          (map #(dissoc
+                                                 (merge % {:active false}) :sock)
+                                               (vals (:game-pieces @game-state)))))})]
     (spit "config/save.clj"
           (str "(def game-state (atom " save-data "))"))
     (slurp "config/save.clj")))
