@@ -121,15 +121,15 @@
   (let [collide-player (:id (method this :collide-players (list)))]
     (as->
      this t
-     (cond
-       collide-player
-       (merge t {:delete-me true
-                 :outbox
-                 {:mail-to collide-player :method "hit"}})
-       (method t :collide (list))
-       (merge t {:delete-me true})
-       :else (method t :move (list)))
-     (merge t (teleport t)))))
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "hit"}})
+        (method t :collide (list))
+        (merge t {:delete-me true})
+        :else (method t :move (list)))
+      (merge t (teleport t)))))
 
 (defn player-behavior
   [this]
@@ -151,12 +151,12 @@
                           [:mail-to])]
     (as->
      this t
-     (merge t {:inbox nil})
-     (merge t {:net-inbox nil})
-     (cond (> (count hits) 0)
-           (merge t {:health (- (:health t) 1)})
-           :else t)
-     (merge t location-updates))))
+      (merge t {:inbox nil})
+      (merge t {:net-inbox nil})
+      (cond (> (count hits) 0)
+            (merge t {:health (- (:health t) 1)})
+            :else t)
+      (merge t location-updates))))
 
 (defn carrot-inbox
   [this]
@@ -191,18 +191,20 @@
   [this]
   (as->
    this t
-   (cond
-     (= (:scene (id->piece (:hunted t))) (:scene t))
-     (walk-towards-object t (id->piece (:hunted t)) (gene-speed t))
-     :else
-     (merge t
-            {:hunted
-             (:id (rand-nth-safe (scene->players (:scene t))))}))
-   (cond
-     (and (nil? (:hunted t)) (not (nil? (:roost t))))
-     (walk-towards-object t (:roost t) (gene-speed t))
-     :else
-     t)))
+    (cond
+      (and
+       (= (:scene (id->piece (:hunted t))) (:scene t))
+       (not (= false (:active (id->piece (:hunted t))))))
+      (walk-towards-object t (id->piece (:hunted t)) (gene-speed t))
+      :else
+      (merge t
+             {:hunted
+              (:id (rand-nth-safe (scene->players (:scene t))))}))
+    (cond
+      (and (nil? (:hunted t)) (not (nil? (:roost t))))
+      (walk-towards-object t (:roost t) (gene-speed t))
+      :else
+      t)))
 
 (defn slime-behavior
   [this]
@@ -216,11 +218,11 @@
   [this]
   (as->
    this t
-   (merge t
-          {:energy (- (:energy t) (gene-speed t))
-           :teleport-debounce false
-           :roost (find-empty-tile (:scene t))})
-   (check-starve t)))
+    (merge t
+           {:energy (- (:energy t) (gene-speed t))
+            :teleport-debounce false
+            :roost (find-empty-tile (:scene t))})
+    (check-starve t)))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
