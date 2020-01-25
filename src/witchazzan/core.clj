@@ -229,12 +229,7 @@
   (run!
    (fn [tilemap] (broadcast
                   {:messageType "game-piece-list"
-                   :pieces (map (fn [%] {:id (:id %) :x (:x %) :y (:y %)
-                                         :type (:type %) :scene (:scene %)
-                                         :health (:health %) :defence (:defence %)
-                                         :sprite (:sprite %) :animation (:animation %)
-                                         :moving (:moving %)
-                                         :name (:name %) :direction (:direction %)})
+                   :pieces (map (fn [%] (dissoc % :sock))
                                 (scene->pieces (:name tilemap)))}
                   (scene->players (:name tilemap))))
    tilemaps))

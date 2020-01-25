@@ -27,16 +27,12 @@
                  :content (get message "text")} (players))))
 
 (defn handle-location-update [message channel]
-  (let [new-x (get message "x") new-y (get message "y")
-        sprite (get message "sprite")
-        moving (get message "moving")
-        animation (get message "animation")
-        new-scene (get message "scene") new-direction (get message "direction")
-        player (sock->player channel)]
-    (swap! network-mail #(conj % {:method "location-update"
-                                  :mail-to (:id player) :x new-x :y new-y
-                                  :scene new-scene :direction new-direction
-                                  :sprite sprite :moving moving}))))
+  (let [player (sock->player channel)]
+    (swap!
+     network-mail
+     #(conj % (merge
+               (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
+               {:method "location-update" :mail-to (:id player)})))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
