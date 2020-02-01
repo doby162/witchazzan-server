@@ -24,12 +24,6 @@
     :else
     (rand-nth list)))
 
-(def network-mail
-  (atom []))
-
-(def game-state
-  (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
-
 (defn save
   "Serializes the entire state of play. All mutable state exists in the resulting file"
   []
@@ -51,14 +45,6 @@
   (load-string (slurp "config/save.clj")))
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
-
-(defn players [] (filter
-                  #(and
-                    (not (= false (:active %)))
-                    (= "player" (:type %)))
-                  (vals (:game-pieces @game-state))))
-
-(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
 
 (defn scene->pieces [scene] (filter #(and
                                       (= (:scene %) scene)
@@ -208,7 +194,7 @@
                message-type (get message "message_type")]
            (try ;checking if the function exists
              (call-func-by-string
-              (str "witchazzan.core/handle-" message-type) [message channel])
+              (str "witchazzan.comms/handle-" message-type) [message channel])
              (catch java.lang.NullPointerException e (println e)))
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
@@ -491,3 +477,4 @@
          (> (:clock @game-state) 20)
          (< (count (filter #(= (:type %) "carrot") (objects))) 5))
     (spawn-points "carrot" true)))
+(defn __init [])

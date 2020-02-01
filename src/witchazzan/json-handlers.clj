@@ -1,10 +1,10 @@
 ;;namespace
-(ns witchazzan.core
+(ns witchazzan.comms
+  (:require witchazzan.core)
+  (:require [org.httpkit.server :as server])
+  (:require [clojure.data.json :as json])
   (:gen-class))
 ;;namespace
-
-(defn sock->player [sock]
-  (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
 (defn message-player [data player]
   (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
@@ -22,14 +22,14 @@
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
-  (let [player (sock->player channel)]
+  (let [player (witchazzan.core/sock->player channel)]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                 :content (get message "text")} (players))))
+                 :content (get message "text")} (witchazzan.core/players))))
 
 (defn handle-location-update [message channel]
-  (let [player (sock->player channel)]
+  (let [player (witchazzan.core/sock->player channel)]
     (swap!
-     network-mail
+     witchazzan.core/network-mail
      #(conj % (merge
                (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
                {:method "location-update" :mail-to (:id player)})))))
@@ -38,35 +38,35 @@
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
+        existing-user (filter #(= username (:name %)) (vals (:game-pieces @witchazzan.core/game-state)))]
     (when (empty? existing-user)
-      (add-game-piece! {:x 0 :y 0 :type "player" :scene "LoruleH8"
-                        :health 3
-                        :animation nil
-                        :active true
-                        :defence 0 :sprite sprite
-                        :moving false
-                        :behavior "witchazzan.core/player-behavior"
-                        :handle-mail "witchazzan.core/player-inbox"
-                        :name username :sock channel :keys {}}))
+      (swap!
+       witchazzan.core/network-mail
+       #(conj %
+              {:mail-to "new-object"
+               :x 0 :y 0 :type "player" :scene "LoruleH8"
+               :health 3
+               :animation nil
+               :active true
+               :defence 0 :sprite sprite
+               :moving false
+               :behavior "witchazzan.core/player-behavior"
+               :handle-mail "witchazzan.core/player-inbox"
+               :name username :sock channel})))
     (when (not (empty? existing-user))
-      (update-game-piece! (:id (first existing-user))
-                          {:sock channel :sprite sprite :active true}))
-    (establish-identity (sock->player channel))))
-
-; this isn't currently how the client comunicates
-; (defn handle-keyboard-update [message channel]
-;   (let [player (sock->player channel)]
-;     (update-game-piece!
-;      (:id player)
-;      {:keys (merge (:keys player) {(str ":" (get message "key")) (get message "state")})})))
+      (swap!
+       witchazzan.core/network-mail
+       #(conj %
+              :mail-to (:id (first existing-user))
+              {:sock channel :sprite sprite :active true})))
+    (establish-identity (witchazzan.core/sock->player channel))))
 
 (defn handle-command
   "this handler is a bit of a switch case inside of a switch case,
   it handles all of the text commands entered
   via the command bar on the client"
   [message channel]
-  (let [player (sock->player channel)]
+  (let [player (witchazzan.core/sock->player channel)]
     (when (re-find #"^look" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
@@ -81,27 +81,31 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name %) " ") (players)))}
+                       (apply str (map #(str (:name %) " ") (witchazzan.core/players)))}
                       player))
-    (when (re-find #"^debug-teleport" (get message "command"))
-      (message-player {:messageType "highlight_pixels"
-                       :content
-                       (check-px-teleport (:scene player))}
-                      player))))
+    #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
+        (message-player {:messageType "highlight_pixels"
+                         :content
+                         (check-px-teleport (:scene player))}
+                        player))))
 
 (defn handle-fireball
   "generate a fireball object and add it to the object registry"
   [message channel]
-  (let [player (sock->player channel) sprite (get message "sprite")]
-    (add-game-piece!
-     {:x (:x player) :y (:y player) :type "fireball"
-      :scene (:scene player) ;standard properties
-      :direction (get message "direction")
-      :sprite sprite
-      :behavior "witchazzan.core/fireball-behavior"
-      :owner (:id player) ;attributes
-      :collide "witchazzan.core/fireball-collide"
-      :move "witchazzan.core/fireball-move"
-      :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
-      :handle-mail "witchazzan.core/ignore-inbox"
-      :collide-players "witchazzan.core/fireball-collide-players"})))
+  (let [player (witchazzan.core/sock->player channel) sprite (get message "sprite")]
+    (swap!
+     witchazzan.core/network-mail
+     #(conj %
+            {:mail-to "new-object"
+             :x (:x player) :y (:y player) :type "fireball"
+             :scene (:scene player) ;standard properties
+             :direction (get message "direction")
+             :sprite sprite
+             :behavior "witchazzan.core/fireball-behavior"
+             :owner (:id player) ;attributes
+             :collide "witchazzan.core/fireball-collide"
+             :move "witchazzan.core/fireball-move"
+             :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
+             :handle-mail "witchazzan.core/ignore-inbox"
+             :collide-players "witchazzan.core/fireball-collide-players"}))))
+(defn __init [])
