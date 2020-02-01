@@ -15,6 +15,7 @@
 (declare rand-nth-safe)
 (declare square-range)
 (declare name->scene)
+(declare within-n)
 ;todo: seperate namespace
 ;;namespace
 

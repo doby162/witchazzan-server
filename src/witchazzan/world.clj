@@ -1,0 +1,493 @@
+;;namespace
+(ns witchazzan.core
+  (:require [clojure.data.json :as json])
+  (:require [org.httpkit.server :as server])
+  (:require [clojure.string :as str])
+  (:require [clojure.pprint :as pp])
+  (:require [clojure.java.io :as io])
+  (:gen-class))
+(declare broadcast)
+(declare within-n)
+(declare clear-corrupted)
+(declare log)
+(declare coordinate-spawns)
+(declare name->scene)
+(declare sock->player)
+;;namespace
+;;
+;;configuration and global state
+(defn rand-nth-safe ; put this somewhere
+  [list]
+  (cond
+    (= (count list) 0)
+    nil
+    :else
+    (rand-nth list)))
+
+(def network-mail
+  (atom []))
+
+(def game-state
+  (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
+
+(defn save
+  "Serializes the entire state of play. All mutable state exists in the resulting file"
+  []
+  (let
+   [save-data
+    (merge @game-state {:game-pieces
+                        (apply merge (map (fn [object]
+                                            {(keyword (str (:id object))) object})
+                                          (map #(dissoc
+                                                 (merge % {:active false}) :sock)
+                                               (vals (:game-pieces @game-state)))))})]
+    (spit "config/save.clj"
+          (str "(def game-state (atom " save-data "))"))
+    (slurp "config/save.clj")))
+
+(defn load-game
+  "reads and executes the code stored in config/save.clj, repopulating the game-state"
+  []
+  (load-string (slurp "config/save.clj")))
+
+(defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
+
+(defn players [] (filter
+                  #(and
+                    (not (= false (:active %)))
+                    (= "player" (:type %)))
+                  (vals (:game-pieces @game-state))))
+
+(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
+
+(defn scene->pieces [scene] (filter #(and
+                                      (= (:scene %) scene)
+                                      (not (= false (:active %))))
+                                    (vals (:game-pieces @game-state))))
+
+(defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
+
+(defn gen-id! []
+  (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
+  (:auto-increment-id @game-state))
+
+(>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+
+(defn hourglass! []
+  (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+    (coordinate-spawns)
+    (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
+    (when (< 23 (:clock @game-state))
+      (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
+      (when (setting "auto-save") (save)))
+    (when (= (:clock @game-state) 6)
+      (broadcast
+       {:messageType "chat" :name "Witchazzan.core" :id -1
+        :content (str "Dawn of day " (:calendar @game-state))} (players)))
+    (when (= (:clock @game-state) 20)
+      (broadcast
+       {:messageType "chat" :name "Witchazzan.core" :id -1
+        :content "Night falls"} (players)))
+    (broadcast {:time (:clock @game-state)} (players))))
+
+;this is a map to leave room for other types of game state
+(defn add-game-piece!
+  "adds a game piece to the global game state
+  game pieces must have, at a minumum:
+  x y type scene behavior"
+  [new-object]
+  (let [id (gen-id!) obj (merge new-object {:id id :delete-me false})]
+    (swap! ; todo, throw exception when object is invalid
+     game-state
+     (fn [%]
+       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))) id))
+
+(defn update-game-piece!
+  "adds or replaces attribues in a game-piece
+  setting an attribute to null is equivilant to deleting it"
+  [id vals]
+  (swap!
+   game-state
+   (fn [state] (update-in state [:game-pieces (keyword (str id))] #(merge % vals)))))
+
+(defn trash-filter
+  "does all the work for collect-garbage"
+  [game-state]
+  (merge ; replace the game-pieces structure with one that is missing deleted pieces
+   game-state
+   {:game-pieces
+    (into {} (filter (fn [piece]
+                       (= false (:delete-me (second piece))))
+                     (:game-pieces game-state)))}))
+
+(defn collect-garbage!
+  "removes game-pieces with the delete-me attribute set to true"
+  []
+  (swap! game-state trash-filter))
+
+(defn process-map
+  "returns an immutable representation of a single tilemap,
+  including a helper for collisions"
+  [map name]
+  (let [width (get map "width") height (get map "height")
+        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")
+        objects (get (first (filter #(= (get % "name") "Objects") (get map "layers"))) "objects")]
+    {:name (first (str/split name #"\."))
+     :width width :height height :syri syri
+     :objects objects
+     :tilewidth (get map "tilewidth")
+     :teleport
+     (fn [coords]
+       (let [tele (filter
+                   #(and
+                     (= "SwitchToScene" (get % "type"))
+                     (within-n (:x coords) (get % "x") (* 2 (get % "width")))
+                     (within-n (:y coords) (get % "y") (* 2 (get % "height"))))
+                   objects)]
+         (when (= 1 (count tele))
+           (let [result (first (filter #(and
+                                         (= "Entrance" (get % "type"))
+                                         (= (get (first (second (first (first tele)))) "value") (get % "name")))
+                     ;this line assumes that the Entrance's first property is it's name
+                     ;no, this is not a good assumption
+                                       (:objects (name->scene (get (first tele) "name")))))]
+             {:scene (get (first tele) "name")
+              :x (get result "x")
+              :y (get result "y")
+              :teleport-debounce true}))))
+     :get-tile-walkable (fn [coords]
+                          (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
+
+(def tilemaps (map ; tilemaps don't go in the game state because they are immutable
+               #(process-map (json/read-str (slurp (str (setting "tilemap-path") %))) %)
+               (setting "tilemaps")))
+
+(defn name->scene [name]
+  (first (filter #(= name (:name %)) tilemaps)))
+
+(defn tile-location
+  "takes a player or game object and returns an x and y offset"
+  [object]
+  (let [tilewidth (:tilewidth (name->scene (:scene object)))]
+    {:x (int (Math/floor (/ (:x object) tilewidth))) :y (int (Math/floor (/ (:y object) tilewidth)))}))
+
+(defn pixel-location
+  "takes a pair of coordinates and returns pixel values"
+  [scene coords]
+  (let [width (:tilewidth (name->scene scene))]
+    {:x (* width (:x coords)) :y (* width (:y coords))}))
+;;configuration and global state
+;;
+;;websocket infrastructure
+(defn call-func-by-string
+  "(call-func-by-string \"+\" [5 5]) => 10"
+  [name args]
+  (apply (resolve (symbol name)) args))
+
+(defn method
+  "shorthand to call game-piece methods"
+  [object key args]
+  (try
+    (call-func-by-string (get object key) (conj args object))
+    (catch Exception e
+      (log (str "method failed: " e)))))
+
+(defn handler [request]
+  (println "A new player has entered Witchazzan")
+  (println request)
+  (server/with-channel request channel
+    (server/on-close
+     channel
+     (fn [data]
+       (update-game-piece! (:id (sock->player channel)) {:active false})))
+    (server/on-receive
+     channel
+     (fn [data]
+       (try ; checking for bad json and that a handler can be found
+         (let [message (json/read-str data)
+               message-type (get message "message_type")]
+           (try ;checking if the function exists
+             (call-func-by-string
+              (str "witchazzan.core/handle-" message-type) [message channel])
+             (catch java.lang.NullPointerException e (println e)))
+                                        ;here we are interpreting the "messasge_type" json value as
+                                        ;the second half of a function name and calling that function
+           )(catch java.lang.Exception e
+              (println "invalid json: " data) (println e)))))))
+(server/run-server handler {:port (setting "port")})
+;;websocket infrastructure
+;;
+;;game loop
+(defn update-clients []
+  (run!
+   (fn [tilemap] (broadcast
+                  {:messageType "game-piece-list"
+                   :pieces (map (fn [%] (dissoc % :sock))
+                                (scene->pieces (:name tilemap)))}
+                  (scene->players (:name tilemap))))
+   tilemaps))
+
+(defn process-behavior
+  "calls the behavior method on all pieces to calculate the next frame"
+  [this]
+  {(first this) (method (second this) :behavior (list))})
+
+(defn process-mail
+  "calls the handle-mail method on all pieces to calculate the next frame"
+  [this]
+  {(first this) (method (second this) :handle-mail (list))})
+
+(defn clear-outbox
+  "clears outbox to avoid duplicate processing"
+  [this]
+  {(first this) (merge (second this) {:outbox nil})})
+
+(defn process-objects!
+  "coordinates the process-behavior function accross the game-pieces"
+  [fun]
+  (swap!
+   game-state
+   (fn [state]
+     (->>
+      (:game-pieces state)
+      (pmap fun)
+      (apply merge)
+      (vector :game-pieces)
+      (merge state)))))
+
+(defn create-objects!
+  [mail-queue]
+  (run!
+   (fn [message]
+     (add-game-piece! message))
+   mail-queue))
+
+(defn attach-mail [mail-queue piece]
+  (letfn [(filt [item] (= (:id (second piece)) (:mail-to item)))
+          (not-filt [item] (not (= (:id (second piece)) (:mail-to item))))]
+    (let [net-mail @network-mail]
+      (swap! network-mail
+           ;complement takes the boolean inverse of a function
+             #(filter not-filt %))
+      {(first piece)
+       (merge (second piece)
+              {:inbox
+               (filter filt mail-queue)}
+              {:net-inbox
+               (filter filt net-mail)})})))
+
+(defn mail-room
+  "puts the mail where it needs to go"
+  [mail-queue]
+  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue)))
+  (process-objects! #(attach-mail mail-queue %)))
+
+(defn game-loop []
+  (loop []
+    (let [start-ms (System/currentTimeMillis)]
+      (hourglass!)
+      (process-objects! process-behavior)
+      (let
+       [mail-queue
+        (filter (fn [item] (not (nil? item)))
+                (pmap #(:outbox (second %)) (:game-pieces @game-state)))]
+        (mail-room mail-queue))
+      (process-objects! clear-outbox)
+      (process-objects! process-mail)
+      (collect-garbage!)
+      (update-clients)
+
+      ;temporary mesure to see if I can track down a bug
+      (when (> (count (filter (fn [object] (= nil (:x object))) (objects))) 0)
+        (clear-corrupted)
+        (log "detected corrupted objects"))
+
+      (try (Thread/sleep
+            (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms)))
+           (catch Exception e
+             (log "long frame"))))
+    (when (not (setting "pause")) (recur))))
+
+(defn threadify [func] (future (func)))
+;;game loop
+;;nature
+(defn square-range
+  "like range but for coordinates"
+  [size]
+  (map
+   #(zipmap '(:x :y) (list (quot % size) (rem % size)))
+   (range (* size size))))
+
+(defn tile-occupied
+  [scene coords]
+  (not (empty? (filter
+                (fn [object]
+                  (let [ob-coords (tile-location object)]
+                    (and
+                     (= (:x coords) (:x ob-coords))
+                     (= (:y coords) (:y ob-coords)))))
+                (scene->pieces scene)))))
+
+(defn find-empty-tile
+  ;this needs to somehow return nil instead of crashing on imossible requests
+  "returns the coordinates of a random empty tile from a map"
+  [scene]
+  (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
+    (->>
+     (square-range tile-size)
+     (filter #((:get-tile-walkable map) %))
+     (filter #(not (tile-occupied scene %)))
+     (rand-nth)
+     (pixel-location scene))))
+
+(defn generate-genes
+  "makes a list of keywords into a map of ints, arbitrarily limited by settings"
+  [& keywords]
+  (zipmap keywords
+          (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
+
+(defn mutate-genes
+  "each gene can be incremeneted, decremented or stay the same with equal chance"
+  [genes]
+  (zipmap (keys genes)
+          (map #(+ (- (rand-int 3) 1) %) (vals genes))))
+
+(defn normalize-genes
+  "prevent mutation from moving genes outside the 0-gene-max range"
+  [genes]
+  (zipmap (keys genes)
+          (map
+           #(cond (> % (setting "gene-max"))
+                  (- % (setting "gene-max"))
+                  (< % 0)
+                  (+ % (setting "gene-max"))
+                  :else %)
+           (vals genes))))
+
+(defn within-n
+  [a b n]
+  (and (>= a (- b n)) (<= a (+ b n))))
+
+(defn find-adjacent
+  "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
+  [object]
+  (let [map (name->scene (:scene object)) n (:tilewidth map)]
+    (filter
+     #(and (within-n (:x %) (:x object) n) (within-n (:y %) (:y object) n))
+     (scene->pieces (:scene object)))))
+
+(defn spawn-slime
+  "create a slime in the world"
+  [scene & mods]
+  (add-game-piece!
+   (conj
+    (find-empty-tile scene)
+    {:scene scene
+     :sprite "gloobScaryman"
+     :type "slime"
+     :energy 24
+     :behavior "witchazzan.core/slime-behavior"
+     :hourly "witchazzan.core/slime-hourly"
+     :reproduce "witchazzan.core/plant-reproduce"
+     :hunt "witchazzan.core/slime-hunt"
+     :clock 1
+     :handle-mail "witchazzan.core/slime-inbox"
+     :max-speed 4
+     :genes
+     (generate-genes
+      :speed :repro-threshold :repro-chance)}
+    (first mods)))) ; passed params overwrite anything
+
+(defn spawn-carrot
+  "create a carrot in the world"
+  [scene & mods]
+  (add-game-piece!
+   (conj
+    (find-empty-tile scene)
+    {:scene scene
+     :sprite "carrot"
+     :type "carrot"
+     :energy 24
+     :behavior "witchazzan.core/hourly-behavior"
+     :hourly "witchazzan.core/carrot-hourly"
+     :reproduce "witchazzan.core/plant-reproduce"
+     :photosynth "witchazzan.core/photosynth"
+     :clock 1 ;some things happen on the hour
+     :handle-mail "witchazzan.core/carrot-inbox"
+     :genes
+     (generate-genes
+      :repro-threshold :repro-chance)}
+    (first mods))))
+;;nature
+;;admin stuff
+(defn log [data]
+  (spit "config/log"
+        (str (System/currentTimeMillis) " : " data "\n")
+        :append true))
+
+(defn clear-corrupted []
+  (run! #(update-game-piece! (:id %) {:delete-me true})
+        (filter (fn [object] (= nil (:x object))) (objects))))
+
+(defn ten-x []
+  (setting "millis-per-hour" (/ (setting "millis-per-hour") 10))
+  (setting "millis-per-frame" (/ (setting "millis-per-frame") 10)))
+
+(defn tenth-x []
+  (setting "millis-per-hour" (* (setting "millis-per-hour") 10))
+  (setting "millis-per-frame" (* (setting "millis-per-frame") 10)))
+
+(defn short-day []
+  (setting "millis-per-hour" 600))
+
+(defn seed-nature []
+  (try
+    (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps)
+    (catch Exception e
+      (println "seeding nature failed")
+      (log "seeding nature failed")
+      (clear-corrupted))))
+
+(defn reset []
+  (io/delete-file "config/save.clj" true)
+  (System/exit 0))
+;;admin stuff
+(defn -main
+  [& args]
+  (when (not (setting "pause"))
+    (do
+      (try (when (setting "auto-load") (load-game))
+           (catch Exception e (println "Failed to load save file")))
+      (threadify game-loop) (seed-nature))))
+
+(defn spawn-points
+  "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
+  [type & rand]
+  (let [coord-pairs
+        (filter #(:x %) ;check if valid coords were returned
+                (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
+                       (let [properties
+                             (first
+                              (filter
+                               #(= (str "spawn-" type) (get % "name"))
+                               (:objects tilemap)))]
+                         {:scene (:name tilemap) :x (get properties "x") :y (get properties "y")}))
+                     tilemaps))]
+    (cond
+      rand
+      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type)
+                                  (list (:scene %) (find-empty-tile (:scene %))))
+            coord-pairs)
+      :else
+      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type) (list (:scene %) %))
+            coord-pairs))))
+
+(defn coordinate-spawns []
+  (when (and
+         (< (:clock @game-state) 5)
+         (< (count (filter #(= (:type %) "slime") (objects))) 5))
+    (spawn-points "slime"))
+  (when (and
+         (> (:clock @game-state) 20)
+         (< (count (filter #(= (:type %) "carrot") (objects))) 5))
+    (spawn-points "carrot" true)))
