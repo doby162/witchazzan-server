@@ -1,12 +1,12 @@
 ;;namespace
 (ns witchazzan.core
+  (:require [witchazzan.comms :as coms])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
   (:require [clojure.string :as str])
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
   (:gen-class))
-(declare broadcast)
 (declare within-n)
 (declare clear-corrupted)
 (declare log)
@@ -67,14 +67,14 @@
       (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
       (when (setting "auto-save") (save)))
     (when (= (:clock @game-state) 6)
-      (broadcast
+      (coms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
         :content (str "Dawn of day " (:calendar @game-state))} (players)))
     (when (= (:clock @game-state) 20)
-      (broadcast
+      (coms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
         :content "Night falls"} (players)))
-    (broadcast {:time (:clock @game-state)} (players))))
+    (coms/broadcast {:time (:clock @game-state)} (players))))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!
@@ -86,7 +86,9 @@
     (swap! ; todo, throw exception when object is invalid
      game-state
      (fn [%]
-       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})}))) id))
+       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})})))
+    (witchazzan.comms/establish-identity (id->piece id))
+    id))
 
 (defn update-game-piece!
   "adds or replaces attribues in a game-piece
@@ -206,7 +208,7 @@
 ;;game loop
 (defn update-clients []
   (run!
-   (fn [tilemap] (broadcast
+   (fn [tilemap] (coms/broadcast
                   {:messageType "game-piece-list"
                    :pieces (map (fn [%] (dissoc % :sock))
                                 (scene->pieces (:name tilemap)))}
@@ -252,9 +254,9 @@
   (letfn [(filt [item] (= (:id (second piece)) (:mail-to item)))
           (not-filt [item] (not (= (:id (second piece)) (:mail-to item))))]
     (let [net-mail @network-mail]
-      (swap! network-mail
+      #_(swap! network-mail
            ;complement takes the boolean inverse of a function
-             #(filter not-filt %))
+               #(filter not-filt %))
       {(first piece)
        (merge (second piece)
               {:inbox
@@ -265,7 +267,11 @@
 (defn mail-room
   "puts the mail where it needs to go"
   [mail-queue]
-  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue)))
+  (create-objects! (filter #(= "new-object" (:mail-to %)) (apply conj mail-queue @network-mail)))
+  (swap! network-mail
+         #(filter (fn [this] (not (= "new-object" (:mail-to this)))) %))
+  ;remove create object commands from mail queue.
+  ;TODO either merge mail and net mail completly or make a general solution for this nonsens
   (process-objects! #(attach-mail mail-queue %)))
 
 (defn game-loop []

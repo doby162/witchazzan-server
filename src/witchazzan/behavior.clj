@@ -1,6 +1,8 @@
 ;;namespace
 (ns witchazzan.core
+  (:require [clojure.pprint :as pp])
   (:gen-class))
+
 (declare name->scene)
 (declare scene->players)
 (declare scene->pieces)

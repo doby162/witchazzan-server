@@ -12,6 +12,7 @@
 (defn broadcast
   "takes an n-level map and distributes it to all clients as json"
   [data players]
+  ;(when (= (count players) 1) (println data))
   (run! #(message-player data %) players))
 
 (defn establish-identity
@@ -57,7 +58,8 @@
       (swap!
        witchazzan.core/network-mail
        #(conj %
-              :mail-to (:id (first existing-user))
+              {:mail-to (:id (first existing-user))}
+              {:method "location-update"}
               {:sock channel :sprite sprite :active true})))
     (establish-identity (witchazzan.core/sock->player channel))))
 
@@ -93,19 +95,19 @@
   "generate a fireball object and add it to the object registry"
   [message channel]
   (let [player (witchazzan.core/sock->player channel) sprite (get message "sprite")]
-    (swap!
-     witchazzan.core/network-mail
-     #(conj %
-            {:mail-to "new-object"
-             :x (:x player) :y (:y player) :type "fireball"
-             :scene (:scene player) ;standard properties
-             :direction (get message "direction")
-             :sprite sprite
-             :behavior "witchazzan.core/fireball-behavior"
-             :owner (:id player) ;attributes
-             :collide "witchazzan.core/fireball-collide"
-             :move "witchazzan.core/fireball-move"
-             :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
-             :handle-mail "witchazzan.core/ignore-inbox"
-             :collide-players "witchazzan.core/fireball-collide-players"}))))
+    #_(swap!
+       witchazzan.core/network-mail
+       #(conj %
+              {:mail-to "new-object"
+               :x (:x player) :y (:y player) :type "fireball"
+               :scene (:scene player) ;standard properties
+               :direction (get message "direction")
+               :sprite sprite
+               :behavior "witchazzan.core/fireball-behavior"
+               :owner (:id player) ;attributes
+               :collide "witchazzan.core/fireball-collide"
+               :move "witchazzan.core/fireball-move"
+               :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
+               :handle-mail "witchazzan.core/ignore-inbox"
+               :collide-players "witchazzan.core/fireball-collide-players"}))))
 (defn __init [])
