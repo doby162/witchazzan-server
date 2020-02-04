@@ -148,8 +148,8 @@
        (let [tele (filter
                    #(and
                      (= "SwitchToScene" (get % "type"))
-                     (within-n (:x coords) (get % "x") (* 2 (get % "width")))
-                     (within-n (:y coords) (get % "y") (* 2 (get % "height"))))
+                     (within-n (:x coords) (+ 8 (get % "x")) (get % "width"))
+                     (within-n (:y coords) (+ 8 (get % "y")) (get % "height")))
                    objects)]
          (when (= 1 (count tele))
            (let [result (first (filter #(and
