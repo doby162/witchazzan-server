@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.core
-  (:require [witchazzan.comms :as coms])
+  (:require [witchazzan.comms :as comms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
 
@@ -138,7 +138,7 @@
 (defn player-behavior
   [this]
   (when (:identity this)
-    (coms/establish-identity this))
+    (comms/establish-identity this))
   (dissoc this :identity))
 
 ;put this somewhere

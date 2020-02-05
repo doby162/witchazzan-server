@@ -1,5 +1,6 @@
 ;;namespace
 (ns witchazzan.core
+  (:require [witchazzan.comms :as comms])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
   (:require [clojure.string :as str])
@@ -66,14 +67,14 @@
       (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
       (when (setting "auto-save") (save)))
     (when (= (:clock @game-state) 6)
-      (coms/broadcast
+      (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
         :content (str "Dawn of day " (:calendar @game-state))} (players)))
     (when (= (:clock @game-state) 20)
-      (coms/broadcast
+      (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
         :content "Night falls"} (players)))
-    (coms/broadcast {:time (:clock @game-state)} (players))))
+    (comms/broadcast {:time (:clock @game-state)} (players))))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!
@@ -206,7 +207,7 @@
 ;;game loop
 (defn update-clients []
   (run!
-   (fn [tilemap] (coms/broadcast
+   (fn [tilemap] (comms/broadcast
                   {:messageType "game-piece-list"
                    :pieces (map (fn [%] (dissoc % :sock))
                                 (scene->pieces (:name tilemap)))}
