@@ -1,6 +1,5 @@
 ;;namespace
 (ns witchazzan.core
-  (:require [witchazzan.comms :as coms])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
   (:require [clojure.string :as str])
