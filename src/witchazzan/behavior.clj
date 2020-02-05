@@ -1,5 +1,6 @@
 ;;namespace
 (ns witchazzan.core
+  (:require [witchazzan.comms :as coms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
 
@@ -136,8 +137,9 @@
 
 (defn player-behavior
   [this]
-  ; (pp/pprint (teleport this))
-  this)
+  (when (:identity this)
+    (coms/establish-identity this))
+  (dissoc this :identity))
 
 ;put this somewhere
 (defn thread-debug
@@ -151,7 +153,7 @@
   (let [hits (filter #(= (:method %) "hit") (:inbox this))
         location-updates (dissoc
                           (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
-                          [:mail-to])]
+                          :mail-to :method :message_type)]
     (as->
      this t
       (merge t {:inbox nil})

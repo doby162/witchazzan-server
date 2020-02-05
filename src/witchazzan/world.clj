@@ -87,7 +87,6 @@
      game-state
      (fn [%]
        (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})})))
-    (witchazzan.comms/establish-identity (id->piece id))
     id))
 
 (defn update-game-piece!
@@ -254,9 +253,9 @@
   (letfn [(filt [item] (= (:id (second piece)) (:mail-to item)))
           (not-filt [item] (not (= (:id (second piece)) (:mail-to item))))]
     (let [net-mail @network-mail]
-      #_(swap! network-mail
+      (swap! network-mail
            ;complement takes the boolean inverse of a function
-               #(filter not-filt %))
+             #(filter not-filt %))
       {(first piece)
        (merge (second piece)
               {:inbox

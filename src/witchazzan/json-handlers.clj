@@ -51,6 +51,7 @@
                :active true
                :defence 0 :sprite sprite
                :moving false
+               :identity "true"
                :behavior "witchazzan.core/player-behavior"
                :handle-mail "witchazzan.core/player-inbox"
                :name username :sock channel})))
@@ -58,10 +59,11 @@
       (swap!
        witchazzan.core/network-mail
        #(conj %
-              {:mail-to (:id (first existing-user))}
-              {:method "location-update"}
-              {:sock channel :sprite sprite :active true})))
-    (establish-identity (witchazzan.core/sock->player channel))))
+              {:mail-to (:id (first existing-user))
+               :method "location-update"
+               :identity "true"
+              ;location updates set arbitrary values so we can ride on those coat tails
+               :sock channel :sprite sprite :active true})))))
 
 (defn handle-command
   "this handler is a bit of a switch case inside of a switch case,
