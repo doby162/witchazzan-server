@@ -1,3 +1,5 @@
+(ns witchazzan.core
+  (:gen-class))
 ; we're storing settings in a map, add ':index value' on a line to add settings
 ; retrieve with (:index settings)
 (def settings (atom

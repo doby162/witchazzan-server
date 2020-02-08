@@ -7,22 +7,14 @@
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
   (:gen-class))
-(declare within-n)
-(declare clear-corrupted)
-(declare log)
 (declare coordinate-spawns)
+(declare within-n)
 (declare name->scene)
-(declare sock->player)
+(declare log)
+(declare clear-corrupted)
 ;;namespace
 ;;
 ;;configuration and global state
-(defn rand-nth-safe ; put this somewhere
-  [list]
-  (cond
-    (= (count list) 0)
-    nil
-    :else
-    (rand-nth list)))
 
 (defn save
   "Serializes the entire state of play. All mutable state exists in the resulting file"
@@ -337,35 +329,9 @@
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
-(defn mutate-genes
-  "each gene can be incremeneted, decremented or stay the same with equal chance"
-  [genes]
-  (zipmap (keys genes)
-          (map #(+ (- (rand-int 3) 1) %) (vals genes))))
-
-(defn normalize-genes
-  "prevent mutation from moving genes outside the 0-gene-max range"
-  [genes]
-  (zipmap (keys genes)
-          (map
-           #(cond (> % (setting "gene-max"))
-                  (- % (setting "gene-max"))
-                  (< % 0)
-                  (+ % (setting "gene-max"))
-                  :else %)
-           (vals genes))))
-
 (defn within-n
   [a b n]
   (and (>= a (- b n)) (<= a (+ b n))))
-
-(defn find-adjacent
-  "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
-  [object]
-  (let [map (name->scene (:scene object)) n (:tilewidth map)]
-    (filter
-     #(and (within-n (:x %) (:x object) n) (within-n (:y %) (:y object) n))
-     (scene->pieces (:scene object)))))
 
 (defn spawn-slime
   "create a slime in the world"
@@ -377,12 +343,12 @@
      :sprite "gloobScaryman"
      :type "slime"
      :energy 24
-     :behavior "witchazzan.core/slime-behavior"
-     :hourly "witchazzan.core/slime-hourly"
-     :reproduce "witchazzan.core/plant-reproduce"
-     :hunt "witchazzan.core/slime-hunt"
+     :behavior "witchazzan.behavior/slime-behavior"
+     :hourly "witchazzan.behavior/slime-hourly"
+     :reproduce "witchazzan.behavior/plant-reproduce"
+     :hunt "witchazzan.behavior/slime-hunt"
      :clock 1
-     :handle-mail "witchazzan.core/slime-inbox"
+     :handle-mail "witchazzan.behavior/slime-inbox"
      :max-speed 4
      :genes
      (generate-genes
@@ -399,12 +365,12 @@
      :sprite "carrot"
      :type "carrot"
      :energy 24
-     :behavior "witchazzan.core/hourly-behavior"
-     :hourly "witchazzan.core/carrot-hourly"
-     :reproduce "witchazzan.core/plant-reproduce"
-     :photosynth "witchazzan.core/photosynth"
+     :behavior "witchazzan.behavior/hourly-behavior"
+     :hourly "witchazzan.behavior/carrot-hourly"
+     :reproduce "witchazzan.behavior/plant-reproduce"
+     :photosynth "witchazzan.behavior/photosynth"
      :clock 1 ;some things happen on the hour
-     :handle-mail "witchazzan.core/carrot-inbox"
+     :handle-mail "witchazzan.behavior/carrot-inbox"
      :genes
      (generate-genes
       :repro-threshold :repro-chance)}
@@ -482,4 +448,3 @@
          (> (:clock @game-state) 20)
          (< (count (filter #(= (:type %) "carrot") (objects))) 5))
     (spawn-points "carrot" true)))
-(defn __init [])

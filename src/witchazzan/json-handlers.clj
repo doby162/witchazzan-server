@@ -52,8 +52,8 @@
                :defence 0 :sprite sprite
                :moving false
                :identity "true"
-               :behavior "witchazzan.core/player-behavior"
-               :handle-mail "witchazzan.core/player-inbox"
+               :behavior "witchazzan.behavior/player-behavior"
+               :handle-mail "witchazzan.behavior/player-inbox"
                :name username :sock channel})))
     (when (not (empty? existing-user))
       (swap!
@@ -105,11 +105,10 @@
              :scene (:scene player) ;standard properties
              :direction (get message "direction")
              :sprite sprite
-             :behavior "witchazzan.core/fireball-behavior"
+             :behavior "witchazzan.behavior/fireball-behavior"
              :owner (:id player) ;attributes
-             :collide "witchazzan.core/fireball-collide"
-             :move "witchazzan.core/fireball-move"
+             :collide "witchazzan.behavior/fireball-collide"
+             :move "witchazzan.behavior/fireball-move"
              :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
-             :handle-mail "witchazzan.core/ignore-inbox"
-             :collide-players "witchazzan.core/fireball-collide-players"}))))
-(defn __init [])
+             :handle-mail "witchazzan.behavior/ignore-inbox"
+             :collide-players "witchazzan.behavior/fireball-collide-players"}))))
