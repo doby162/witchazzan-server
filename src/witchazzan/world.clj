@@ -350,6 +350,7 @@
      :clock 1
      :handle-mail "witchazzan.behavior/slime-inbox"
      :max-speed 4
+     :health 1
      :genes
      (generate-genes
       :speed :repro-threshold :repro-chance)}
