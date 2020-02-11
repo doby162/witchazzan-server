@@ -52,8 +52,8 @@
                :defence 0 :sprite sprite
                :moving false
                :identity "true"
-               :behavior "witchazzan.behavior/player-behavior"
-               :handle-mail "witchazzan.behavior/player-inbox"
+               :behavior "player-behavior"
+               :handle-mail "player-inbox"
                :name username :sock channel})))
     (when (not (empty? existing-user))
       (swap!
@@ -106,11 +106,11 @@
              :direction (get message "direction")
              :sprite sprite
              :behavior
-             (cond (= "joosh" (:sprite player)) "witchazzan.behavior/fireball-blue-behavior"
-                   :else "witchazzan.behavior/fireball-behavior")
+             (cond (= "joosh" (:sprite player)) "fireball-blue-behavior"
+                   :else "fireball-behavior")
              :owner (:id player) ;attributes
-             :collide "witchazzan.behavior/fireball-collide"
-             :move "witchazzan.behavior/fireball-move"
+             :collide "fireball-collide"
+             :move "fireball-move"
              :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
-             :handle-mail "witchazzan.behavior/ignore-inbox"
-             :collide-players "witchazzan.behavior/fireball-collide-players"}))))
+             :handle-mail "ignore-inbox"
+             :collide-players "fireball-collide-players"}))))

@@ -167,7 +167,7 @@
   "shorthand to call game-piece methods"
   [object key args]
   (try
-    (call-func-by-string (get object key) (conj args object))
+    (call-func-by-string (str "witchazzan.behavior/" (get object key)) (conj args object))
     (catch Exception e
       (log (str "method failed: " e)))))
 
@@ -343,12 +343,12 @@
      :sprite "gloobScaryman"
      :type "slime"
      :energy 24
-     :behavior "witchazzan.behavior/slime-behavior"
-     :hourly "witchazzan.behavior/slime-hourly"
-     :reproduce "witchazzan.behavior/plant-reproduce"
-     :hunt "witchazzan.behavior/slime-hunt"
+     :behavior "slime-behavior"
+     :hourly "slime-hourly"
+     :reproduce "plant-reproduce"
+     :hunt "slime-hunt"
      :clock 1
-     :handle-mail "witchazzan.behavior/slime-inbox"
+     :handle-mail "slime-inbox"
      :max-speed 4
      :health 1
      :genes
@@ -366,12 +366,12 @@
      :sprite "carrot"
      :type "carrot"
      :energy 24
-     :behavior "witchazzan.behavior/hourly-behavior"
-     :hourly "witchazzan.behavior/carrot-hourly"
-     :reproduce "witchazzan.behavior/plant-reproduce"
-     :photosynth "witchazzan.behavior/photosynth"
+     :behavior "hourly-behavior"
+     :hourly "carrot-hourly"
+     :reproduce "plant-reproduce"
+     :photosynth "photosynth"
      :clock 1 ;some things happen on the hour
-     :handle-mail "witchazzan.behavior/carrot-inbox"
+     :handle-mail "carrot-inbox"
      :health 1
      :genes
      (generate-genes

@@ -1,7 +1,6 @@
 ;;namespace
 (ns witchazzan.behavior
   (:require [witchazzan.core :as core])
-;  (:require [witchazzan.world :as world])
   (:require [witchazzan.comms :as comms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
@@ -276,7 +275,7 @@
   [this] (carrot-inbox this))
 
 (defn player-behavior
-  [this] ; todo clean up player inbox and move some of this there
+  [this]
   (-> this
       (implements-identity)
       (implements-death)))
