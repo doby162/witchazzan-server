@@ -24,7 +24,7 @@
        (println "No custom configuration found at config/config.clj.
                 Add settings like (setting \"port\" 1234)")))
 
-(load-file "src/witchazzan/json-handlers.clj")
+(load-file "src/witchazzan/comms.clj")
 (load-file "src/witchazzan/world.clj")
 (load-file "src/witchazzan/behavior.clj")
 

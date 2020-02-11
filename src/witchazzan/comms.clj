@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.comms
-  (:require witchazzan.core)
+  (:require [witchazzan.core :as core])
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
   (:gen-class))
@@ -23,14 +23,14 @@
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
-  (let [player (witchazzan.core/sock->player channel)]
+  (let [player (core/sock->player channel)]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                 :content (get message "text")} (witchazzan.core/players))))
+                 :content (get message "text")} (core/players))))
 
 (defn handle-location-update [message channel]
-  (let [player (witchazzan.core/sock->player channel)]
+  (let [player (core/sock->player channel)]
     (swap!
-     witchazzan.core/network-mail
+     core/network-mail
      #(conj % (merge
                (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
                {:method "location-update" :mail-to (:id player)})))))
@@ -39,10 +39,10 @@
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (filter #(= username (:name %)) (vals (:game-pieces @witchazzan.core/game-state)))]
+        existing-user (filter #(= username (:name %)) (vals (:game-pieces @core/game-state)))]
     (when (empty? existing-user)
       (swap!
-       witchazzan.core/network-mail
+       core/network-mail
        #(conj %
               {:mail-to "new-object"
                :x 0 :y 0 :type "player" :scene "LoruleH8"
@@ -57,7 +57,7 @@
                :name username :sock channel})))
     (when (not (empty? existing-user))
       (swap!
-       witchazzan.core/network-mail
+       core/network-mail
        #(conj %
               {:mail-to (:id (first existing-user))
                :method "location-update"
@@ -70,7 +70,7 @@
   it handles all of the text commands entered
   via the command bar on the client"
   [message channel]
-  (let [player (witchazzan.core/sock->player channel)]
+  (let [player (core/sock->player channel)]
     (when (re-find #"^look" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
@@ -85,7 +85,7 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name %) " ") (witchazzan.core/players)))}
+                       (apply str (map #(str (:name %) " ") (core/players)))}
                       player))
     #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
         (message-player {:messageType "highlight_pixels"
@@ -96,9 +96,9 @@
 (defn handle-fireball
   "generate a fireball object and add it to the object registry"
   [message channel]
-  (let [player (witchazzan.core/sock->player channel) sprite (get message "sprite")]
+  (let [player (core/sock->player channel) sprite (get message "sprite")]
     (swap!
-     witchazzan.core/network-mail
+     core/network-mail
      #(conj %
             {:mail-to "new-object"
              :x (:x player) :y (:y player) :type "fireball"
