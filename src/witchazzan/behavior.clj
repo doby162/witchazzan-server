@@ -155,11 +155,24 @@
         :else (core/method t :move (list)))
       (merge t (teleport t)))))
 
-(defn player-behavior
+(defn fireball-blue-behavior
   [this]
-  (when (:identity this)
-    (comms/establish-identity this))
-  (dissoc this :identity))
+  (let [collide-player (:id (core/method this :collide-players (list)))]
+    (as->
+     this t
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "teleport-rand"}})
+        (core/method t :collide (list))
+        (merge t {:delete-me true})
+        :else (core/method t :move (list)))
+      (merge t (teleport t)))))
+
+(defn implements-identity [this]
+  (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
+        :else this))
 
 ;put this somewhere
 (defn thread-debug
@@ -168,33 +181,43 @@
   (pp/pprint x)
   x)
 
-(defn player-inbox
-  [this]
-  (let [hits (filter #(= (:method %) "hit") (:inbox this))
-        location-updates (dissoc
-                          (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
-                          :mail-to :method :message_type)]
-    (as->
-     this t
-      (merge t {:inbox nil})
-      (merge t {:net-inbox nil})
-      (cond (> (count hits) 0)
-            (merge t {:health (- (:health t) 1)})
-            :else t)
-      (merge t location-updates))))
-
-(defn carrot-inbox
-  [this]
-  (let [hits (filter #(= (:method %) "hit") (:inbox this))]
-    (cond
-      (> (count hits) 0)
-      (merge this {:delete-me true})
-      :else
-      (merge this {:inbox nil}))))
+(defn implements-location-updates [this]
+  (merge
+   this
+   (dissoc
+    (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
+    :mail-to :method :message_type)))
 
 (defn ignore-inbox
   [this]
   (merge this {:inbox nil}))
+
+(defn implements-blue-fire [this]
+  (let [tps (filter #(= (:method %) "teleport-rand") (:inbox this))]
+    (cond
+      (> (count tps) 0)
+      (merge this (core/find-empty-tile (:scene this)))
+      :else this)))
+
+(defn implements-fire [this]
+  (let [hits (filter #(= (:method %) "hit") (:inbox this))]
+    (cond
+      (> (count hits) 0)
+      (merge this {:health (dec (:health this))})
+      :else this)))
+
+(defn implements-death [this]
+  (cond
+    (< (:health this) 1) (merge this {:delete-me true})
+    :else this))
+
+(defn carrot-inbox
+  [this]
+  (-> this
+      (implements-fire)
+      (implements-blue-fire)
+      (implements-death)
+      (ignore-inbox)))
 
 (defn blank-behavior [this & args] this)
 
@@ -251,3 +274,16 @@
 
 (defn slime-inbox
   [this] (carrot-inbox this))
+
+(defn player-behavior
+  [this] ; todo clean up player inbox and move some of this there
+  (-> this
+      (implements-identity)
+      (implements-death)))
+
+(defn player-inbox
+  [this]
+  (-> this
+      (implements-location-updates)
+      (implements-fire)
+      (implements-blue-fire)))

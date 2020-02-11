@@ -371,6 +371,7 @@
      :photosynth "witchazzan.behavior/photosynth"
      :clock 1 ;some things happen on the hour
      :handle-mail "witchazzan.behavior/carrot-inbox"
+     :health 1
      :genes
      (generate-genes
       :repro-threshold :repro-chance)}

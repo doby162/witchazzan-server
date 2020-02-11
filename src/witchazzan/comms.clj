@@ -105,7 +105,9 @@
              :scene (:scene player) ;standard properties
              :direction (get message "direction")
              :sprite sprite
-             :behavior "witchazzan.behavior/fireball-behavior"
+             :behavior
+             (cond (= "joosh" (:sprite player)) "witchazzan.behavior/fireball-blue-behavior"
+                   :else "witchazzan.behavior/fireball-behavior")
              :owner (:id player) ;attributes
              :collide "witchazzan.behavior/fireball-collide"
              :move "witchazzan.behavior/fireball-move"
