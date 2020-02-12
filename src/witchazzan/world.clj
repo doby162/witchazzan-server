@@ -40,7 +40,8 @@
 
 (defn scene->pieces [scene] (filter #(and
                                       (= (:scene %) scene)
-                                      (not (= false (:active %))))
+                                      (not (= false (:active %)))
+                                      (not (:dead %)))
                                     (vals (:game-pieces @game-state))))
 
 (defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
@@ -203,7 +204,7 @@
                   {:messageType "game-piece-list"
                    :pieces (map (fn [%] (dissoc % :sock))
                                 (scene->pieces (:name tilemap)))}
-                  (scene->players (:name tilemap))))
+                  (scene->players-all (:name tilemap))))
    tilemaps))
 
 (defn process-behavior

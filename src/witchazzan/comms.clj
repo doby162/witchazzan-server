@@ -62,6 +62,8 @@
               {:mail-to (:id (first existing-user))
                :method "location-update"
                :identity "true"
+               :dead nil ;TODO better respawn
+               :health 3
               ;location updates set arbitrary values so we can ride on those coat tails
                :sock channel :sprite sprite :active true})))))
 
@@ -97,20 +99,21 @@
   "generate a fireball object and add it to the object registry"
   [message channel]
   (let [player (core/sock->player channel) sprite (get message "sprite")]
-    (swap!
-     core/network-mail
-     #(conj %
-            {:mail-to "new-object"
-             :x (:x player) :y (:y player) :type "fireball"
-             :scene (:scene player) ;standard properties
-             :direction (get message "direction")
-             :sprite sprite
-             :behavior
-             (cond (= "joosh" (:sprite player)) "fireball-blue-behavior"
-                   :else "fireball-behavior")
-             :owner (:id player) ;attributes
-             :collide "fireball-collide"
-             :move "fireball-move"
-             :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
-             :handle-mail "ignore-inbox"
-             :collide-players "fireball-collide-players"}))))
+    (when (not (:dead player)); TODO this whole thing should probably be in a standard update
+      (swap!
+       core/network-mail
+       #(conj %
+              {:mail-to "new-object"
+               :x (:x player) :y (:y player) :type "fireball"
+               :scene (:scene player) ;standard properties
+               :direction (get message "direction")
+               :sprite sprite
+               :behavior
+               (cond (= "joosh" (:sprite player)) "fireball-blue-behavior"
+                     :else "fireball-behavior")
+               :owner (:id player) ;attributes
+               :collide "fireball-collide"
+               :move "fireball-move"
+               :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
+               :handle-mail "ignore-inbox"
+               :collide-players "fireball-collide-players"})))))

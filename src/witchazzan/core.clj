@@ -13,7 +13,14 @@
                     (= "player" (:type %)))
                   (vals (:game-pieces @game-state))))
 
-(defn scene->players [scene] (filter #(= (:scene %) scene) (players)))
+(defn scene->players-all
+  "only for network comms"
+  [scene]
+  (filter #(= (:scene %) scene) (players)))
+
+(defn scene->players
+  [scene]
+  (filter #(and (= (:scene %) scene) (not (:dead %))) (players)))
 
 (defn sock->player [sock]
   (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))

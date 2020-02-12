@@ -97,7 +97,7 @@
       :outbox (conj (:outbox this)
                     (-> this
                         (merge {:outbox nil :teleport-debounce nil :id nil})
-                        (merge {:mail-to "new-object"}) ;the new object handler will open this mail
+                        (merge {:mail-to "new-object"})
                         (merge {:energy energy})
                         (merge (core/find-empty-tile (:scene this)))
                         (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
@@ -144,30 +144,30 @@
   (let [collide-player (:id (core/method this :collide-players (list)))]
     (as->
      this t
-      (cond
-        collide-player
-        (merge t {:delete-me true
-                  :outbox
-                  {:mail-to collide-player :method "hit"}})
-        (core/method t :collide (list))
-        (merge t {:delete-me true})
-        :else (core/method t :move (list)))
-      (merge t (teleport t)))))
+     (cond
+       collide-player
+       (merge t {:delete-me true
+                 :outbox
+                 {:mail-to collide-player :method "hit"}})
+       (core/method t :collide (list))
+       (merge t {:delete-me true})
+       :else (core/method t :move (list)))
+     (merge t (teleport t)))))
 
 (defn fireball-blue-behavior
   [this]
   (let [collide-player (:id (core/method this :collide-players (list)))]
     (as->
      this t
-      (cond
-        collide-player
-        (merge t {:delete-me true
-                  :outbox
-                  {:mail-to collide-player :method "teleport-rand"}})
-        (core/method t :collide (list))
-        (merge t {:delete-me true})
-        :else (core/method t :move (list)))
-      (merge t (teleport t)))))
+     (cond
+       collide-player
+       (merge t {:delete-me true
+                 :outbox
+                 {:mail-to collide-player :method "teleport-rand"}})
+       (core/method t :collide (list))
+       (merge t {:delete-me true})
+       :else (core/method t :move (list)))
+     (merge t (teleport t)))))
 
 (defn implements-identity [this]
   (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
@@ -210,6 +210,23 @@
     (< (:health this) 1) (merge this {:delete-me true})
     :else this))
 
+(defn implements-player-death [this]
+  (cond
+    (and (< (:health this) 1) (not (:dead this)))
+    (merge
+     this
+     {:dead true
+      :outbox
+      {:mail-to "new-object"
+       :id (:id this)
+       :x (:x this)
+       :y (:y this)
+       :scene (:scene this)
+       :sprite "corpse"
+       :behavior "blank-behavior"
+       :handle-mail "ignore-inbox"}})
+    :else this))
+
 (defn carrot-inbox
   [this]
   (-> this
@@ -236,22 +253,21 @@
 
 (defn slime-hunt
   [this]
-  (as->
-   this t
-    (cond
-      (and
-       (= (:scene (core/id->piece (:hunted t))) (:scene t))
-       (not (= false (:active (core/id->piece (:hunted t))))))
-      (walk-towards-object t (core/id->piece (:hunted t)) (gene-speed t))
-      :else
-      (merge t
-             {:hunted
-              (:id (rand-nth-safe (core/scene->players (:scene t))))}))
-    (cond
-      (and (nil? (:hunted t)) (not (nil? (:roost t))))
-      (walk-towards-object t (:roost t) (gene-speed t))
-      :else
-      t)))
+  (as-> this t
+        (cond
+          (and
+           (= (:scene (core/id->piece (:hunted t))) (:scene t))
+           (not (= false (:active (core/id->piece (:hunted t))))))
+          (walk-towards-object t (core/id->piece (:hunted t)) (gene-speed t))
+          :else
+          (merge t
+                 {:hunted
+                  (:id (rand-nth-safe (core/scene->players (:scene t))))}))
+        (cond
+          (and (nil? (:hunted t)) (not (nil? (:roost t))))
+          (walk-towards-object t (:roost t) (gene-speed t))
+          :else
+          t)))
 
 (defn slime-behavior
   [this]
@@ -265,11 +281,11 @@
   [this]
   (as->
    this t
-    (merge t
-           {:energy (- (:energy t) (gene-speed t))
-            :teleport-debounce false
-            :roost (core/find-empty-tile (:scene t))})
-    (check-starve t)))
+   (merge t
+          {:energy (- (:energy t) (gene-speed t))
+           :teleport-debounce false
+           :roost (core/find-empty-tile (:scene t))})
+   (check-starve t)))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
@@ -278,7 +294,7 @@
   [this]
   (-> this
       (implements-identity)
-      (implements-death)))
+      (implements-player-death)))
 
 (defn player-inbox
   [this]
