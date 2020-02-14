@@ -19,7 +19,10 @@
   "comunicates to a client which player object belongs to them"
   [player]
   (message-player {:messageType "identity" :id (:id player)
-                   :name (:name player)} player))
+                   :name (:name player)} player)
+  (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
+              :content (str "Welcome, " (:name player))} (core/players)))
+
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
