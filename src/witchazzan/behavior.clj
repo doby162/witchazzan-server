@@ -5,8 +5,21 @@
   (:require [clojure.pprint :as pp])
   (:gen-class))
 ;;namespace
+;;default handlers
+(defn ignore-inbox
+  [this]
+  (merge this {:inbox nil}))
 
+(defn blank-behavior [this & args] this)
 
+(defn hourly-behavior
+  "an abstraction for all objects running their code on the hour"
+  [this]
+  (cond (not (= (:clock @core/game-state) (:clock this)))
+        (core/method (merge this {:clock (:clock @core/game-state)}) :hourly (list))
+        :else this))
+;;default handlers
+;;helpers
 (defn normalize-genes
   "prevent mutation from moving genes outside the 0-gene-max range"
   [genes]
@@ -47,13 +60,6 @@
     (merge t {:delete-me true})
     :else t))
 
-(defn hourly-behavior
-  "an abstraction for all objects running their code on the hour"
-  [this]
-  (cond (not (= (:clock @core/game-state) (:clock this)))
-        (core/method (merge this {:clock (:clock @core/game-state)}) :hourly (list))
-        :else this))
-
 (defn teleport [this]
   "check for and apply teleports"
   (when
@@ -74,33 +80,6 @@
                        (catch Exception e nil)))
      ;check every single pixel for teleports
                    (core/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
-
-(defn carrot-hourly
-  [this]
-  (cond (and
-         (>= (:repro-chance (:genes this)) (rand-int (core/setting "gene-max")))
-         (>= (:energy this) (:repro-threshold (:genes this))))
-        (core/method this :reproduce (list))
-        (<= (:energy this) 0)
-        (merge this {:delete-me true})
-        :else
-        (->
-         this
-         (merge {:energy (core/method this :photosynth (list))})
-         (merge (teleport this)))))
-
-(defn plant-reproduce [this]
-  (let [energy (/ (:energy this) 3)]
-    (merge
-     this
-     {:energy energy
-      :outbox (conj (:outbox this)
-                    (-> this
-                        (merge {:outbox nil :teleport-debounce nil :id nil})
-                        (merge {:mail-to "new-object"})
-                        (merge {:energy energy})
-                        (merge (core/find-empty-tile (:scene this)))
-                        (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
 
 (defn sunny?
   "so how's the weather?"
@@ -142,32 +121,30 @@
 (defn fireball-behavior
   [this]
   (let [collide-player (:id (core/method this :collide-players (list)))]
-    (as->
-     this t
-     (cond
-       collide-player
-       (merge t {:delete-me true
-                 :outbox
-                 {:mail-to collide-player :method "hit"}})
-       (core/method t :collide (list))
-       (merge t {:delete-me true})
-       :else (core/method t :move (list)))
-     (merge t (teleport t)))))
+    (as-> this t
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "hit"}})
+        (core/method t :collide (list))
+        (merge t {:delete-me true})
+        :else (core/method t :move (list)))
+      (merge t (teleport t)))))
 
 (defn fireball-blue-behavior
   [this]
   (let [collide-player (:id (core/method this :collide-players (list)))]
-    (as->
-     this t
-     (cond
-       collide-player
-       (merge t {:delete-me true
-                 :outbox
-                 {:mail-to collide-player :method "teleport-rand"}})
-       (core/method t :collide (list))
-       (merge t {:delete-me true})
-       :else (core/method t :move (list)))
-     (merge t (teleport t)))))
+    (as-> this t
+      (cond
+        collide-player
+        (merge t {:delete-me true
+                  :outbox
+                  {:mail-to collide-player :method "teleport-rand"}})
+        (core/method t :collide (list))
+        (merge t {:delete-me true})
+        :else (core/method t :move (list)))
+      (merge t (teleport t)))))
 
 (defn implements-identity [this]
   (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
@@ -180,16 +157,27 @@
   (pp/pprint x)
   x)
 
+(defn walk-towards-object
+  [this that speed]
+  (let [angle (Math/atan2 (- (:x this) (:x that)) (- (:y this) (:y that)))]
+    (merge this
+           {:x (- (:x this) (* speed (Math/sin angle))) :y (- (:y this) (* speed (Math/cos angle)))})))
+
+(defn gene-speed
+  "determines the speed a creature should have based
+  on speed stats and a hard max, with 1 as a minimum"
+  [this]
+  (+ 1 (quot
+        (:speed (:genes this))
+        (- (quot (core/setting "gene-max") (:max-speed this)) 1))))
+;;helpers
+;;implementation functions, these add prepackaged traits by responding to stats and mail
 (defn implements-location-updates [this]
   (merge
    this
    (dissoc
     (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
     :mail-to :method :message_type)))
-
-(defn ignore-inbox
-  [this]
-  (merge this {:inbox nil}))
 
 (defn implements-blue-fire [this]
   (let [tps (filter #(= (:method %) "teleport-rand") (:inbox this))]
@@ -226,6 +214,34 @@
        :behavior "blank-behavior"
        :handle-mail "ignore-inbox"}})
     :else this))
+;;implementation functions, these add prepackaged traits by responding to stats and mail
+;;object behaviors
+(defn carrot-hourly
+  [this]
+  (cond (and
+         (>= (:repro-chance (:genes this)) (rand-int (core/setting "gene-max")))
+         (>= (:energy this) (:repro-threshold (:genes this))))
+        (core/method this :reproduce (list))
+        (<= (:energy this) 0)
+        (merge this {:delete-me true})
+        :else
+        (->
+         this
+         (merge {:energy (core/method this :photosynth (list))})
+         (merge (teleport this)))))
+
+(defn plant-reproduce [this]
+  (let [energy (/ (:energy this) 3)]
+    (merge
+     this
+     {:energy energy
+      :outbox (conj (:outbox this)
+                    (-> this
+                        (merge {:outbox nil :teleport-debounce nil :id nil})
+                        (merge {:mail-to "new-object"})
+                        (merge {:energy energy})
+                        (merge (core/find-empty-tile (:scene this)))
+                        (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
 
 (defn carrot-inbox
   [this]
@@ -235,39 +251,23 @@
       (implements-death)
       (ignore-inbox)))
 
-(defn blank-behavior [this & args] this)
-
-(defn walk-towards-object
-  [this that speed]
-  (let [angle (Math/atan2 (- (:x this) (:x that)) (- (:y this) (:y that)))]
-    (merge this
-           {:x (- (:x this) (* speed (Math/sin angle))) :y (- (:y this) (* speed (Math/cos angle)))})))
-
-(defn gene-speed
-  "determines the speed a creature should have based
-  on speed stats and a hard max, with 1 as a minimum"
-  [this]
-  (+ 1 (quot
-        (:speed (:genes this))
-        (- (quot (core/setting "gene-max") (:max-speed this)) 1))))
-
 (defn slime-hunt
   [this]
   (as-> this t
-        (cond
-          (and
-           (= (:scene (core/id->piece (:hunted t))) (:scene t))
-           (not (= false (:active (core/id->piece (:hunted t))))))
-          (walk-towards-object t (core/id->piece (:hunted t)) (gene-speed t))
-          :else
-          (merge t
-                 {:hunted
-                  (:id (rand-nth-safe (core/scene->players (:scene t))))}))
-        (cond
-          (and (nil? (:hunted t)) (not (nil? (:roost t))))
-          (walk-towards-object t (:roost t) (gene-speed t))
-          :else
-          t)))
+    (cond
+      (and
+       (= (:scene (core/id->piece (:hunted t))) (:scene t))
+       (not (= false (:active (core/id->piece (:hunted t))))))
+      (walk-towards-object t (core/id->piece (:hunted t)) (gene-speed t))
+      :else
+      (merge t
+             {:hunted
+              (:id (rand-nth-safe (core/scene->players (:scene t))))}))
+    (cond
+      (and (nil? (:hunted t)) (not (nil? (:roost t))))
+      (walk-towards-object t (:roost t) (gene-speed t))
+      :else
+      t)))
 
 (defn slime-behavior
   [this]
@@ -279,13 +279,12 @@
 
 (defn slime-hourly
   [this]
-  (as->
-   this t
-   (merge t
-          {:energy (- (:energy t) (gene-speed t))
-           :teleport-debounce false
-           :roost (core/find-empty-tile (:scene t))})
-   (check-starve t)))
+  (as-> this t
+    (merge t
+           {:energy (- (:energy t) (gene-speed t))
+            :teleport-debounce false
+            :roost (core/find-empty-tile (:scene t))})
+    (check-starve t)))
 
 (defn slime-inbox
   [this] (carrot-inbox this))
@@ -302,3 +301,4 @@
       (implements-location-updates)
       (implements-fire)
       (implements-blue-fire)))
+;;object behaviors
