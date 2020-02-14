@@ -201,18 +201,22 @@
 (defn implements-player-death [this]
   (cond
     (and (< (:health this) 1) (not (:dead this)))
-    (merge
-     this
-     {:dead true
-      :outbox
-      {:mail-to "new-object"
-       :id (:id this)
-       :x (:x this)
-       :y (:y this)
-       :scene (:scene this)
-       :sprite "corpse"
-       :behavior "blank-behavior"
-       :handle-mail "ignore-inbox"}})
+    (do
+      (comms/broadcast
+       {:messageType "chat" :name "Witchazzan.core" :id -1
+        :content (str "RIP " (:name this))} (core/players))
+      (merge
+       this
+       {:dead true
+        :outbox
+        {:mail-to "new-object"
+         :id (:id this)
+         :x (:x this)
+         :y (:y this)
+         :scene (:scene this)
+         :sprite "corpse"
+         :behavior "blank-behavior"
+         :handle-mail "ignore-inbox"}}))
     :else this))
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
 ;;object behaviors
