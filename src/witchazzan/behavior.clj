@@ -183,7 +183,7 @@
   (let [tps (filter #(= (:method %) "teleport-rand") (:inbox this))]
     (cond
       (> (count tps) 0)
-      (merge this (core/find-empty-tile (:scene this)))
+      (merge this (core/find-empty-tile (:scene this)) {:force true})
       :else this)))
 
 (defn implements-fire [this]
