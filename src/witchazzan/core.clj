@@ -1,38 +1,15 @@
 (ns witchazzan.core
+  (:require witchazzan.common)
+  (:require witchazzan.comms)
+  (:require witchazzan.world)
+  (:require witchazzan.behavior)
   (:gen-class))
 
-(def game-state
-  (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
+;repl boilerplate
+(refer 'witchazzan.common)
+(refer 'witchazzan.comms)
+(refer 'witchazzan.world)
+(refer 'witchazzan.behavior)
 
-(def network-mail
-  (atom []))
-
-(defn players [] (filter
-                  #(and
-                    (not (= false (:active %)))
-                    (= "player" (:type %)))
-                  (vals (:game-pieces @game-state))))
-
-(defn scene->players-all
-  "only for network comms"
-  [scene]
-  (filter #(= (:scene %) scene) (players)))
-
-(defn scene->players
-  [scene]
-  (filter #(and (= (:scene %) scene) (not (:dead %))) (players)))
-
-(defn sock->player [sock]
-  (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
-
-(load-file "config/default-config.clj")
-(try (load-file "config/config.clj")
-     (catch Exception e
-       (println "No custom configuration found at config/config.clj.
-                Add settings like (setting \"port\" 1234)")))
-
-(load-file "src/witchazzan/comms.clj")
-(load-file "src/witchazzan/world.clj")
-(load-file "src/witchazzan/behavior.clj")
-
+(defn -main [] (main))
 (-main)

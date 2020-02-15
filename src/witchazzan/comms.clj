@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.comms
-  (:require [witchazzan.core :as core])
+  (:require [witchazzan.common :as core])
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
   (:gen-class))

@@ -1,5 +1,6 @@
 ;;namespace
-(ns witchazzan.core
+(ns witchazzan.world
+  (:refer witchazzan.common)
   (:require [witchazzan.comms :as comms])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
@@ -162,7 +163,10 @@
 (defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
   [name args]
-  (apply (resolve (symbol name)) args))
+  (try
+    (apply (resolve (symbol name)) args)
+    (catch NullPointerException e
+      (log (str "call-func-by-string failed" name)))))
 
 (defn method
   "shorthand to call game-piece methods"
@@ -412,7 +416,7 @@
   (io/delete-file "config/save.clj" true)
   (System/exit 0))
 ;;admin stuff
-(defn -main
+(defn main
   [& args]
   (when (not (setting "pause"))
     (do
@@ -435,11 +439,11 @@
                      tilemaps))]
     (cond
       rand
-      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type)
+      (run! #(call-func-by-string (str "witchazzan.common/spawn-" type)
                                   (list (:scene %) (find-empty-tile (:scene %))))
             coord-pairs)
       :else
-      (run! #(call-func-by-string (str "witchazzan.core/spawn-" type) (list (:scene %) %))
+      (run! #(call-func-by-string (str "witchazzan.common/spawn-" type) (list (:scene %) %))
             coord-pairs))))
 
 (defn coordinate-spawns []

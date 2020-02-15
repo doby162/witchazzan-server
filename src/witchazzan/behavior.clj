@@ -1,6 +1,7 @@
 ;;namespace
 (ns witchazzan.behavior
-  (:require [witchazzan.core :as core])
+  (:require [witchazzan.world :as world])
+  (:require [witchazzan.common :as core])
   (:require [witchazzan.comms :as comms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
@@ -16,7 +17,7 @@
   "an abstraction for all objects running their code on the hour"
   [this]
   (cond (not (= (:clock @core/game-state) (:clock this)))
-        (core/method (merge this {:clock (:clock @core/game-state)}) :hourly (list))
+        (world/method (merge this {:clock (:clock @core/game-state)}) :hourly (list))
         :else this))
 ;;default handlers
 ;;helpers
@@ -49,10 +50,10 @@
 (defn find-adjacent
   "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
   [object]
-  (let [map (core/name->scene (:scene object)) n (:tilewidth map)]
+  (let [map (world/name->scene (:scene object)) n (:tilewidth map)]
     (filter
-     #(and (core/within-n (:x %) (:x object) n) (core/within-n (:y %) (:y object) n))
-     (core/scene->pieces (:scene object)))))
+     #(and (world/within-n (:x %) (:x object) n) (world/within-n (:y %) (:y object) n))
+     (world/scene->pieces (:scene object)))))
 
 (defn check-starve [t]
   (cond
@@ -64,12 +65,12 @@
   "check for and apply teleports"
   (when
    (not (:teleport-debounce this))
-    ((:teleport (core/name->scene (:scene this))) this)))
+    ((:teleport (world/name->scene (:scene this))) this)))
 
 (defn check-px-teleport
   "creates a list of all pixels that qualify as being within range of a teleport"
   [scene]
-  (let [map (core/name->scene scene)]
+  (let [map (world/name->scene scene)]
     (pmap #(dissoc % :teleport-debounce)
           (filter #(not (nil? (:teleport-debounce %)))
                   (pmap
@@ -79,7 +80,7 @@
                               (conj {:scene scene} coords)) coords)
                        (catch Exception e nil)))
      ;check every single pixel for teleports
-                   (core/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
+                   (world/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
 
 (defn sunny?
   "so how's the weather?"
@@ -99,15 +100,15 @@
 (defn fireball-collide [this]
   (not
    ((:get-tile-walkable
-     (core/name->scene (:scene this))) (core/tile-location this))))
+     (world/name->scene (:scene this))) (world/tile-location this))))
 
 (defn fireball-collide-players [this]
   (first
    (filter #(and
-             (core/within-n (:x this) (:x %) (:tilewidth (core/name->scene (:scene this))))
-             (core/within-n (:y this) (:y %) (:tilewidth (core/name->scene (:scene this))))
+             (world/within-n (:x this) (:x %) (:tilewidth (world/name->scene (:scene this))))
+             (world/within-n (:y this) (:y %) (:tilewidth (world/name->scene (:scene this))))
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
-           (core/scene->pieces (:scene this)))))
+           (world/scene->pieces (:scene this)))))
 
 (defn fireball-move
   [this]
@@ -120,30 +121,30 @@
 
 (defn fireball-behavior
   [this]
-  (let [collide-player (:id (core/method this :collide-players (list)))]
+  (let [collide-player (:id (world/method this :collide-players (list)))]
     (as-> this t
       (cond
         collide-player
         (merge t {:delete-me true
                   :outbox
                   {:mail-to collide-player :method "hit"}})
-        (core/method t :collide (list))
+        (world/method t :collide (list))
         (merge t {:delete-me true})
-        :else (core/method t :move (list)))
+        :else (world/method t :move (list)))
       (merge t (teleport t)))))
 
 (defn fireball-blue-behavior
   [this]
-  (let [collide-player (:id (core/method this :collide-players (list)))]
+  (let [collide-player (:id (world/method this :collide-players (list)))]
     (as-> this t
       (cond
         collide-player
         (merge t {:delete-me true
                   :outbox
                   {:mail-to collide-player :method "teleport-rand"}})
-        (core/method t :collide (list))
+        (world/method t :collide (list))
         (merge t {:delete-me true})
-        :else (core/method t :move (list)))
+        :else (world/method t :move (list)))
       (merge t (teleport t)))))
 
 (defn implements-identity [this]
@@ -183,7 +184,7 @@
   (let [tps (filter #(= (:method %) "teleport-rand") (:inbox this))]
     (cond
       (> (count tps) 0)
-      (merge this (core/find-empty-tile (:scene this)) {:force true})
+      (merge this (world/find-empty-tile (:scene this)) {:force true})
       :else this)))
 
 (defn implements-fire [this]
@@ -225,13 +226,13 @@
   (cond (and
          (>= (:repro-chance (:genes this)) (rand-int (core/setting "gene-max")))
          (>= (:energy this) (:repro-threshold (:genes this))))
-        (core/method this :reproduce (list))
+        (world/method this :reproduce (list))
         (<= (:energy this) 0)
         (merge this {:delete-me true})
         :else
         (->
          this
-         (merge {:energy (core/method this :photosynth (list))})
+         (merge {:energy (world/method this :photosynth (list))})
          (merge (teleport this)))))
 
 (defn plant-reproduce [this]
@@ -244,7 +245,7 @@
                         (merge {:outbox nil :teleport-debounce nil :id nil})
                         (merge {:mail-to "new-object"})
                         (merge {:energy energy})
-                        (merge (core/find-empty-tile (:scene this)))
+                        (merge (world/find-empty-tile (:scene this)))
                         (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
 
 (defn carrot-inbox
@@ -260,9 +261,9 @@
   (as-> this t
     (cond
       (and
-       (= (:scene (core/id->piece (:hunted t))) (:scene t))
-       (not (= false (:active (core/id->piece (:hunted t))))))
-      (walk-towards-object t (core/id->piece (:hunted t)) (gene-speed t))
+       (= (:scene (world/id->piece (:hunted t))) (:scene t))
+       (not (= false (:active (world/id->piece (:hunted t))))))
+      (walk-towards-object t (world/id->piece (:hunted t)) (gene-speed t))
       :else
       (merge t
              {:hunted
@@ -278,7 +279,7 @@
   (->
    this
    (hourly-behavior)
-   (core/method :hunt (list))
+   (world/method :hunt (list))
    (merge (teleport this))))
 
 (defn slime-hourly
@@ -287,7 +288,7 @@
     (merge t
            {:energy (- (:energy t) (gene-speed t))
             :teleport-debounce false
-            :roost (core/find-empty-tile (:scene t))})
+            :roost (world/find-empty-tile (:scene t))})
     (check-starve t)))
 
 (defn slime-inbox
