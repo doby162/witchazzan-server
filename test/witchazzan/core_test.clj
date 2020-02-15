@@ -1,6 +1,8 @@
 (ns witchazzan.core-test
   (:require [clojure.test :refer :all]
             [witchazzan.core :refer :all]
+            [witchazzan.world :refer :all]
+            [witchazzan.common :refer :all]
             [clojure.string :as str]))
 
 (deftest a-test
