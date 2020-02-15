@@ -10,10 +10,11 @@
   (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
 
 (defn broadcast
-  "takes an n-level map and distributes it to all clients as json"
-  [data players]
-  ;(when (= (count players) 1) (println data))
-  (run! #(message-player data %) players))
+  "takes an n-level map and distributes it to all/selected clients as json"
+  [data & [players]]
+  (run!
+   #(message-player data %)
+   (cond players players :else (core/players))))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -21,14 +22,14 @@
   (message-player {:messageType "identity" :id (:id player)
                    :name (:name player)} player)
   (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
-              :content (str "Welcome, " (:name player))} (core/players)))
+              :content (str "Welcome, " (:name player))}))
 
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
   (let [player (core/sock->player channel)]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                 :content (get message "text")} (core/players))))
+                 :content (get message "text")})))
 
 (defn handle-location-update [message channel]
   (let [player (core/sock->player channel)]

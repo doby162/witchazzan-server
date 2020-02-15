@@ -62,12 +62,12 @@
     (when (= (:clock @game-state) 6)
       (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
-        :content (str "Dawn of day " (:calendar @game-state))} (players)))
+        :content (str "Dawn of day " (:calendar @game-state))}))
     (when (= (:clock @game-state) 20)
       (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
-        :content "Night falls"} (players)))
-    (comms/broadcast {:time (:clock @game-state)} (players))))
+        :content "Night falls"}))
+    (comms/broadcast {:time (:clock @game-state)})))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!

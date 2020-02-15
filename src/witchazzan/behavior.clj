@@ -204,7 +204,7 @@
     (do
       (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
-        :content (str "RIP " (:name this))} (core/players))
+        :content (str "RIP " (:name this))})
       (merge
        this
        {:dead true
