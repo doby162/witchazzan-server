@@ -166,7 +166,7 @@
   (try
     (apply (resolve (symbol name)) args)
     (catch NullPointerException e
-      (log (str "call-func-by-string failed" name)))))
+      (log (str "call-func-by-string failed: " name)))))
 
 (defn method
   "shorthand to call game-piece methods"
@@ -341,6 +341,8 @@
 (defn spawn-slime
   "create a slime in the world"
   [scene & mods]
+  (def scene scene)
+  (def mods mods)
   (add-game-piece!
    (conj
     (find-empty-tile scene)
@@ -439,14 +441,15 @@
                      tilemaps))]
     (cond
       rand
-      (run! #(call-func-by-string (str "witchazzan.common/spawn-" type)
+      (run! #(call-func-by-string (str "witchazzan.world/spawn-" type)
                                   (list (:scene %) (find-empty-tile (:scene %))))
             coord-pairs)
       :else
-      (run! #(call-func-by-string (str "witchazzan.common/spawn-" type) (list (:scene %) %))
+      (run! #(call-func-by-string (str "witchazzan.world/spawn-" type) (list (:scene %) %))
             coord-pairs))))
 
 (defn coordinate-spawns []
+(spawn-points "slime")
   (when (and
          (< (:clock @game-state) 5)
          (< (count (filter #(= (:type %) "slime") (objects))) 5))
