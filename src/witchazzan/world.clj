@@ -449,7 +449,6 @@
             coord-pairs))))
 
 (defn coordinate-spawns []
-(spawn-points "slime")
   (when (and
          (< (:clock @game-state) 5)
          (< (count (filter #(= (:type %) "slime") (objects))) 5))
