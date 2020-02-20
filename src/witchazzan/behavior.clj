@@ -211,13 +211,15 @@
        {:dead true
         :outbox
         {:mail-to "new-object"
+         :type "corpse"
          :id (:id this)
          :x (:x this)
          :y (:y this)
          :scene (:scene this)
          :sprite "corpse"
+         :health 1
          :behavior "blank-behavior"
-         :handle-mail "ignore-inbox"}}))
+         :handle-mail "corpse-inbox"}}))
     :else this))
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
 ;;object behaviors
@@ -292,6 +294,9 @@
     (check-starve t)))
 
 (defn slime-inbox
+  [this] (carrot-inbox this))
+
+(defn corpse-inbox
   [this] (carrot-inbox this))
 
 (defn player-behavior
