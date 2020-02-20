@@ -23,12 +23,12 @@ not yet big enough to warrant a namespace of it's own. Generally, this file cont
 Many world rules are in the form of helper functions, but the processing of tilemaps, core game loop and server boilerplate also reside here.
 
 The core game loop isn't intuitive, here's a break down:
-*Each game piece is a map, with function identifiers and keys.
-*Each frame of the simulation, game pieces are fed into their :behavior functions and the return value of that function
+* Each game piece is a map, with function identifiers and keys.
+* Each frame of the simulation, game pieces are fed into their :behavior functions and the return value of that function
 is used as the new current state of that object.
-*If the object has data in it's :outbox key, that data is attached to it's labeled recipient.
-*All objects are then processed with their :handle-inbox functions to alter their state according to received messages. Mail can also be sent to non object entities, such as the object factory, which is how plants and animals reproduce.
-*Finally, all objects with :delete-me set to true are garbage collected.
+* If the object has data in it's :outbox key, that data is attached to it's labeled recipient.
+* All objects are then processed with their :handle-inbox functions to alter their state according to received messages. Mail can also be sent to non object entities, such as the object factory, which is how plants and animals reproduce.
+* Finally, all objects with :delete-me set to true are garbage collected.
 
 ## Comms
 
@@ -36,15 +36,15 @@ This simplest namespace, this file implements the API of the server.
 The majority of data passed in by the client application is handled by handle-location-update, which attaches newly received state information to the client's avatar via the mail queue.
 
 The api is, approximately, as follows:
-*Handle-login: when a new client is connected, they are assigned an in game avatar and they recieve the output of establish-identity, which allows client programs to know which game object is their avatar.
-*Handle-location-update: The main update handler, this function expects new X and Y values for the avatar, as well as
+* Handle-login: when a new client is connected, they are assigned an in game avatar and they recieve the output of establish-identity, which allows client programs to know which game object is their avatar.
+* Handle-location-update: The main update handler, this function expects new X and Y values for the avatar, as well as
 any additional key/value pairs the client program would like to associate with the avatar. It's a current goal of the project to implement validation for this incoming data, by disallowing setting certain keys and validating updates to other keys.
-*Handle-chat: Chat messages get broadcast to all clients, they are not stored.
-*Handle-command: Various commands can be entered via the client by sending a chat message beginning with a forward slash.
-  */look and /listen give information about the location.
-  */reload hotloads the current version of the source code into memory, soon to be accompanied by /git-pull
-  */who returns a list of all connected players
-*Handle-fireball: Creates a new fireball object depending on the state of the originating avatar.
+* Handle-chat: Chat messages get broadcast to all clients, they are not stored.
+* Handle-command: Various commands can be entered via the client by sending a chat message beginning with a forward slash.
+  * /look and /listen give information about the location.
+  * /reload hotloads the current version of the source code into memory, soon to be accompanied by /git-pull
+  * /who returns a list of all connected players
+* Handle-fireball: Creates a new fireball object depending on the state of the originating avatar.
 
 ## Common
 This namespace contains the global var definitions that need to be accessed in all other files, as well as general functions for accessing this data efficiently. 
@@ -52,10 +52,10 @@ This namespace contains the global var definitions that need to be accessed in a
 ## [Behavior](doc/intro.md) 
 A collection of high level rules for simulating objects. Some are general, many are specific to a type of plant or animal.
 Categorically, there are 
-*Default functions, which do not modify the object they are called with.
-*Helper functions, which determine facts about the world or an object.
-*Behaviors, which return an altered version of the object they are called with.
-*Implementations, which are special behaviors built as an interface to an external behavior (such as a behavior that defines being eaten)
+* Default functions, which do not modify the object they are called with.
+* Helper functions, which determine facts about the world or an object.
+* Behaviors, which return an altered version of the object they are called with.
+* Implementations, which are special behaviors built as an interface to an external behavior (such as a behavior that defines being eaten)
 *Top level behaviors, such as :behavior and :handle-inbox
 
 
