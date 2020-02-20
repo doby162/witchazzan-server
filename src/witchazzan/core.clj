@@ -11,5 +11,7 @@
 (refer 'witchazzan.world)
 (refer 'witchazzan.behavior)
 
-(defn -main [] (main))
+(defn -main []
+  (init)
+  (main))
 (-main)

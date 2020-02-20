@@ -93,6 +93,9 @@
                        :content
                        (apply str (map #(str (:name %) " ") (core/players)))}
                       player))
+    (when (re-find #"^reload" (get message "command"))
+      (require 'witchazzan.behavior :reload-all))
+    ;recursivly reloading behavior refreshes all files
     #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
         (message-player {:messageType "highlight_pixels"
                          :content

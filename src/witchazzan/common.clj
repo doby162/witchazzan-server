@@ -1,11 +1,17 @@
 (ns witchazzan.common
   (:gen-class))
 
-(def game-state
-  (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
+(defn init []
+  (def game-state
+    (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
+  (def network-mail
+    (atom [])))
 
-(def network-mail
-  (atom []))
+(load-file "config/default-config.clj")
+(try (load-file "config/config.clj")
+     (catch Exception e
+       (println "No custom configuration found at config/config.clj.
+                Add settings like (setting \"port\" 1234)")))
 
 (defn players [] (filter
                   #(and
@@ -25,8 +31,3 @@
 (defn sock->player [sock]
   (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
-(load-file "config/default-config.clj")
-(try (load-file "config/config.clj")
-     (catch Exception e
-       (println "No custom configuration found at config/config.clj.
-                Add settings like (setting \"port\" 1234)")))

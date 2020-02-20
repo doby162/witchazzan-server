@@ -51,8 +51,6 @@
   (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
   (:auto-increment-id @game-state))
 
-(>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
-
 (defn hourglass! []
   (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
     (coordinate-spawns)
@@ -198,7 +196,6 @@
                                         ;the second half of a function name and calling that function
            )(catch java.lang.Exception e
               (println "invalid json: " data) (println e)))))))
-(server/run-server handler {:port (setting "port")})
 ;;websocket infrastructure
 ;;
 ;;game loop
@@ -424,6 +421,7 @@
     (do
       (try (when (setting "auto-load") (load-game))
            (catch Exception e (println "Failed to load save file")))
+      (server/run-server handler {:port (setting "port")})
       (threadify game-loop) (seed-nature))))
 
 (defn spawn-points
