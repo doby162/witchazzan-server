@@ -4,6 +4,7 @@
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
   (:gen-class))
+(use '[clojure.java.shell :only [sh]])
 ;;namespace
 
 (defn message-player [data player]
@@ -94,8 +95,15 @@
                        (apply str (map #(str (:name %) " ") (core/players)))}
                       player))
     (when (re-find #"^reload" (get message "command"))
-      (require 'witchazzan.behavior :reload-all))
-    ;recursivly reloading behavior refreshes all files
+      (require 'witchazzan.common :reload)
+      (require 'witchazzan.comms :reload)
+      (require 'witchazzan.world :reload)
+      (require 'witchazzan.behavior :reload)
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content "Reloading source files"} player))
+    (when (re-find #"^git-pull" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content (:out (sh "git" "pull"))} player))
     #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
         (message-player {:messageType "highlight_pixels"
                          :content
