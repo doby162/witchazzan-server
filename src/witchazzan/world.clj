@@ -28,20 +28,14 @@
                                           (map #(dissoc
                                                  (merge % {:active false}) :sock)
                                                (vals (:game-pieces @game-state)))))})]
-    (spit "config/save.clj"
-          (str "(def game-state (atom " save-data "))"))
+    (spit "config/save.clj" (str save-data))
     (slurp "config/save.clj")))
-
-(defn load-game
-  "reads and executes the code stored in config/save.clj, repopulating the game-state"
-  []
-  (load-string (slurp "config/save.clj")))
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
 (defn scene->pieces [scene] (filter #(and
                                       (= (:scene %) scene)
-                                      (not (= false (:active %)))
+                                      (not (and (= "player" (:type %)) (= false (:active %))))
                                       (not (:dead %)))
                                     (vals (:game-pieces @game-state))))
 
@@ -418,11 +412,8 @@
 (defn main
   [& args]
   (when (not (setting "pause"))
-    (do
-      (try (when (setting "auto-load") (load-game))
-           (catch Exception e (println "Failed to load save file")))
-      (server/run-server handler {:port (setting "port")})
-      (threadify game-loop) (seed-nature))))
+    (server/run-server handler {:port (setting "port")})
+    (threadify game-loop) (seed-nature)))
 
 (defn spawn-points
   "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
