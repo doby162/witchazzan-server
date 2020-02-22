@@ -3,6 +3,7 @@
   (:require witchazzan.comms)
   (:require witchazzan.world)
   (:require witchazzan.behavior)
+  (:require [clojure.pprint :as pp])
   (:gen-class))
 
 ;repl boilerplate

@@ -92,10 +92,15 @@
   [this]
   (cond
     (sunny?)
-    (+ (:energy this); add to energy 1 energy minus 10% per adjacent item, not including the object
-       (* 0.1 (- 11 (count (find-adjacent this)))))
-    :else
-    (- (:energy this) 1)))
+    (merge this {:energy (+ (:energy this)
+                            (* 1 (- 11 (count (find-adjacent this)))))})
+    :else this))
+
+(defn hunger
+  [this]
+  (cond (> (:energy this) 0)
+        (merge this {:energy (- (:energy this) 1)})
+        :else this))
 
 (defn fireball-collide [this]
   (not
@@ -225,30 +230,29 @@
 ;;object behaviors
 (defn carrot-hourly
   [this]
-  (cond (and
-         (>= (:repro-chance (:genes this)) (rand-int (core/setting "gene-max")))
-         (>= (:energy this) (:repro-threshold (:genes this))))
-        (world/method this :reproduce (list))
-        (<= (:energy this) 0)
-        (merge this {:delete-me true})
-        :else
-        (->
-         this
-         (merge {:energy (world/method this :photosynth (list))})
-         (merge (teleport this)))))
+  (as-> this t
+    (world/method t :photosynth (list))
+    (cond (and
+           (>= (:repro-chance (:genes t)) (rand-int (core/setting "gene-max")))
+           (>= (:energy t) (:repro-threshold (:genes t))))
+          (world/method this :reproduce (list))
+          :else t)
+    (check-starve t)
+    (hunger t)
+    (merge t (teleport t))))
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)]
     (merge
      this
      {:energy energy
-      :outbox (conj (:outbox this)
-                    (-> this
-                        (merge {:outbox nil :teleport-debounce nil :id nil})
-                        (merge {:mail-to "new-object"})
-                        (merge {:energy energy})
-                        (merge (world/find-empty-tile (:scene this)))
-                        (merge {:genes (normalize-genes (mutate-genes (:genes this)))})))})))
+      :outbox
+      (-> this
+          (merge {:outbox nil :teleport-debounce nil :id nil})
+          (merge {:mail-to "new-object"})
+          (merge {:energy energy})
+          (merge (world/find-empty-tile (:scene this)))
+          (merge {:genes (normalize-genes (mutate-genes (:genes this)))}))})))
 
 (defn carrot-inbox
   [this]
