@@ -142,7 +142,7 @@
   "takes a player or game object and returns an x and y offset"
   [object]
   (let [tilewidth (:tilewidth (name->scene (:scene object)))]
-    {:x (int (Math/floor (/ (:x object) tilewidth))) :y (int (Math/floor (/ (:y object) tilewidth)))}))
+    {:x (quot (:x object) tilewidth) :y (quot (:y object) tilewidth)}))
 
 (defn pixel-location
   "takes a pair of coordinates and returns pixel values"
@@ -308,7 +308,6 @@
                 (scene->pieces scene)))))
 
 (defn find-empty-tile
-  ;this needs to somehow return nil instead of crashing on imossible requests
   "returns the coordinates of a random empty tile from a map"
   [scene]
   (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
@@ -352,7 +351,7 @@
      :genes
      (generate-genes
       :speed :repro-threshold :repro-chance)}
-    (first mods)))) ; passed params overwrite anything
+    (dissoc (first mods) :mail-to)))) ; passed params overwrite anything
 
 (defn spawn-carrot
   "create a carrot in the world"

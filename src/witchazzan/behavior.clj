@@ -115,6 +115,18 @@
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
            (world/scene->pieces (:scene this)))))
 
+(defn slime-attack
+  [this]
+  (let [collide (fireball-collide-players this)]
+    (cond
+      collide
+      (merge this {:energy (inc (:energy this))
+                   :outbox
+                   {:mail-to (:id collide)
+                    :method "hit"
+                    :sender (:id this)}})
+      :else this)))
+
 (defn fireball-move
   [this]
   (let [speed (:speed this)]
@@ -132,7 +144,9 @@
         collide-player
         (merge t {:delete-me true
                   :outbox
-                  {:mail-to collide-player :method "hit"}})
+                  {:mail-to collide-player
+                   :method "hit"
+                   :sender (:owner this)}})
         (world/method t :collide (list))
         (merge t {:delete-me true})
         :else (world/method t :move (list)))
@@ -192,7 +206,9 @@
       (merge this (world/find-empty-tile (:scene this)) {:force true})
       :else this)))
 
-(defn implements-fire [this]
+(defn implements-hit
+  "Lose health in response to an attack"
+  [this]
   (let [hits (filter #(= (:method %) "hit") (:inbox this))]
     (cond
       (> (count hits) 0)
@@ -242,22 +258,27 @@
     (merge t (teleport t))))
 
 (defn plant-reproduce [this]
-  (let [energy (/ (:energy this) 3)]
-    (merge
-     this
-     {:energy energy
-      :outbox
-      (-> this
-          (merge {:outbox nil :teleport-debounce nil :id nil})
-          (merge {:mail-to "new-object"})
-          (merge {:energy energy})
-          (merge (world/find-empty-tile (:scene this)))
-          (merge {:genes (normalize-genes (mutate-genes (:genes this)))}))})))
+  (let [energy (/ (:energy this) 3)
+        location (world/find-empty-tile (:scene this))]
+    (cond
+      location
+      (merge
+       this
+       {:energy energy
+        :outbox
+        (-> this
+            (merge {:outbox nil :teleport-debounce nil :id nil})
+            (merge {:mail-to "new-object"})
+            (merge {:energy energy})
+            (merge {:x (:x location) :y (:y location)})
+            (merge {:genes (normalize-genes (mutate-genes (:genes this)))}))})
+      :else
+      this)))
 
 (defn carrot-inbox
   [this]
   (-> this
-      (implements-fire)
+      (implements-hit)
       (implements-blue-fire)
       (implements-death)
       (ignore-inbox)))
@@ -286,6 +307,7 @@
    this
    (hourly-behavior)
    (world/method :hunt (list))
+   (slime-attack)
    (merge (teleport this))))
 
 (defn slime-hourly
@@ -298,7 +320,9 @@
     (check-starve t)))
 
 (defn slime-inbox
-  [this] (carrot-inbox this))
+  [this]
+  (-> this
+      (carrot-inbox)))
 
 (defn corpse-inbox
   [this] (carrot-inbox this))
@@ -313,6 +337,6 @@
   [this]
   (-> this
       (implements-location-updates)
-      (implements-fire)
+      (implements-hit)
       (implements-blue-fire)))
 ;;object behaviors
