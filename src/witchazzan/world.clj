@@ -28,8 +28,8 @@
                                           (map #(dissoc
                                                  (merge % {:active false}) :sock)
                                                (vals (:game-pieces @game-state)))))})]
-    (spit "config/save.clj" (str save-data))
-    (slurp "config/save.clj")))
+    (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
+    (slurp "config/save.edn")))
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
