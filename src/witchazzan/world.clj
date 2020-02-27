@@ -225,7 +225,7 @@
    (fn [state]
      (->>
       (:game-pieces state)
-      (pmap fun)
+      (cmap fun)
       (apply merge)
       (vector :game-pieces)
       (merge state)))))
@@ -269,7 +269,7 @@
       (let
        [mail-queue
         (filter (fn [item] (not (nil? item)))
-                (pmap #(:outbox (second %)) (:game-pieces @game-state)))]
+                (cmap #(:outbox (second %)) (:game-pieces @game-state)))]
         (mail-room mail-queue))
       (process-objects! clear-outbox)
       (process-objects! process-mail)

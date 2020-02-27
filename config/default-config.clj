@@ -11,7 +11,9 @@
                 :auto-save true
                 :auto-load true
                 :gene-max 255
-                :millis-per-hour 60000}))
+                :millis-per-hour 60000
+                :threaded false
+                }))
 (defn setting
   ([key value]
    (swap! settings #(merge % {(keyword key) value})))

@@ -40,3 +40,14 @@
 
 (defn sock->player [sock]
   (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
+
+(defmacro cmap
+  "configurable map, single or multi core:"
+  [one two]
+  (println (setting "threaded"))
+  (cond
+    (setting "threaded")
+    `(pmap ~one ~two)
+    :else
+    `(map ~one ~two)))
+

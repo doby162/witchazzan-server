@@ -71,16 +71,16 @@
   "creates a list of all pixels that qualify as being within range of a teleport"
   [scene]
   (let [map (world/name->scene scene)]
-    (pmap #(dissoc % :teleport-debounce)
-          (filter #(not (nil? (:teleport-debounce %)))
-                  (pmap
-                   (fn [coords]
-                     (try
-                       (conj (teleport
-                              (conj {:scene scene} coords)) coords)
-                       (catch Exception e nil)))
+    (core/cmap #(dissoc % :teleport-debounce)
+               (filter #(not (nil? (:teleport-debounce %)))
+                       (core/cmap
+                        (fn [coords]
+                          (try
+                            (conj (teleport
+                                   (conj {:scene scene} coords)) coords)
+                            (catch Exception e nil)))
      ;check every single pixel for teleports
-                   (world/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
+                        (world/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
 
 (defn sunny?
   "so how's the weather?"
