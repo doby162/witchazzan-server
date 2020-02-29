@@ -169,7 +169,7 @@
       (log (str "method failed: " e)))))
 
 (defn handler [request]
-  (println "A new player has entered Witchazzan")
+  (println "A new player has entered Witchazzan!")
   (println request)
   (server/with-channel request channel
     (server/on-close
@@ -410,8 +410,9 @@
 ;;admin stuff
 (defn main
   [& args]
+  (server/run-server handler {:port (setting "port")})
+  (println (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
-    (server/run-server handler {:port (setting "port")})
     (threadify game-loop) (seed-nature)))
 
 (defn spawn-points

@@ -1,28 +1,39 @@
 (ns witchazzan.common
   (:require [clojure.edn :as edn])
+  (:require [clojure.java.io :as io])
   (:gen-class))
 
-(def game-state)
+(when (not (.exists (io/file "config/config.edn")))
+  (println "No config file found, creating config/config.edn with defaults.")
+  (spit "config/config.edn" (slurp "config/default-config.edn")))
 
-(load-file "config/default-config.clj")
-(try (load-file "config/config.clj")
-     (catch Exception e
-       (println "No custom configuration found at config/config.clj.
-                Add settings like (setting \"port\" 1234)")))
+(defonce network-mail (atom {}))
+(defonce game-state (atom {}))
+(def blank-game-state {:game-pieces {} :auto-increment-id 0
+                       :stopwatch (System/currentTimeMillis)
+                       :clock 0 :calendar 0})
+(def settings (atom (merge
+                     (edn/read-string (slurp "config/default-config.edn"))
+                     (edn/read-string (slurp "config/config.edn")))))
+(defn setting
+  ([key value]
+   (swap! settings #(merge % {(keyword key) value})))
+  ([key] ((keyword key) @settings)))
+
 (defn load-game
-  "reads and executes the code stored in config/save.edn, repopulating the game-state"
   []
+  (when (not (.exists (io/file "config/save.edn")))
+    (println "No save file found, creating config/save.edn")
+    (spit "config/save.edn" blank-game-state))
   (reset! game-state (edn/read-string (slurp "config/save.edn"))))
 
 (defn init []
-  (def game-state
-    (atom {:game-pieces {} :auto-increment-id 0 :stopwatch (System/currentTimeMillis) :clock 0 :calendar 0}))
-
-  (try (when (setting "auto-load") (load-game))
-       (catch Exception e (println e) (println "Failed to load save file")))
-
-  (def network-mail
-    (atom [])))
+  (cond
+    (setting "auto-load")
+    (try (load-game)
+         (catch Exception e (println e)
+                (println "Failed to load save file, it might be invalid.")))
+    :else (reset! game-state blank-game-state)))
 
 (defn players [] (filter
                   #(and

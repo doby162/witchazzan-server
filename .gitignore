@@ -19,8 +19,9 @@ pom.xml.asc
 .hgignore
 .hg/
 
-config.clj
+config.edn
 save.edn
+save.edn.bak
 log
 
 # Ignore lein if we install it in the repo folder
