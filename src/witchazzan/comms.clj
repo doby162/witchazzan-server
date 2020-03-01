@@ -51,7 +51,7 @@
        #(conj %
               {:mail-to "new-object"
                :x 0 :y 0 :type "player" :scene "LoruleH8"
-               :health 3
+               :health 100
                :animation nil
                :active true
                :defence 0 :sprite sprite
@@ -68,7 +68,7 @@
                :method "location-update"
                :identity "true"
                :dead nil ;TODO better respawn
-               :health 3
+               :health 100
               ;location updates set arbitrary values so we can ride on those coat tails
                :sock channel :sprite sprite :active true})))))
 
