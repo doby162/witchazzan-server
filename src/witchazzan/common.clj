@@ -61,3 +61,19 @@
     `(pmap ~one ~two)
     :else
     `(map ~one ~two)))
+
+(defn reset
+  "delete config and save, but not player data"
+  []
+  (io/delete-file "config/config.edn" true)
+  (io/delete-file "config/save.edn" true)
+  (let [players
+        (reduce merge (map
+                       (fn [player]
+                         {(keyword (str (:id player))) player})
+                       (players)))]
+    (println players)
+    (init)
+    (swap!
+     game-state
+     (fn [state] (merge state {:game-pieces players})))))

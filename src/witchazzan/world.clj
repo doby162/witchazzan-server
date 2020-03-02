@@ -404,9 +404,6 @@
       (log "seeding nature failed")
       (clear-corrupted))))
 
-(defn reset []
-  (io/delete-file "config/save.clj" true)
-  (System/exit 0))
 ;;admin stuff
 (defn main
   [& args]
