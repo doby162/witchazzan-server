@@ -12,27 +12,28 @@ Both parts are required for the game to function.
 
 # Admin client API
 ## Clients can send messages directly to the admin api by sending a chat message begining with a slash
-## This allows all players, eventually all players with admin rights, to coordinate server actions.
+## This allows all players, eventually all players with admin rights, to coordinate server actions.  
+NOTE: These **are** case sensitive
 
-### Look
+### look
 This will eventually give players information of some sort, it basically does nothing.
 
-### Listen
+### listen
 See look
 
-### Who
+### who
 Lists all currently logged on players.
 
-### Reload
+### reload
 Recompile all namespaces except for core, core should have no functionality so this should be equivalent to saving and rebooting, except without kicking players out.
 
-### Git-pull
+### git-pull
 Shell out and run "git pull". Intended to pair with reload.
 
-### Reset
+### reset
 Delete the custom config file and the save file, but keeps all players connected.
 
-### Save-game
+### save-game
 Saves the game, stores all game-state in save.edn. Works even if autosave and autoload are false.
 
 ### load-game
@@ -124,6 +125,21 @@ java --version
 this starts the server, and also plunks you down into a console where you can manually interact with the code. This will allow the administrator to invoke top level functions, such as setting the framerate of the game or making a player invincible.
 
 Use `Ctrl+d` to quit.
+
+## REPL Usage
+The joy of Clojure is the REPL. Here are some things you can do **in** the REPL to work with the game.
+
+###(spawn-slime "LoruleH8")
+Spawn a Slime in the scene "LoruleH8". Replace text with whatever scene you want.
+
+###(pp/pprint (filter #(= "slime" (:type %)) (vals (:game-pieces @game-state))))
+List details about all "slime" NPCs in the game.
+
+###(ten-x)
+Speed up the game 10 times.
+
+###(tenth-x)
+Slow down the game to 1/10th speed.
 
 ## Contribution
 
