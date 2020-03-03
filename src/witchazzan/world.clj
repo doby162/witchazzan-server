@@ -169,8 +169,7 @@
       (log (str "method failed: " e)))))
 
 (defn handler [request]
-  (println "A new player has entered Witchazzan!")
-  (println request)
+  (println "A player has entered Witchazzan!")
   (server/with-channel request channel
     (server/on-close
      channel
