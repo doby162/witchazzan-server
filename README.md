@@ -10,6 +10,37 @@ The game exists in two parts:
 
 Both parts are required for the game to function.
 
+# Admin client API
+## Clients can send messages directly to the admin api by sending a chat message begining with a slash
+## This allows all players, eventually all players with admin rights, to coordinate server actions.
+
+### Look
+This will eventually give players information of some sort, it basically does nothing.
+
+### Listen
+See look
+
+### Who
+Lists all currently logged on players.
+
+### Reload
+Recompile all namespaces except for core, core should have no functionality so this should be equivalent to saving and rebooting, except without kicking players out.
+
+### Git-pull
+Shell out and run "git pull". Intended to pair with reload.
+
+### Reset
+Delete the custom config file and the save file, but keeps all players connected.
+
+### Save-game
+Saves the game, stores all game-state in save.edn. Works even if autosave and autoload are false.
+
+### load-game
+Clears and loads game state from save.edn, but keeps all players connected.
+
+### debug-teleport
+Under maintenance, this function tells the client to display the hitboxes of the teleport zones.
+
 # Namespace Documents - a contributor's guide 
 
 ## Core
