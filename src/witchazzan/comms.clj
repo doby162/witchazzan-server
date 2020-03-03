@@ -108,6 +108,14 @@
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content "Deleting config and save."} player)
       (core/reset))
+    (when (re-find #"^save-game" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content "Saving."} player)
+      (core/save))
+    (when (re-find #"^load-game" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content "Loading."} player)
+      (core/load-game))
     #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
         (message-player {:messageType "highlight_pixels"
                          :content

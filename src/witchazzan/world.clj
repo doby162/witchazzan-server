@@ -17,20 +17,6 @@
 ;;
 ;;configuration and global state
 
-(defn save
-  "Serializes the entire state of play. All mutable state exists in the resulting file"
-  []
-  (let
-   [save-data
-    (merge @game-state {:game-pieces
-                        (apply merge (map (fn [object]
-                                            {(keyword (str (:id object))) object})
-                                          (map #(dissoc
-                                                 (merge % {:active false}) :sock)
-                                               (vals (:game-pieces @game-state)))))})]
-    (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
-    (slurp "config/save.edn")))
-
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
 (defn scene->pieces [scene] (filter #(and

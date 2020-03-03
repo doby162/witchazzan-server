@@ -1,5 +1,6 @@
 (ns witchazzan.common
   (:require [clojure.edn :as edn])
+  (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
   (:gen-class))
 
@@ -20,12 +21,39 @@
    (swap! settings #(merge % {(keyword key) value})))
   ([key] ((keyword key) @settings)))
 
+(defn players [] (filter
+                  #(and
+                    (not (= false (:active %)))
+                    (= "player" (:type %)))
+                  (vals (:game-pieces @game-state))))
+
 (defn load-game
   []
   (when (not (.exists (io/file "config/save.edn")))
     (println "No save file found, creating config/save.edn")
     (spit "config/save.edn" blank-game-state))
-  (reset! game-state (edn/read-string (slurp "config/save.edn"))))
+  (let [players
+        (reduce merge (map
+                       (fn [player]
+                         {(keyword (str (:id player))) player})
+                       (players)))]
+    (reset! game-state (edn/read-string (slurp "config/save.edn")))
+    (swap! game-state
+           (fn [state] (merge state {:game-pieces (merge (:game-pieces state) players)})))))
+
+(defn save
+  "Serializes the entire state of play. All mutable state exists in the resulting file"
+  []
+  (let
+   [save-data
+    (merge @game-state {:game-pieces
+                        (apply merge (map (fn [object]
+                                            {(keyword (str (:id object))) object})
+                                          (map #(dissoc
+                                                 (merge % {:active false}) :sock)
+                                               (vals (:game-pieces @game-state)))))})]
+    (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
+    (slurp "config/save.edn")))
 
 (defn init []
   (cond
@@ -34,12 +62,6 @@
          (catch Exception e (println e)
                 (println "Failed to load save file, it might be invalid.")))
     :else (reset! game-state blank-game-state)))
-
-(defn players [] (filter
-                  #(and
-                    (not (= false (:active %)))
-                    (= "player" (:type %)))
-                  (vals (:game-pieces @game-state))))
 
 (defn scene->players-all
   "only for network comms"
@@ -72,7 +94,6 @@
                        (fn [player]
                          {(keyword (str (:id player))) player})
                        (players)))]
-    (println players)
     (init)
     (swap!
      game-state
