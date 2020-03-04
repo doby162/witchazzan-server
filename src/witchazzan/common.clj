@@ -6,7 +6,7 @@
 
 (when (not (.exists (io/file "config/config.edn")))
   (println "No config file found, creating config/config.edn with defaults.")
-  (spit "config/config.edn" (slurp "config/default-config.edn")))
+  (spit "config/config.edn" "{}"))
 
 (defonce network-mail (atom {}))
 (defonce game-state (atom {}))
@@ -85,9 +85,8 @@
     `(map ~one ~two)))
 
 (defn reset
-  "delete config and save, but not player data"
+  "delete save, but not player data"
   []
-  (io/delete-file "config/config.edn" true)
   (io/delete-file "config/save.edn" true)
   (let [players
         (reduce merge (map

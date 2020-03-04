@@ -2,9 +2,9 @@
 
 # Witchazzan - A Game!
 
-This is the start of a game that [doby162](https://github.com/doby162) and [chrisl8](https://github.com/chrisl8) are building.  
+This is the start of a game that [doby162](https://github.com/doby162) and [chrisl8](https://github.com/chrisl8) are building.
 
-The game exists in two parts:  
+The game exists in two parts:
 1. This is the Clojure based server
 2. [A Phaser 3 based web front end](https://github.com/chrisl8/witchazzan-client)
 
@@ -12,7 +12,7 @@ Both parts are required for the game to function.
 
 # Admin client API
 ## Clients can send messages directly to the admin api by sending a chat message begining with a slash
-## This allows all players, eventually all players with admin rights, to coordinate server actions.  
+## This allows all players, eventually all players with admin rights, to coordinate server actions.
 NOTE: These **are** case sensitive
 
 ### look
@@ -31,7 +31,7 @@ Recompile all namespaces except for core, core should have no functionality so t
 Shell out and run "git pull". Intended to pair with reload.
 
 ### reset
-Delete the custom config file and the save file, but keeps all players connected.
+Delete the save file and all non player entities, keeps all players connected.
 
 ### save-game
 Saves the game, stores all game-state in save.edn. Works even if autosave and autoload are false.
@@ -105,7 +105,7 @@ The steps to get this going on your development system are:
 
 ## Installing Java (Java Runtime Environment aka. JRE)
 
-The Java Runtime Environment (JRE) is required by Clojure.  
+The Java Runtime Environment (JRE) is required by Clojure.
 
 We have had success using OpenJDK 11, which you can install on Ubuntu with:
 `sudo apt install openjdk-11-jre`
@@ -147,7 +147,7 @@ Slow down the game to 1/10th speed.
 `lein cljfmt fix`
 
 ### Lint your code
-`lein eastwood`  
+`lein eastwood`
 But don't be a slave to it, we aren't.
 
 ## License
