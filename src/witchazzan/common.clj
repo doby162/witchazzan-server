@@ -2,6 +2,7 @@
   (:require [clojure.edn :as edn])
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
+  (:require [clojure.core.reducers :as r])
   (:gen-class))
 
 (when (not (.exists (io/file "config/config.edn")))
@@ -75,12 +76,27 @@
 (defn sock->player [sock]
   (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
+(defn ppmap
+  "Partitioned pmap, for grouping map ops together to make parallel
+  overhead worthwhile. Thank you Brave Clojure!"
+  [grain-size f & colls]
+  (apply concat
+         (apply pmap
+                (fn [& pgroups] (doall (apply map f pgroups)))
+                (map (partial partition-all grain-size) colls))))
+
 (defmacro cmap
   "configurable map, single or multi core:"
   [one two]
   (cond
-    (setting "threaded")
+    (= "pmap" (setting "pmap"))
     `(pmap ~one ~two)
+    (= "ppmap" (setting "ppmap"))
+    `(ppmap 256 ~one ~two)
+    ;this isn't really an optimal use of reducers, but that isn't really
+    ;the point right now, this macro is just for benchmarking.
+    (= "foldcat" (setting "foldcat"))
+    `(r/foldcat (r/map ~one ~two))
     :else
     `(map ~one ~two)))
 
