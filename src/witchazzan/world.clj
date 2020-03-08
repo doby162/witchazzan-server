@@ -13,6 +13,7 @@
 (declare name->scene)
 (declare log)
 (declare clear-corrupted)
+(declare square-range)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -246,10 +247,47 @@
   ;TODO either merge mail and net mail completly or make a general solution for this nonsens
   (process-objects! #(attach-mail mail-queue %)))
 
+(def empty-tiles (atom {}))
+
+(defn tile-occupied
+  [scene coords]
+  (not (empty? (filter
+                (fn [object]
+                  (let [ob-coords (tile-location object)]
+                    (and
+                     (= (:x coords) (:x ob-coords))
+                     (= (:y coords) (:y ob-coords)))))
+                (scene->pieces scene)))))
+
+(defn find-empty-tiles
+  "returns the coordinates of a random empty tile from a map"
+  [scene]
+  (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
+    (->>
+     (square-range tile-size)
+     (filter #((:get-tile-walkable map) %))
+     (filter #(not (tile-occupied scene %))))))
+
+(defn set-empty-tiles []
+  (run!
+   (fn [scene]
+     (let [scene-name (subs scene 0 (- (count scene) 5))]
+       (swap! empty-tiles
+              #(merge % {(keyword scene-name) (find-empty-tiles scene-name)}))))
+   (setting "tilemaps")))
+
+(defn find-empty-tile
+  [scene]
+  (pixel-location
+   scene
+   (rand-nth
+    ((keyword scene) @empty-tiles))))
+
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
       (hourglass!)
+      (set-empty-tiles)
       (process-objects! process-behavior)
       (let
        [mail-queue
@@ -281,27 +319,6 @@
   (map
    #(zipmap '(:x :y) (list (quot % size) (rem % size)))
    (range (* size size))))
-
-(defn tile-occupied
-  [scene coords]
-  (not (empty? (filter
-                (fn [object]
-                  (let [ob-coords (tile-location object)]
-                    (and
-                     (= (:x coords) (:x ob-coords))
-                     (= (:y coords) (:y ob-coords)))))
-                (scene->pieces scene)))))
-
-(defn find-empty-tile
-  "returns the coordinates of a random empty tile from a map"
-  [scene]
-  (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
-    (->>
-     (square-range tile-size)
-     (filter #((:get-tile-walkable map) %))
-     (filter #(not (tile-occupied scene %)))
-     (rand-nth)
-     (pixel-location scene))))
 
 (defn generate-genes
   "makes a list of keywords into a map of ints, arbitrarily limited by settings"
