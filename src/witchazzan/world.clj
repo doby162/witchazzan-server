@@ -38,7 +38,8 @@
     (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
     (when (< 23 (:clock @game-state))
       (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
-      (when (setting "auto-save") (save)))
+      (when (setting "auto-save") (save))
+      (log (str "day " (:calendar @game-state))))
     (when (= (:clock @game-state) 6)
       (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
