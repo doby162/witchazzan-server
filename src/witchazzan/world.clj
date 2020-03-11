@@ -133,10 +133,13 @@
     {:x (quot (:x object) tilewidth) :y (quot (:y object) tilewidth)}))
 
 (defn pixel-location
-  "takes a pair of coordinates and returns pixel values"
+  "takes a pair of coordinates and returns pixel values. Returns nil on bad data"
   [scene coords]
-  (let [width (:tilewidth (name->scene scene))]
-    {:x (* width (:x coords)) :y (* width (:y coords))}))
+  (cond
+    (nil? coords) nil
+    :else
+    (let [width (:tilewidth (name->scene scene))]
+      {:x (* width (:x coords)) :y (* width (:y coords))})))
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
@@ -146,7 +149,7 @@
   (try
     (apply (resolve (symbol name)) args)
     (catch NullPointerException e
-      (log (str "call-func-by-string failed: " name)))))
+      (log (str "call-func-by-string failed: " name " " e)))))
 
 (defn method
   "shorthand to call game-piece methods"
@@ -154,7 +157,7 @@
   (try
     (call-func-by-string (str "witchazzan.behavior/" (get object key)) (conj args object))
     (catch Exception e
-      (log (str "method failed: " e)))))
+      (log (str "method failed: " key " " e)))))
 
 (defn handler [request]
   (println "A player has entered Witchazzan!")
@@ -281,7 +284,7 @@
   [scene]
   (pixel-location
    scene
-   (rand-nth
+   (rand-nth-safe
     ((keyword scene) @empty-tiles))))
 
 (defn game-loop []

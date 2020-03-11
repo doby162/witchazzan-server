@@ -22,6 +22,15 @@
    (swap! settings #(merge % {(keyword key) value})))
   ([key] ((keyword key) @settings)))
 
+(defn rand-nth-safe
+  [list]
+  "If a list is empty, return nil"
+  (cond
+    (= (count list) 0)
+    nil
+    :else
+    (rand-nth list)))
+
 (defn players [] (filter
                   #(and
                     (not (= false (:active %)))

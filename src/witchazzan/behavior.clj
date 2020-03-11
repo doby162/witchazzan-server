@@ -39,14 +39,6 @@
   (zipmap (keys genes)
           (map #(+ (- (rand-int 3) 1) %) (vals genes))))
 
-(defn rand-nth-safe
-  [list]
-  (cond
-    (= (count list) 0)
-    nil
-    :else
-    (rand-nth list)))
-
 (defn find-adjacent
   "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
   [object]
@@ -294,7 +286,7 @@
       :else
       (merge t
              {:hunted
-              (:id (rand-nth-safe (core/scene->players (:scene t))))}))
+              (:id (core/rand-nth-safe (core/scene->players (:scene t))))}))
     (cond
       (and (nil? (:hunted t)) (not (nil? (:roost t))))
       (walk-towards-object t (:roost t) (gene-speed t))
