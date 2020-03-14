@@ -28,9 +28,11 @@
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
-  (let [player (core/sock->player channel)]
+  (let [player (core/sock->player channel)
+        id (get message "targetPlayerId")
+        audience (if id [(core/ffilter #(= (:id %) id) (core/players))] (core/players))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                 :content (get message "text")})))
+                 :content (get message "text")} audience)))
 
 (defn handle-location-update [message channel]
   (let [player (core/sock->player channel)]

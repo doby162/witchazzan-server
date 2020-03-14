@@ -9,6 +9,8 @@
   (println "No config file found, creating config/config.edn with defaults.")
   (spit "config/config.edn" "{}"))
 
+(def ffilter "(first (filter ))" (comp first filter))
+
 (defonce network-mail (atom {}))
 (defonce game-state (atom {}))
 (def blank-game-state {:game-pieces {} :auto-increment-id 0
