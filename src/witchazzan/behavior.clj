@@ -13,6 +13,11 @@
 
 (defn blank-behavior [this & args] this)
 
+(defn collide
+  "Check if two objects are on the same tile"
+  [one two]
+  (and (= (int (:x one)) (int (:x two))) (= (int (:y one)) (int (:y two)))))
+
 (defn hourly-behavior
   "an abstraction for all objects running their code on the hour"
   [this]
@@ -97,13 +102,12 @@
 (defn fireball-collide [this]
   (not
    ((:get-tile-walkable
-     (world/name->scene (:scene this))) (world/tile-location this))))
+     (world/name->scene (:scene this))) this)))
 
 (defn fireball-collide-players [this]
   (first
    (filter #(and
-             (world/within-n (:x this) (:x %) (:tilewidth (world/name->scene (:scene this))))
-             (world/within-n (:y this) (:y %) (:tilewidth (world/name->scene (:scene this))))
+             (collide this %)
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
            (world/scene->pieces (:scene this)))))
 
@@ -179,9 +183,10 @@
   "determines the speed a creature should have based
   on speed stats and a hard max, with 1 as a minimum"
   [this]
-  (+ 1 (quot
-        (:speed (:genes this))
-        (- (quot (core/setting "gene-max") (:max-speed this)) 1))))
+  (+ 0.1 ;minimum
+     (* 0.1 ; increment
+        (quot (:speed (:genes this))
+              (- (quot (core/setting "gene-max") (:max-speed this)) 1)))))
 ;;helpers
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
 (defn implements-location-updates [this]

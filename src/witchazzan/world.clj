@@ -96,7 +96,6 @@
     {:name (first (str/split name #"\."))
      :width width :height height :syri syri
      :objects objects
-     :tilewidth (get map "tilewidth")
      :teleport
      (fn [coords]
        (let [tele (filter
@@ -126,20 +125,6 @@
 (defn name->scene [name]
   (first (filter #(= name (:name %)) tilemaps)))
 
-(defn tile-location
-  "takes a player or game object and returns an x and y offset"
-  [object]
-  (let [tilewidth (:tilewidth (name->scene (:scene object)))]
-    {:x (quot (:x object) tilewidth) :y (quot (:y object) tilewidth)}))
-
-(defn pixel-location
-  "takes a pair of coordinates and returns pixel values. Returns nil on bad data"
-  [scene coords]
-  (cond
-    (nil? coords) nil
-    :else
-    (let [width (:tilewidth (name->scene scene))]
-      {:x (* width (:x coords)) :y (* width (:y coords))})))
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
@@ -257,7 +242,7 @@
   [scene coords]
   (not (empty? (filter
                 (fn [object]
-                  (let [ob-coords (tile-location object)]
+                  (let [ob-coords object]
                     (and
                      (= (:x coords) (:x ob-coords))
                      (= (:y coords) (:y ob-coords)))))
@@ -282,10 +267,8 @@
 
 (defn find-empty-tile
   [scene]
-  (pixel-location
-   scene
-   (rand-nth-safe
-    ((keyword scene) @empty-tiles))))
+  (rand-nth-safe
+   ((keyword scene) @empty-tiles)))
 
 (defn game-loop []
   (loop []

@@ -143,6 +143,6 @@
                :owner (:id player) ;attributes
                :collide "fireball-collide"
                :move "fireball-move"
-               :speed 15 ; 15 is max speed for 16 px tiles w/tile collision
+               :speed 0.3
                :handle-mail "ignore-inbox"
                :collide-players "fireball-collide-players"})))))
