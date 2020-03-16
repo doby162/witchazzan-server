@@ -301,10 +301,11 @@
 ;;game loop
 ;;nature
 (defn square-range
-  "like range but for coordinates"
+  "like range but for coordinates. Delivers coords with 0.5 added to center
+  pieces on tiles"
   [size]
   (map
-   #(zipmap '(:x :y) (list (quot % size) (rem % size)))
+   #(zipmap '(:x :y) (list (+ 0.5 (quot % size)) (+ 0.5 (rem % size))))
    (range (* size size))))
 
 (defn generate-genes
