@@ -117,12 +117,7 @@
     (when (re-find #"^load-game" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content "Loading."} player)
-      (core/load-game))
-    #_(when (re-find #"^debug-teleport" (get message "command")) ;TODO make this work
-        (message-player {:messageType "highlight_pixels"
-                         :content
-                         (check-px-teleport (:scene player))}
-                        player))))
+      (core/load-game))))
 
 (defn handle-fireball
   "generate a fireball object and add it to the object registry"

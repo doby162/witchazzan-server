@@ -64,21 +64,6 @@
    (not (:teleport-debounce this))
     ((:teleport (world/name->scene (:scene this))) this)))
 
-(defn check-px-teleport
-  "creates a list of all pixels that qualify as being within range of a teleport"
-  [scene]
-  (let [map (world/name->scene scene)]
-    (core/cmap #(dissoc % :teleport-debounce)
-               (filter #(not (nil? (:teleport-debounce %)))
-                       (core/cmap
-                        (fn [coords]
-                          (try
-                            (conj (teleport
-                                   (conj {:scene scene} coords)) coords)
-                            (catch Exception e nil)))
-     ;check every single pixel for teleports
-                        (world/square-range (* (:tilewidth map) (max (:width map) (:height map)))))))))
-
 (defn sunny?
   "so how's the weather?"
   []
@@ -146,7 +131,7 @@
         (world/method t :collide (list))
         (merge t {:delete-me true})
         :else (world/method t :move (list)))
-      (merge t (teleport t)))))
+      #_(merge t (teleport t)))))
 
 (defn fireball-blue-behavior
   [this]
@@ -160,7 +145,7 @@
         (world/method t :collide (list))
         (merge t {:delete-me true})
         :else (world/method t :move (list)))
-      (merge t (teleport t)))))
+      #_(merge t (teleport t)))))
 
 (defn implements-identity [this]
   (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
@@ -252,7 +237,7 @@
           :else t)
     (check-starve t)
     (hunger t)
-    (merge t (teleport t))))
+    #_(merge t (teleport t))))
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)
@@ -305,7 +290,7 @@
    (hourly-behavior)
    (world/method :hunt (list))
    (slime-attack)
-   (merge (teleport this))))
+   #_(merge (teleport this))))
 
 (defn slime-hourly
   [this]

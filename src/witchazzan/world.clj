@@ -89,34 +89,21 @@
 (defn process-map
   "returns an immutable representation of a single tilemap,
   including a helper for collisions"
-  [map name]
-  (let [width (get map "width") height (get map "height")
-        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get map "layers"))) "data")
-        objects (get (first (filter #(= (get % "name") "Objects") (get map "layers"))) "objects")]
+  [data name]
+  (let [width (get data "width")
+        height (get data "height")
+        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get data "layers"))) "data")
+        objects (get (first (filter #(= (get % "name") "Objects") (get data "layers"))) "objects")]
     {:name (first (str/split name #"\."))
-     :width width :height height :syri syri
+     :width width
+     :height height
+     :layers (get data "layers")
+     :syri syri ; stuff you run into
      :objects objects
-     :teleport
-     (fn [coords]
-       (let [tele (filter
-                   #(and
-                     (= "SwitchToScene" (get % "type"))
-                     (within-n (:x coords) (+ 8 (get % "x")) (get % "width"))
-                     (within-n (:y coords) (+ 8 (get % "y")) (get % "height")))
-                   objects)]
-         (when (= 1 (count tele))
-           (let [result (first (filter #(and
-                                         (= "Entrance" (get % "type"))
-                                         (= (get (first (second (first (first tele)))) "value") (get % "name")))
-                     ;this line assumes that the Entrance's first property is it's name
-                     ;no, this is not a good assumption
-                                       (:objects (name->scene (get (first tele) "name")))))]
-             {:scene (get (first tele) "name")
-              :x (get result "x")
-              :y (get result "y")
-              :teleport-debounce true}))))
-     :get-tile-walkable (fn [coords]
-                          (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
+     :get-tile-walkable (fn [coords] (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
+
+(comment
+  (def a (process-map (json/read-str (slurp (str (setting "tilemap-path") "LoruleH8.json"))) "LoruleH8.json")))
 
 (def tilemaps (map ; tilemaps don't go in the game state because they are immutable
                #(process-map (json/read-str (slurp (str (setting "tilemap-path") %))) %)
