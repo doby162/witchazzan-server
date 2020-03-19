@@ -47,7 +47,7 @@
 (defn find-adjacent
   "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
   [object]
-  (let [map (world/name->scene (:scene object)) n (:tilewidth map)]
+  (let [map (world/name->scene (:scene object)) n 1]
     (filter
      #(and (world/within-n (:x %) (:x object) n) (world/within-n (:y %) (:y object) n))
      (world/scene->pieces (:scene object)))))
