@@ -20,6 +20,11 @@
 
 (defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
+(defn object-type
+  "filters the list of objects by type"
+  [t]
+  (filter #(= (:type %) t) (vals (:game-pieces @game-state))))
+
 (defn scene->pieces [scene] (filter #(and
                                       (= (:scene %) scene)
                                       (not (and (= "player" (:type %)) (= false (:active %))))
