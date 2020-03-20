@@ -105,7 +105,7 @@
      :layers (get data "layers")
      :syri syri ; stuff you run into
      :objects objects
-     :get-tile-walkable (fn [coords] (= 0 (get syri (int (+ (:x coords) (* width (:y coords)))))))}))
+     :get-tile-walkable (fn [coords] (= 0 (get syri (+ (int (:x coords)) (* width (int (:y coords)))))))}))
 
 (comment
   (def a (process-map (json/read-str (slurp (str (setting "tilemap-path") "LoruleH8.json"))) "LoruleH8.json")))
@@ -236,8 +236,8 @@
                 (fn [object]
                   (let [ob-coords object]
                     (and
-                     (= (:x coords) (:x ob-coords))
-                     (= (:y coords) (:y ob-coords)))))
+                     (= (int (:x coords)) (int (:x ob-coords)))
+                     (= (int (:y coords)) (int (:y ob-coords))))))
                 (scene->pieces scene)))))
 
 (defn find-empty-tiles
