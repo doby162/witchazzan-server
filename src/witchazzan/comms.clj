@@ -108,7 +108,7 @@
                        :content (:out (sh "git" "pull"))} player))
     (when (re-find #"^reset" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
-                       :content "Deleting config and save."} player)
+                       :content "Deleting save."} player)
       (core/reset))
     (when (re-find #"^save-game" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"

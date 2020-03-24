@@ -60,9 +60,15 @@
 
 (defn teleport [this]
   "check for and apply teleports"
-  (when
-   (not (:teleport-debounce this))
-    ((:teleport (world/name->scene (:scene this))) this)))
+  (let [scene (world/name->scene (:scene this))
+        tp-collisions
+        (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
+    (cond
+      (and
+       (not (:teleport-debounce this))
+       (some #(not (= 0 %)) tp-collisions))
+      (merge this {:x 5 :y 5 :teleport-debounce true})
+      :else this)))
 
 (defn sunny?
   "so how's the weather?"
@@ -131,7 +137,7 @@
         (world/method t :collide (list))
         (merge t {:delete-me true})
         :else (world/method t :move (list)))
-      #_(merge t (teleport t)))))
+      (teleport t))))
 
 (defn fireball-blue-behavior
   [this]
@@ -145,7 +151,7 @@
         (world/method t :collide (list))
         (merge t {:delete-me true})
         :else (world/method t :move (list)))
-      #_(merge t (teleport t)))))
+      (teleport t))))
 
 (defn implements-identity [this]
   (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
@@ -237,7 +243,8 @@
           :else t)
     (check-starve t)
     (hunger t)
-    #_(merge t (teleport t))))
+    (merge t {:teleport-debounce false})
+    (teleport t)))
 
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)
@@ -290,7 +297,7 @@
    (hourly-behavior)
    (world/method :hunt (list))
    (slime-attack)
-   #_(merge (teleport this))))
+   (teleport this)))
 
 (defn slime-hourly
   [this]

@@ -97,18 +97,18 @@
   [data name]
   (let [width (get data "width")
         height (get data "height")
-        syri (get (first (filter #(= (get % "name") "Stuff You Run Into") (get data "layers"))) "data")
-        objects (get (first (filter #(= (get % "name") "Objects") (get data "layers"))) "objects")]
+        layers (get data "layers")
+        syri (get (ffilter #(= (get % "name") "Stuff You Run Into") layers) "data")
+        teleport (get (ffilter #(= (get % "name") "Teleport") layers) "layers")
+        objects (get (ffilter #(= (get % "name") "Objects") layers) "objects")]
     {:name (first (str/split name #"\."))
      :width width
      :height height
-     :layers (get data "layers")
+     :layers layers
      :syri syri ; stuff you run into
+     :teleport teleport
      :objects objects
      :get-tile-walkable (fn [coords] (= 0 (get syri (+ (int (:x coords)) (* width (int (:y coords)))))))}))
-
-(comment
-  (def a (process-map (json/read-str (slurp (str (setting "tilemap-path") "LoruleH8.json"))) "LoruleH8.json")))
 
 (def tilemaps (map ; tilemaps don't go in the game state because they are immutable
                #(process-map (json/read-str (slurp (str (setting "tilemap-path") %))) %)
