@@ -60,6 +60,9 @@
 
 (defn teleport [this]
   "check for and apply teleports"
+  ;TODO: fix null pointer exception on a teleport to a scene without a designated entrance
+  ;use the defauly entrance, like the players do
+  ;refactor me
   (let [scene (world/name->scene (:scene this))
         tp-collisions
         (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
@@ -67,7 +70,18 @@
       (and
        (not (:teleport-debounce this))
        (some #(not (= 0 %)) tp-collisions))
-      (merge this {:x 5 :y 5 :teleport-debounce true})
+      (let [target (nth (:teleport scene) (.indexOf tp-collisions (apply max tp-collisions)))
+            tilewidth (:tilewidth scene)
+            target-obj-name (get (first (get target "properties")) "value")
+            target-obj
+            (core/ffilter
+             #(= (get % "name") target-obj-name)
+             (:objects (world/name->scene (get target "name"))))]
+        (merge this
+               {:x (/ (get target-obj "x") tilewidth)
+                :y (/ (get target-obj "y") tilewidth)
+                :scene (get target "name")
+                :teleport-debounce true}))
       :else this)))
 
 (defn sunny?

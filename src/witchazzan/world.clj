@@ -107,7 +107,9 @@
      :layers layers
      :syri syri ; stuff you run into
      :teleport teleport
+     :tilewidth (get data "tilewidth")
      :objects objects
+     ;refactor me (get-tile-walkable)
      :get-tile-walkable (fn [coords] (= 0 (get syri (+ (int (:x coords)) (* width (int (:y coords)))))))}))
 
 (def tilemaps (map ; tilemaps don't go in the game state because they are immutable
