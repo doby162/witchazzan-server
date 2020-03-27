@@ -14,6 +14,8 @@
 (declare log)
 (declare clear-corrupted)
 (declare square-range)
+
+(def is-long-frame? true)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -38,7 +40,9 @@
   (:auto-increment-id @game-state))
 
 (defn hourglass! []
+  (def is-long-frame? false) ; yes, yes this is terrible I'll fix it later
   (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
+    (def is-long-frame? true) ; todo fix this nonsense
     (coordinate-spawns)
     (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
     (when (< 23 (:clock @game-state))
@@ -288,7 +292,11 @@
       (try (Thread/sleep
             (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms)))
            (catch Exception e
-             (log "long frame"))))
+             (log (str
+                    "long frame detected with "
+                    (count (objects)) " objects and "
+                    (count (players)) " players. Frame length is "
+                    (cond is-long-frame? "long." :else "short."))))))
     (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
