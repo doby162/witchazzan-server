@@ -247,13 +247,14 @@
                 (scene->pieces scene)))))
 
 (defn find-empty-tiles
-  "returns the coordinates of a random empty tile from a map"
   [scene]
   (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
     (->>
      (square-range tile-size)
+     (shuffle)
      (filter #((:get-tile-walkable map) %))
-     (filter #(not (tile-occupied scene %))))))
+     (filter #(not (tile-occupied scene %)))
+     (take 10))))
 
 (defn set-empty-tiles []
   (run!
@@ -264,6 +265,7 @@
    (setting "tilemaps")))
 
 (defn find-empty-tile
+  "returns the coordinates of a random empty tile from a map"
   [scene]
   (rand-nth-safe
    ((keyword scene) @empty-tiles)))
@@ -288,15 +290,15 @@
       (when (> (count (filter (fn [object] (= nil (:x object))) (objects))) 0)
         (clear-corrupted)
         (log "detected corrupted objects"))
-
       (try (Thread/sleep
             (- (setting "millis-per-frame") (- (System/currentTimeMillis) start-ms)))
            (catch Exception e
              (log (str
-                    "long frame detected with "
-                    (count (objects)) " objects and "
-                    (count (players)) " players. Frame length is "
-                    (cond is-long-frame? "long." :else "short."))))))
+                   "long frame detected with "
+                   (count (objects)) " objects and "
+                   (count (players)) " players. Frame length is "
+                   (cond is-long-frame? "long." :else "short. ")
+                   (- (System/currentTimeMillis) start-ms))))))
     (when (not (setting "pause")) (recur))))
 
 (defn threadify [func] (future (func)))
