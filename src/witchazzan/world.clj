@@ -15,7 +15,6 @@
 (declare clear-corrupted)
 (declare square-range)
 
-(def is-long-frame? true)
 ;;namespace
 ;;
 ;;configuration and global state
@@ -40,9 +39,6 @@
   (:auto-increment-id @game-state))
 
 (defn hourglass! []
-  (def is-long-frame? false) ; yes, yes this is terrible I'll fix it later
-  (when (>= (System/currentTimeMillis) (+ (setting "millis-per-hour") (:stopwatch @game-state)))
-    (def is-long-frame? true) ; todo fix this nonsense
     (coordinate-spawns)
     (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
     (when (< 23 (:clock @game-state))
@@ -57,7 +53,7 @@
       (comms/broadcast
        {:messageType "chat" :name "Witchazzan.core" :id -1
         :content "Night falls"}))
-    (comms/broadcast {:time (:clock @game-state)})))
+    (comms/broadcast {:time (:clock @game-state)}))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!
@@ -270,11 +266,17 @@
   (rand-nth-safe
    ((keyword scene) @empty-tiles)))
 
+(defn passive-update-loop []
+  (loop []
+    (hourglass!)
+    (set-empty-tiles)
+    (realize-map @empty-tiles)
+    (try (Thread/sleep (setting "millis-per-hour")) (catch Exception e))
+    (when (not (setting "pause")) (recur))))
+
 (defn game-loop []
   (loop []
     (let [start-ms (System/currentTimeMillis)]
-      (hourglass!)
-      (set-empty-tiles)
       (process-objects! process-behavior)
       (let
        [mail-queue
@@ -297,7 +299,6 @@
                    "long frame detected with "
                    (count (objects)) " objects and "
                    (count (players)) " players. Frame length is "
-                   (cond is-long-frame? "long." :else "short. ")
                    (- (System/currentTimeMillis) start-ms))))))
     (when (not (setting "pause")) (recur))))
 
@@ -404,7 +405,9 @@
   (server/run-server handler {:port (setting "port")})
   (println (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
-    (threadify game-loop) (seed-nature)))
+    (threadify passive-update-loop)
+    (threadify game-loop)
+    (seed-nature)))
 
 (defn spawn-points
   "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"

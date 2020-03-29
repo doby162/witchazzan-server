@@ -5,6 +5,10 @@
   (:require [clojure.core.reducers :as r])
   (:gen-class))
 
+(defn realize-map
+  "Just do the math you lazy bum"
+  [coll] (run! #(doall (second %)) coll))
+
 (when (not (.exists (io/file "config/config.edn")))
   (println "No config file found, creating config/config.edn with defaults.")
   (spit "config/config.edn" "{}"))
