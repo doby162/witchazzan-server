@@ -141,6 +141,24 @@ Speed up the game 10 times.
 ###(tenth-x)
 Slow down the game to 1/10th speed.
 
+## Profiling
+This project used this clojure profiler: https://github.com/clojure-goes-fast/clj-async-profiler
+
+### Get your environment ready:
+`sudo echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid`
+
+`sudo apt install openjdk-8-dbg` // select correct version for your java runtime by changing the number in the middle
+
+### In the repl:
+`(require '[clj-async-profiler.core :as prof])`
+
+Serve the flamegraph: `(prof/serve-files 8082)`
+
+Profile a single frame while paused: `(prof/profile (game-loop))`
+
+Profile the running application with the UI hosted by the profiler.
+
+
 ## Contribution
 
 ### Format your code like we did
