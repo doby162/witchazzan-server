@@ -3,6 +3,9 @@
  :tilemaps ["LoruleF8.json" "LoruleG7.json" "LoruleG8.json"
             "LoruleH6.json" "LoruleH7.json" "LoruleH8.json"
             "LoruleI7.json" "LoruleI8.json" "LoruleJ8.json"
+            "LoruleE8.json" "LoruleF7.json" "LoruleG6.json"
+            "LoruleH5.json" "LoruleI6.json" "LoruleJ7.json"
+            "LoruleK8.json"
             "arena1.json" "backYard1.json"]
  :millis-per-frame 40
  :pause false
