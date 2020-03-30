@@ -68,7 +68,6 @@
         (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
     (cond
       (and
-       (not (:teleport-debounce this))
        (some #(not (= 0 %)) tp-collisions))
       (let [target (nth (:teleport scene) (.indexOf tp-collisions (apply max tp-collisions)))
             tilewidth (:tilewidth scene)
@@ -80,8 +79,7 @@
         (merge this
                {:x (/ (get target-obj "x") tilewidth)
                 :y (/ (get target-obj "y") tilewidth)
-                :scene (get target "name")
-                :teleport-debounce true}))
+                :scene (get target "name")}))
       :else this)))
 
 (defn sunny?
@@ -257,7 +255,6 @@
           :else t)
     (check-starve t)
     (hunger t)
-    (merge t {:teleport-debounce false})
     (teleport t)))
 
 (defn plant-reproduce [this]
@@ -270,7 +267,7 @@
        {:energy energy
         :outbox
         (-> this
-            (merge {:outbox nil :teleport-debounce nil :id nil})
+            (merge {:outbox nil :id nil})
             (merge {:mail-to "new-object"})
             (merge {:energy energy})
             (merge {:x (:x location) :y (:y location)})
@@ -311,14 +308,13 @@
    (hourly-behavior)
    (world/method :hunt (list))
    (slime-attack)
-   (teleport this)))
+   (teleport)))
 
 (defn slime-hourly
   [this]
   (as-> this t
     (merge t
            {:energy (- (:energy t) (gene-speed t))
-            :teleport-debounce false
             :roost (world/find-empty-tile (:scene t))})
     (check-starve t)))
 
