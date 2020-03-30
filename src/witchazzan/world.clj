@@ -39,21 +39,21 @@
   (:auto-increment-id @game-state))
 
 (defn hourglass! []
-    (coordinate-spawns)
-    (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
-    (when (< 23 (:clock @game-state))
-      (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
-      (when (setting "auto-save") (save))
-      (log (str "day " (:calendar @game-state))))
-    (when (= (:clock @game-state) 6)
-      (comms/broadcast
-       {:messageType "chat" :name "Witchazzan.core" :id -1
-        :content (str "Dawn of day " (:calendar @game-state))}))
-    (when (= (:clock @game-state) 20)
-      (comms/broadcast
-       {:messageType "chat" :name "Witchazzan.core" :id -1
-        :content "Night falls"}))
-    (comms/broadcast {:time (:clock @game-state)}))
+  (coordinate-spawns)
+  (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
+  (when (< 23 (:clock @game-state))
+    (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
+    (when (setting "auto-save") (save))
+    (log (str "day " (:calendar @game-state))))
+  (when (= (:clock @game-state) 6)
+    (comms/broadcast
+     {:messageType "chat" :name "Witchazzan.core" :id -1
+      :content (str "Dawn of day " (:calendar @game-state))}))
+  (when (= (:clock @game-state) 20)
+    (comms/broadcast
+     {:messageType "chat" :name "Witchazzan.core" :id -1
+      :content "Night falls"}))
+  (comms/broadcast {:time (:clock @game-state)}))
 
 ;this is a map to leave room for other types of game state
 (defn add-game-piece!
@@ -244,13 +244,18 @@
 
 (defn find-empty-tiles
   [scene]
-  (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
-    (->>
-     (square-range tile-size)
-     (shuffle)
-     (filter #((:get-tile-walkable map) %))
-     (filter #(not (tile-occupied scene %)))
-     (take 10))))
+  (let [map (name->scene scene) tile-size (max (:width map) (:height map))
+        tiles
+        (atom (->>
+               (square-range tile-size)
+               (shuffle)
+               (filter #((:get-tile-walkable map) %))
+               (filter #(not (tile-occupied scene %)))
+               (doall)))
+        original @tiles]
+    (fn []
+      (when (= 1 (count @tiles)) (reset! tiles (shuffle original)))
+      (first (swap! tiles #(rest %))))))
 
 (defn set-empty-tiles []
   (run!
@@ -263,14 +268,12 @@
 (defn find-empty-tile
   "returns the coordinates of a random empty tile from a map"
   [scene]
-  (rand-nth-safe
-   ((keyword scene) @empty-tiles)))
+  (((keyword scene) @empty-tiles)))
 
 (defn passive-update-loop []
   (loop []
     (hourglass!)
     (set-empty-tiles)
-    (realize-map @empty-tiles)
     (try (Thread/sleep (setting "millis-per-hour")) (catch Exception e))
     (when (not (setting "pause")) (recur))))
 
