@@ -6,7 +6,8 @@
             "LoruleE8.json" "LoruleF7.json" "LoruleG6.json"
             "LoruleH5.json" "LoruleI6.json" "LoruleJ7.json"
             "LoruleK8.json"
-            "arena1.json" "backYard1.json"]
+            "arena1.json" "backYard1.json"
+            "EmptyCave.json" "SlimeCave.json" "CaveF8.json"]
  :millis-per-frame 50
  :pause false
  :auto-save true
