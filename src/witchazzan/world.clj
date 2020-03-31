@@ -134,7 +134,9 @@
   "shorthand to call game-piece methods"
   [object key args]
   (try
-    (call-func-by-string (str "witchazzan.behavior/" (get object key)) (conj args object))
+    (let [ret (call-func-by-string (str "witchazzan.behavior/" (get object key)) (conj args object))]
+      (when (nil? ret) (log (str "method returned nil: " object " " key " " args)))
+      ret)
     (catch Exception e
       (log (str "method failed: " key " " e)))))
 
@@ -272,10 +274,14 @@
 
 (defn passive-update-loop []
   (loop []
-    (hourglass!)
-    (set-empty-tiles)
-    (try (Thread/sleep (setting "millis-per-hour")) (catch Exception e))
-    (when (not (setting "pause")) (recur))))
+    (log "hour")
+    (let [start-ms (System/currentTimeMillis)]
+      (when (not (setting "pause")) (hourglass!))
+      (set-empty-tiles)
+      (try (Thread/sleep
+            (- (setting "millis-per-hour") (- (System/currentTimeMillis) start-ms)))
+           (catch Exception e))
+      (recur))))
 
 (defn game-loop []
   (loop []
@@ -340,7 +346,6 @@
      :energy 24
      :behavior "slime-behavior"
      :hourly "slime-hourly"
-     :reproduce "plant-reproduce"
      :hunt "slime-hunt"
      :clock 1
      :handle-mail "slime-inbox"
@@ -363,8 +368,6 @@
      :energy 24
      :behavior "hourly-behavior"
      :hourly "carrot-hourly"
-     :reproduce "plant-reproduce"
-     :photosynth "photosynth"
      :clock 1 ;some things happen on the hour
      :handle-mail "carrot-inbox"
      :health 1
@@ -395,20 +398,16 @@
   (setting "millis-per-hour" 600))
 
 (defn seed-nature []
-  (try
-    (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps)
-    (catch Exception e
-      (println "seeding nature failed")
-      (log "seeding nature failed")
-      (clear-corrupted))))
+  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 
 ;;admin stuff
 (defn main
   [& args]
   (server/run-server handler {:port (setting "port")})
   (println (str "Running server on port " (setting "port")))
+  (set-empty-tiles)
+  (threadify passive-update-loop)
   (when (not (setting "pause"))
-    (threadify passive-update-loop)
     (threadify game-loop)
     (seed-nature)))
 
@@ -419,11 +418,13 @@
         (filter #(:x %) ;check if valid coords were returned
                 (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
                        (let [properties
-                             (first
-                              (filter
-                               #(= (str "spawn-" type) (get % "name"))
-                               (:objects tilemap)))]
-                         {:scene (:name tilemap) :x (get properties "x") :y (get properties "y")}))
+                             (ffilter
+                              #(= (str "spawn-" type) (get % "name"))
+                              (:objects tilemap))]
+                         (when properties
+                           {:scene (:name tilemap)
+                            :x (/ (get properties "x") (:tilewidth tilemap))
+                            :y (/ (get properties "y") (:tilewidth tilemap))})))
                      tilemaps))]
     (cond
       rand

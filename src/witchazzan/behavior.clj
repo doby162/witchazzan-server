@@ -137,32 +137,18 @@
 
 (defn fireball-behavior
   [this]
-  (let [collide-player (:id (world/method this :collide-players (list)))]
+  (let [collide-player (:id (fireball-collide-players this))]
     (as-> this t
       (cond
         collide-player
         (merge t {:delete-me true
                   :outbox
                   {:mail-to collide-player
-                   :method "hit"
+                   :method (:method this)
                    :sender (:owner this)}})
-        (world/method t :collide (list))
+        (fireball-collide this)
         (merge t {:delete-me true})
-        :else (world/method t :move (list)))
-      (teleport t))))
-
-(defn fireball-blue-behavior
-  [this]
-  (let [collide-player (:id (world/method this :collide-players (list)))]
-    (as-> this t
-      (cond
-        collide-player
-        (merge t {:delete-me true
-                  :outbox
-                  {:mail-to collide-player :method "teleport-rand"}})
-        (world/method t :collide (list))
-        (merge t {:delete-me true})
-        :else (world/method t :move (list)))
+        :else (fireball-move this))
       (teleport t))))
 
 (defn implements-identity [this]
@@ -244,19 +230,6 @@
     :else this))
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
 ;;object behaviors
-(defn carrot-hourly
-  [this]
-  (as-> this t
-    (world/method t :photosynth (list))
-    (cond (and
-           (>= (:repro-chance (:genes t)) (rand-int (core/setting "gene-max")))
-           (>= (:energy t) (:repro-threshold (:genes t))))
-          (world/method this :reproduce (list))
-          :else t)
-    (check-starve t)
-    (hunger t)
-    (teleport t)))
-
 (defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)
         location (world/find-empty-tile (:scene this))]
@@ -274,6 +247,19 @@
             (merge {:genes (normalize-genes (mutate-genes (:genes this)))}))})
       :else
       this)))
+
+(defn carrot-hourly
+  [this]
+  (as-> this t
+    (photosynth this)
+    (cond (and
+           (>= (:repro-chance (:genes t)) (rand-int (core/setting "gene-max")))
+           (>= (:energy t) (:repro-threshold (:genes t))))
+          (plant-reproduce this)
+          :else t)
+    (check-starve t)
+    (hunger t)
+    (teleport t)))
 
 (defn carrot-inbox
   [this]

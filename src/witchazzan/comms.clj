@@ -132,12 +132,10 @@
                :scene (:scene player) ;standard properties
                :direction (get message "direction")
                :sprite sprite
-               :behavior
-               (cond (= "joosh" (:sprite player)) "fireball-blue-behavior"
-                     :else "fireball-behavior")
+               :behavior "fireball-behavior"
+               :method
+               (cond (= "joosh" (:sprite player)) "teleport-rand"
+                     :else "hit")
                :owner (:id player) ;attributes
-               :collide "fireball-collide"
-               :move "fireball-move"
                :speed 0.3
-               :handle-mail "ignore-inbox"
-               :collide-players "fireball-collide-players"})))))
+               :handle-mail "ignore-inbox"})))))

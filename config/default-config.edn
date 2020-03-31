@@ -7,10 +7,10 @@
             "LoruleH5.json" "LoruleI6.json" "LoruleJ7.json"
             "LoruleK8.json"
             "arena1.json" "backYard1.json"]
- :millis-per-frame 40
+ :millis-per-frame 50
  :pause false
  :auto-save true
  :auto-load true
  :gene-max 255
  :millis-per-hour 60000
- :threaded false}
+ :threaded "ppmap"}
