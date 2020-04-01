@@ -11,7 +11,6 @@
 (declare coordinate-spawns)
 (declare within-n)
 (declare name->scene)
-(declare log)
 (declare clear-corrupted)
 (declare square-range)
 
@@ -141,7 +140,7 @@
       (log (str "method failed: " key " " e)))))
 
 (defn handler [request]
-  (println "A player has entered Witchazzan!")
+  (log "A player has entered Witchazzan!")
   (server/with-channel request channel
     (server/on-close
      channel
@@ -156,11 +155,11 @@
            (try ;checking if the function exists
              (call-func-by-string
               (str "witchazzan.comms/handle-" message-type) [message channel])
-             (catch java.lang.NullPointerException e (println e)))
+             (catch java.lang.NullPointerException e (log e)))
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
            )(catch java.lang.Exception e
-              (println "invalid json: " data) (println e)))))))
+              (log "invalid json: " data) (log e)))))))
 ;;websocket infrastructure
 ;;
 ;;game loop
@@ -377,11 +376,6 @@
     (first mods))))
 ;;nature
 ;;admin stuff
-(defn log [data]
-  (spit "config/log"
-        (str (System/currentTimeMillis) " : " data "\n")
-        :append true))
-
 (defn clear-corrupted []
   (run! #(update-game-piece! (:id %) {:delete-me true})
         (filter (fn [object] (= nil (:x object))) (objects))))
@@ -403,8 +397,9 @@
 ;;admin stuff
 (defn main
   [& args]
+  (log "Booting...")
   (server/run-server handler {:port (setting "port")})
-  (println (str "Running server on port " (setting "port")))
+  (log (str "Running server on port " (setting "port")))
   (set-empty-tiles)
   (threadify passive-update-loop)
   (when (not (setting "pause"))

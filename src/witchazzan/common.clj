@@ -5,12 +5,18 @@
   (:require [clojure.core.reducers :as r])
   (:gen-class))
 
+(defn log [data]
+  (println data)
+  (spit "config/log"
+        (str (System/currentTimeMillis) " : " data "\n")
+        :append true))
+
 (defn realize-map
   "Just do the math you lazy bum"
   [coll] (run! #(doall (second %)) coll))
 
 (when (not (.exists (io/file "config/config.edn")))
-  (println "No config file found, creating config/config.edn with defaults.")
+  (log "No config file found, creating config/config.edn with defaults.")
   (spit "config/config.edn" "{}"))
 
 (def ffilter "(first (filter ))" (comp first filter))
@@ -46,7 +52,7 @@
 (defn load-game
   []
   (when (not (.exists (io/file "config/save.edn")))
-    (println "No save file found, creating config/save.edn")
+    (log "No save file found, creating config/save.edn")
     (spit "config/save.edn" blank-game-state))
   (let [players
         (reduce merge (map
@@ -75,8 +81,8 @@
   (cond
     (setting "auto-load")
     (try (load-game)
-         (catch Exception e (println e)
-                (println "Failed to load save file, it might be invalid.")))
+         (catch Exception e (log e)
+                (log "Failed to load save file, it might be invalid.")))
     :else (reset! game-state blank-game-state)))
 
 (defn scene->players-all
