@@ -91,7 +91,7 @@
 (defn photosynth
   [this]
   (cond
-    (sunny?)
+    (and (sunny?) (not (.contains (:scene this) "Cave")))
     (merge this {:energy (+ (:energy this)
                             (* 1 (- 11 (count (find-adjacent this)))))})
     :else this))
