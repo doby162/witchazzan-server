@@ -7,17 +7,17 @@
 (use '[clojure.java.shell :only [sh]])
 ;;namespace
 
-(defn message-player [data player]
+#_(defn message-player [data player]
   (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
 
-(defn broadcast
+#_(defn broadcast
   "takes an n-level map and distributes it to all/selected clients as json"
   [data & [players]]
   (run!
    #(message-player data %)
    (cond players players :else (core/players))))
 
-(defn establish-identity
+#_(defn establish-identity
   "comunicates to a client which player object belongs to them"
   [player]
   (message-player {:messageType "identity" :id (:id player)
@@ -25,7 +25,7 @@
   (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
               :content (str "Welcome, " (:name player))}))
 
-(defn handle-chat
+#_(defn handle-chat
   "broadcasts chats as json"
   [message channel]
   (let [player (core/sock->player channel)
@@ -34,7 +34,7 @@
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
-(defn handle-location-update [message channel]
+#_(defn handle-location-update [message channel]
   (let [player (core/sock->player channel)]
     (swap!
      core/network-mail
@@ -42,7 +42,7 @@
                (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
                {:method "location-update" :mail-to (:id player)})))))
 
-(defn handle-login [message channel]
+#_(defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
         moving (get message "moving")
@@ -74,7 +74,7 @@
               ;location updates set arbitrary values so we can ride on those coat tails
                :sock channel :sprite sprite :active true})))))
 
-(defn handle-command
+#_(defn handle-command
   "this handler is a bit of a switch case inside of a switch case,
   it handles all of the text commands entered
   via the command bar on the client"
@@ -119,7 +119,7 @@
                        :content "Loading."} player)
       (core/load-game))))
 
-(defn handle-fireball
+#_(defn handle-fireball
   "generate a fireball object and add it to the object registry"
   [message channel]
   (let [player (core/sock->player channel) sprite (get message "sprite")]

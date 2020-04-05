@@ -18,7 +18,7 @@
   [one two]
   (and (= (int (:x one)) (int (:x two))) (= (int (:y one)) (int (:y two)))))
 
-(defn hourly-behavior
+#_(defn hourly-behavior
   "an abstraction for all objects running their code on the hour"
   [this]
   (cond (not (= (:clock @core/game-state) (:clock this)))
@@ -44,7 +44,7 @@
   (zipmap (keys genes)
           (map #(+ (- (rand-int 3) 1) %) (vals genes))))
 
-(defn find-adjacent
+#_(defn find-adjacent
   "returns a list of all pieces residing in the 9 adjacent tiles to the arg"
   [object]
   (let [map (world/name->scene (:scene object)) n 1]
@@ -52,13 +52,13 @@
      #(and (world/within-n (:x %) (:x object) n) (world/within-n (:y %) (:y object) n))
      (world/scene->pieces (:scene object)))))
 
-(defn check-starve [t]
+#_(defn check-starve [t]
   (cond
     (>= 0 (:energy t))
     (merge t {:delete-me true})
     :else t))
 
-(defn teleport [this]
+#_(defn teleport [this]
   "check for and apply teleports"
   ;TODO: fix null pointer exception on a teleport to a scene without a designated entrance
   ;use the defauly entrance, like the players do
@@ -82,13 +82,13 @@
                 :scene (get target "name")}))
       :else this)))
 
-(defn sunny?
+#_(defn sunny?
   "so how's the weather?"
   []
   (cond (and (>= (:clock @core/game-state) 6) (< (:clock @core/game-state) 20)) true
         :else false))
 
-(defn photosynth
+#_(defn photosynth
   [this]
   (cond
     (and (sunny?) (not (.contains (:scene this) "Cave")))
@@ -96,25 +96,25 @@
                             (* 1 (- 11 (count (find-adjacent this)))))})
     :else this))
 
-(defn hunger
+#_(defn hunger
   [this]
   (cond (> (:energy this) 0)
         (merge this {:energy (- (:energy this) 1)})
         :else this))
 
-(defn fireball-collide [this]
+#_(defn fireball-collide [this]
   (not
    ((:get-tile-walkable
      (world/name->scene (:scene this))) this)))
 
-(defn fireball-collide-players [this]
+#_(defn fireball-collide-players [this]
   (first
    (filter #(and
              (collide this %)
              (not (or (= (:id %) (:owner this)) (= (:id %) (:id this)))))
            (world/scene->pieces (:scene this)))))
 
-(defn slime-attack
+#_(defn slime-attack
   [this]
   (let [collide (fireball-collide-players this)]
     (cond
@@ -126,7 +126,7 @@
                     :sender (:id this)}})
       :else this)))
 
-(defn fireball-move
+#_(defn fireball-move
   [this]
   (let [speed (:speed this)]
     (cond
@@ -135,7 +135,7 @@
       (= "east" (:direction this)) (conj this {:x (+ (:x this) speed)})
       :else (conj this {:x (- (:x this) speed)}))))
 
-(defn fireball-behavior
+#_(defn fireball-behavior
   [this]
   (let [collide-player (:id (fireball-collide-players this))]
     (as-> this t
@@ -151,7 +151,7 @@
         :else (fireball-move this))
       (teleport t))))
 
-(defn implements-identity [this]
+#_(defn implements-identity [this]
   (cond (:identity this) (do (comms/establish-identity this) (dissoc this :identity))
         :else this))
 
@@ -162,13 +162,13 @@
   (pp/pprint x)
   x)
 
-(defn walk-towards-object
+#_(defn walk-towards-object
   [this that speed]
   (let [angle (Math/atan2 (- (:x this) (:x that)) (- (:y this) (:y that)))]
     (merge this
            {:x (- (:x this) (* speed (Math/sin angle))) :y (- (:y this) (* speed (Math/cos angle)))})))
 
-(defn gene-speed
+#_(defn gene-speed
   "determines the speed a creature should have based
   on speed stats and a hard max, with 1 as a minimum"
   [this]
@@ -178,21 +178,21 @@
               (- (quot (core/setting "gene-max") (:max-speed this)) 1)))))
 ;;helpers
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
-(defn implements-location-updates [this]
+#_(defn implements-location-updates [this]
   (merge
    this
    (dissoc
     (apply merge (reverse (filter #(= (:method %) "location-update") (:net-inbox this))))
     :mail-to :method :message_type)))
 
-(defn implements-blue-fire [this]
+#_(defn implements-blue-fire [this]
   (let [tps (filter #(= (:method %) "teleport-rand") (:inbox this))]
     (cond
       (> (count tps) 0)
       (merge this (world/find-empty-tile (:scene this)) {:force true})
       :else this)))
 
-(defn implements-hit
+#_(defn implements-hit
   "Lose health in response to an attack"
   [this]
   (let [hits (filter #(= (:method %) "hit") (:inbox this))]
@@ -201,12 +201,12 @@
       (merge this {:health (dec (:health this))})
       :else this)))
 
-(defn implements-death [this]
+#_(defn implements-death [this]
   (cond
     (< (:health this) 1) (merge this {:delete-me true})
     :else this))
 
-(defn implements-player-death [this]
+#_(defn implements-player-death [this]
   (cond
     (and (< (:health this) 1) (not (:dead this)))
     (do
@@ -230,7 +230,7 @@
     :else this))
 ;;implementation functions, these add prepackaged traits by responding to stats and mail
 ;;object behaviors
-(defn plant-reproduce [this]
+#_(defn plant-reproduce [this]
   (let [energy (/ (:energy this) 3)
         location (world/find-empty-tile (:scene this))]
     (cond
@@ -248,7 +248,7 @@
       :else
       this)))
 
-(defn carrot-hourly
+#_(defn carrot-hourly
   [this]
   (as-> this t
     (photosynth this)
@@ -261,7 +261,7 @@
     (hunger t)
     (teleport t)))
 
-(defn carrot-inbox
+#_(defn carrot-inbox
   [this]
   (-> this
       (implements-hit)
@@ -269,7 +269,7 @@
       (implements-death)
       (ignore-inbox)))
 
-(defn slime-hunt
+#_(defn slime-hunt
   [this]
   (as-> this t
     (cond
@@ -287,7 +287,7 @@
       :else
       t)))
 
-(defn slime-behavior
+#_(defn slime-behavior
   [this]
   (->
    this
@@ -296,7 +296,7 @@
    (slime-attack)
    (teleport)))
 
-(defn slime-hourly
+#_(defn slime-hourly
   [this]
   (as-> this t
     (merge t
@@ -304,24 +304,45 @@
             :roost (world/find-empty-tile (:scene t))})
     (check-starve t)))
 
-(defn slime-inbox
+#_(defn slime-inbox
   [this]
   (-> this
       (carrot-inbox)))
 
-(defn corpse-inbox
+#_(defn corpse-inbox
   [this] (carrot-inbox this))
 
-(defn player-behavior
+#_(defn player-behavior
   [this]
   (-> this
       (implements-identity)
       (implements-player-death)))
 
-(defn player-inbox
+#_(defn player-inbox
   [this]
   (-> this
       (implements-location-updates)
       (implements-hit)
       (implements-blue-fire)))
 ;;object behaviors
+;;
+
+
+(comment
+
+(defprotocol game-piece
+  (behavior [this]))
+
+(defrecord carrot [id name energy]
+ game-piece
+ (behavior [x] (println (str name " is my carrot name") this)))
+
+(def a-carrot (->carrot 5 "bob" 23))
+
+
+(behavior a-carrot)
+(def glist (atom []))
+
+(swap! glist #(merge % (agent (->carrot 1 "beth" 22))))
+(send (first @glist) (fn [this] (behavior this)))
+)

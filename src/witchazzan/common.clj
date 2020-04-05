@@ -64,9 +64,14 @@
     `(r/foldcat (r/map ~one ~two))
     :else
     `(map ~one ~two)))
+
+(defn within-n
+  [a b n]
+  (and (>= a (- b n)) (<= a (+ b n))))
 ;;game agnostic helpers
 ;;state management and access
 (defonce game-pieces (atom []))
+
 #_(defn players [] (filter
                   #(and
                     (not (= false (:active %)))
@@ -126,10 +131,31 @@
     (swap!
      game-state
      (fn [state] (merge state {:game-pieces players})))))
+
+#_(defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
+
+#_(defn players [] (filter
+                  #(and
+                    (not (= false (:active %)))
+                    (= "player" (:type %)))
+                  (vals (:game-pieces @game-state))))
+
+#_(defn object-type
+  "filters the list of objects by type"
+  [t]
+  (filter #(= (:type %) t) (vals (:game-pieces @game-state))))
+
+#_(defn scene->pieces [scene] (filter #(and
+                                      (= (:scene %) scene)
+                                      (not (and (= "player" (:type %)) (= false (:active %))))
+                                      (not (:dead %)))
+                                    (vals (:game-pieces @game-state))))
+
+#_(defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
 ;;state management and access
 ;;init
 (defn init []
-  (cond
+  #_(cond
     (setting "auto-load")
     (try (load-game)
          (catch Exception e (log e)
