@@ -5,18 +5,12 @@
   (:require [clojure.core.reducers :as r])
   (:gen-class))
 
-(defn log [data]
-  (println data)
-  (spit "config/log"
-        (str (System/currentTimeMillis) " : " data "\n")
-        :append true))
-
 (defn realize-map
   "Just do the math you lazy bum"
   [coll] (run! #(doall (second %)) coll))
 
 (when (not (.exists (io/file "config/config.edn")))
-  (log "No config file found, creating config/config.edn with defaults.")
+  (println "No config file found, creating config/config.edn with defaults.")
   (spit "config/config.edn" "{}"))
 
 (def ffilter "(first (filter ))" (comp first filter))
@@ -33,6 +27,12 @@
   ([key value]
    (swap! settings #(merge % {(keyword key) value})))
   ([key] ((keyword key) @settings)))
+
+(defn log [data]
+  (when (setting "log-to-repl") (println data))
+  (spit "config/log"
+        (str (System/currentTimeMillis) " : " data "\n")
+        :append true))
 
 (defn rand-nth-safe
   [list]
