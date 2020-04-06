@@ -40,10 +40,16 @@
             energy
             scene
             sprite
-            delta
+            milliseconds
             health]
   game-piece
-  (behavior [this] (println (str sprite " is my carrot name")) this))
+  (behavior
+    [this]
+    (let [time (System/currentTimeMillis)
+          delta (- time milliseconds)]
+      (-> this
+          (merge {:milliseconds time})
+          (merge {:energy (+ (/ delta 1000) energy)})))))
 
 (defn add-game-piece
   [piece]
@@ -59,5 +65,5 @@
     20
     "LoruleH8"
     "carrot"
-    0
+    (System/currentTimeMillis)
     1)))

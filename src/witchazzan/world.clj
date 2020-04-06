@@ -122,6 +122,12 @@
      (fn [game-piece]
        (send game-piece (fn [this] (behavior/behavior this))))
      (:game-pieces @game-state))
+    ;wait for a minumum of 10 milliseconds and a maximum of 100 milliseconds
+    ;to queue up the next round of agent actions. If it takes more than 100 millis to
+    ;finish processing, they'll just pile up in order.
+    ;agents keep track of elapsed time on an individual basis.
+    (try (Thread/sleep 10) (catch Exception e))
+    (apply await-for 90 (:game-pieces @game-state))
     (recur)))
 
 (defn main
