@@ -31,6 +31,12 @@
   ([key] ((keyword key) @settings)))
 ;;settings
 ;;game agnostic helpers
+(defn thread-debug
+  "both print and return the value"
+  [x]
+  (pp/pprint x)
+  x)
+
 (defn realize-map
   "Just do the math you lazy bum"
   [coll] (run! #(doall (second %)) coll))
@@ -70,95 +76,97 @@
   (and (>= a (- b n)) (<= a (+ b n))))
 ;;game agnostic helpers
 ;;state management and access
-(defonce game-pieces (atom []))
+(defonce game-state (atom
+                     {:game-pieces []
+                      :auto-increment-id 0}))
 
 #_(defn players [] (filter
-                  #(and
-                    (not (= false (:active %)))
-                    (= "player" (:type %)))
-                  (vals (:game-pieces @game-state))))
+                    #(and
+                      (not (= false (:active %)))
+                      (= "player" (:type %)))
+                    (vals (:game-pieces @game-state))))
 
 #_(defn load-game
-  []
-  (when (not (.exists (io/file "config/save.edn")))
-    (log "No save file found, creating config/save.edn")
-    (spit "config/save.edn" blank-game-state))
-  (let [players
-        (reduce merge (map
-                       (fn [player]
-                         {(keyword (str (:id player))) player})
-                       (players)))]
-    (reset! game-state (edn/read-string (slurp "config/save.edn")))
-    (swap! game-state
-           (fn [state] (merge state {:game-pieces (merge (:game-pieces state) players)})))))
+    []
+    (when (not (.exists (io/file "config/save.edn")))
+      (log "No save file found, creating config/save.edn")
+      (spit "config/save.edn" blank-game-state))
+    (let [players
+          (reduce merge (map
+                         (fn [player]
+                           {(keyword (str (:id player))) player})
+                         (players)))]
+      (reset! game-state (edn/read-string (slurp "config/save.edn")))
+      (swap! game-state
+             (fn [state] (merge state {:game-pieces (merge (:game-pieces state) players)})))))
 
 #_(defn save
-  "Serializes the entire state of play. All mutable state exists in the resulting file"
-  []
-  (let
-   [save-data
-    (merge @game-state {:game-pieces
-                        (apply merge (map (fn [object]
-                                            {(keyword (str (:id object))) object})
-                                          (map #(dissoc
-                                                 (merge % {:active false}) :sock)
-                                               (vals (:game-pieces @game-state)))))})]
-    (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
-    (slurp "config/save.edn")))
+    "Serializes the entire state of play. All mutable state exists in the resulting file"
+    []
+    (let
+     [save-data
+      (merge @game-state {:game-pieces
+                          (apply merge (map (fn [object]
+                                              {(keyword (str (:id object))) object})
+                                            (map #(dissoc
+                                                   (merge % {:active false}) :sock)
+                                                 (vals (:game-pieces @game-state)))))})]
+      (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
+      (slurp "config/save.edn")))
 
 #_(defn scene->players-all
-  "only for network comms"
-  [scene]
-  (filter #(= (:scene %) scene) (players)))
+    "only for network comms"
+    [scene]
+    (filter #(= (:scene %) scene) (players)))
 
 #_(defn scene->players
-  [scene]
-  (filter #(and (= (:scene %) scene) (not (:dead %))) (players)))
+    [scene]
+    (filter #(and (= (:scene %) scene) (not (:dead %))) (players)))
 
 #_(defn sock->player [sock]
-  (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
+    (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
 
 #_(defn reset
-  "delete save, but not player data"
-  []
-  (io/delete-file "config/save.edn" true)
-  (let [players
-        (reduce merge (map
-                       (fn [player]
-                         {(keyword (str (:id player))) player})
-                       (players)))]
-    (init)
-    (swap!
-     game-state
-     (fn [state] (merge state {:game-pieces players})))))
+    "delete save, but not player data"
+    []
+    (io/delete-file "config/save.edn" true)
+    (let [players
+          (reduce merge (map
+                         (fn [player]
+                           {(keyword (str (:id player))) player})
+                         (players)))]
+      (init)
+      (swap!
+       game-state
+       (fn [state] (merge state {:game-pieces players})))))
 
 #_(defn objects [] (filter #(not (= "player" (:type %))) (vals (:game-pieces @game-state))))
 
 #_(defn players [] (filter
-                  #(and
-                    (not (= false (:active %)))
-                    (= "player" (:type %)))
-                  (vals (:game-pieces @game-state))))
+                    #(and
+                      (not (= false (:active %)))
+                      (= "player" (:type %)))
+                    (vals (:game-pieces @game-state))))
 
 #_(defn object-type
-  "filters the list of objects by type"
-  [t]
-  (filter #(= (:type %) t) (vals (:game-pieces @game-state))))
+    "filters the list of objects by type"
+    [t]
+    (filter #(= (:type %) t) (vals (:game-pieces @game-state))))
 
 #_(defn scene->pieces [scene] (filter #(and
-                                      (= (:scene %) scene)
-                                      (not (and (= "player" (:type %)) (= false (:active %))))
-                                      (not (:dead %)))
-                                    (vals (:game-pieces @game-state))))
+                                        (= (:scene %) scene)
+                                        (not (and (= "player" (:type %)) (= false (:active %))))
+                                        (not (:dead %)))
+                                      (vals (:game-pieces @game-state))))
 
 #_(defn id->piece [id] ((keyword (str id)) (:game-pieces @game-state)))
 ;;state management and access
 ;;init
 (defn init []
   #_(cond
-    (setting "auto-load")
-    (try (load-game)
-         (catch Exception e (log e)
-                (log "Failed to load save file, it might be invalid.")))
-    :else (reset! game-state blank-game-state)))
+      (setting "auto-load")
+      (try (load-game)
+           (catch Exception e (log e)
+                  (log "Failed to load save file, it might be invalid.")))
+      :else (reset! game-state blank-game-state)))
 ;;init

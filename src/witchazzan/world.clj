@@ -9,67 +9,8 @@
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
   (:gen-class))
-(declare coordinate-spawns)
-(declare name->scene)
-(declare clear-corrupted)
-(declare square-range)
 ;;namespace
 ;;configuration and global state
-#_(defn gen-id! []
-  (swap! game-state #(merge % {:auto-increment-id (inc (:auto-increment-id %))}))
-  (:auto-increment-id @game-state))
-
-#_(defn hourglass! []
-  (coordinate-spawns)
-  (swap! game-state #(merge % {:stopwatch (System/currentTimeMillis) :clock (inc (:clock %))}))
-  (when (< 23 (:clock @game-state))
-    (swap! game-state #(merge % {:clock 0 :calendar (inc (:calendar %))}))
-    (when (setting "auto-save") (save))
-    (log (str "day " (:calendar @game-state))))
-  (when (= (:clock @game-state) 6)
-    (comms/broadcast
-     {:messageType "chat" :name "Witchazzan.core" :id -1
-      :content (str "Dawn of day " (:calendar @game-state))}))
-  (when (= (:clock @game-state) 20)
-    (comms/broadcast
-     {:messageType "chat" :name "Witchazzan.core" :id -1
-      :content "Night falls"}))
-  (comms/broadcast {:time (:clock @game-state)}))
-
-#_(defn add-game-piece!
-  "adds a game piece to the global game state
-  game pieces must have, at a minumum:
-  x y type scene behavior"
-  [new-object]
-  (let [id (gen-id!) obj (merge new-object {:id id :delete-me false})]
-    (swap! ; todo, throw exception when object is invalid
-     game-state
-     (fn [%]
-       (merge % {:game-pieces (merge (:game-pieces %) {(keyword (str id)) obj})})))
-    id))
-
-#_(defn update-game-piece!
-  "adds or replaces attribues in a game-piece
-  setting an attribute to null is equivilant to deleting it"
-  [id vals]
-  (swap!
-   game-state
-   (fn [state] (update-in state [:game-pieces (keyword (str id))] #(merge % vals)))))
-
-#_(defn trash-filter
-  "does all the work for collect-garbage"
-  [game-state]
-  (merge ; replace the game-pieces structure with one that is missing deleted pieces
-   game-state
-   {:game-pieces
-    (into {} (filter (fn [piece]
-                       (= false (:delete-me (second piece))))
-                     (:game-pieces game-state)))}))
-
-#_(defn collect-garbage!
-  "removes game-pieces with the delete-me attribute set to true"
-  []
-  (swap! game-state trash-filter))
 
 (defn process-map
   "returns an immutable representation of a single tilemap,
@@ -135,14 +76,13 @@
 ;;
 ;;game loop
 #_(defn update-clients []
-  (run!
-   (fn [tilemap] (comms/broadcast
-                  {:messageType "game-piece-list"
-                   :pieces (map (fn [%] (dissoc % :sock))
-                                (scene->pieces (:name tilemap)))}
-                  (scene->players-all (:name tilemap))))
-   tilemaps))
-
+    (run!
+     (fn [tilemap] (comms/broadcast
+                    {:messageType "game-piece-list"
+                     :pieces (map (fn [%] (dissoc % :sock))
+                                  (scene->pieces (:name tilemap)))}
+                    (scene->players-all (:name tilemap))))
+     tilemaps))
 
 (defn threadify [func] (future (func)))
 ;;game loop
@@ -155,14 +95,10 @@
    #(zipmap '(:x :y) (list (+ 0.5 (quot % size)) (+ 0.5 (rem % size))))
    (range (* size size))))
 
-(defn generate-genes
-  "makes a list of keywords into a map of ints, arbitrarily limited by settings"
-  [& keywords]
-  (zipmap keywords
-          (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
 ;;nature
 ;;admin stuff
+
 
 (defn ten-x []
   (setting "millis-per-hour" (/ (setting "millis-per-hour") 10))
@@ -176,48 +112,57 @@
   (setting "millis-per-hour" 600))
 
 #_(defn seed-nature []
-  (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
+    (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 
 ;;admin stuff
+;;
+(defn game-loop []
+  (loop []
+    (run!
+     (fn [game-piece]
+       (send game-piece (fn [this] (behavior/behavior this))))
+     (:game-pieces @game-state))
+    (recur)))
+
 (defn main
   [& args]
   (log "Booting...")
   (server/run-server handler {:port (setting "port")})
   (log (str "Running server on port " (setting "port")))
-  #_(when (not (setting "pause"))
-    (threadify game-loop)
-    (seed-nature)))
+  (when (not (setting "pause"))
+    (log "Not paused, running game")
+    #_(threadify game-loop)))
 
 #_(defn spawn-points
-  "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
-  [type & rand]
-  (let [coord-pairs
-        (filter #(:x %) ;check if valid coords were returned
-                (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
-                       (let [properties
-                             (ffilter
-                              #(= (str "spawn-" type) (get % "name"))
-                              (:objects tilemap))]
-                         (when properties
-                           {:scene (:name tilemap)
-                            :x (/ (get properties "x") (:tilewidth tilemap))
-                            :y (/ (get properties "y") (:tilewidth tilemap))})))
-                     tilemaps))]
-    (cond
-      rand
-      (run! #(call-func-by-string (str "witchazzan.world/spawn-" type)
-                                  (list (:scene %) (find-empty-tile (:scene %))))
-            coord-pairs)
-      :else
-      (run! #(call-func-by-string (str "witchazzan.world/spawn-" type) (list (:scene %) %))
-            coord-pairs))))
+    "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
+    [type & rand]
+    (let [coord-pairs
+          (filter #(:x %) ;check if valid coords were returned
+                  (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
+                         (let [properties
+                               (ffilter
+                                #(= (str "spawn-" type) (get % "name"))
+                                (:objects tilemap))]
+                           (when properties
+                             {:scene (:name tilemap)
+                              :x (/ (get properties "x") (:tilewidth tilemap))
+                              :y (/ (get properties "y") (:tilewidth tilemap))})))
+                       tilemaps))]
+      (cond
+        rand
+        (run! #(call-func-by-string (str "witchazzan.world/spawn-" type)
+                                    (list (:scene %) (find-empty-tile (:scene %))))
+              coord-pairs)
+        :else
+        (run! #(call-func-by-string (str "witchazzan.world/spawn-" type) (list (:scene %) %))
+              coord-pairs))))
 
 #_(defn coordinate-spawns []
-  (when (and
-         (< (:clock @game-state) 5)
-         (< (count (filter #(= (:type %) "slime") (objects))) 5))
-    (spawn-points "slime"))
-  (when (and
-         (> (:clock @game-state) 20)
-         (< (count (filter #(= (:type %) "carrot") (objects))) 5))
-    (spawn-points "carrot" true)))
+    (when (and
+           (< (:clock @game-state) 5)
+           (< (count (filter #(= (:type %) "slime") (objects))) 5))
+      (spawn-points "slime"))
+    (when (and
+           (> (:clock @game-state) 20)
+           (< (count (filter #(= (:type %) "carrot") (objects))) 5))
+      (spawn-points "carrot" true)))
