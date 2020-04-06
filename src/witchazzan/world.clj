@@ -2,6 +2,7 @@
 (ns witchazzan.world
   (:refer witchazzan.common)
   (:require [witchazzan.comms :as comms])
+  (:require [witchazzan.behavior :as behavior])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
   (:require [clojure.string :as str])

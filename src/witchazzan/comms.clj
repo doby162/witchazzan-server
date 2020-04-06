@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.comms
-  (:require [witchazzan.common :as core])
+  (:refer witchazzan.common)
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
   (:gen-class))
@@ -15,7 +15,7 @@
   [data & [players]]
   (run!
    #(message-player data %)
-   (cond players players :else (core/players))))
+   (cond players players :else (players))))
 
 #_(defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -28,16 +28,16 @@
 #_(defn handle-chat
   "broadcasts chats as json"
   [message channel]
-  (let [player (core/sock->player channel)
+  (let [player (sock->player channel)
         id (get message "targetPlayerId")
-        audience (if id [(core/ffilter #(= (:id %) id) (core/players))] (core/players))]
+        audience (if id [(ffilter #(= (:id %) id) (players))] (players))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
 #_(defn handle-location-update [message channel]
-  (let [player (core/sock->player channel)]
+  (let [player (sock->player channel)]
     (swap!
-     core/network-mail
+     network-mail
      #(conj % (merge
                (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
                {:method "location-update" :mail-to (:id player)})))))
@@ -46,10 +46,10 @@
   (let [username (get message "username") password (get message "password")
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (filter #(= username (:name %)) (vals (:game-pieces @core/game-state)))]
+        existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
     (when (empty? existing-user)
       (swap!
-       core/network-mail
+       network-mail
        #(conj %
               {:mail-to "new-object"
                :x 0 :y 0 :type "player" :scene "LoruleH8"
@@ -64,7 +64,7 @@
                :name username :sock channel})))
     (when (not (empty? existing-user))
       (swap!
-       core/network-mail
+       network-mail
        #(conj %
               {:mail-to (:id (first existing-user))
                :method "location-update"
@@ -79,7 +79,7 @@
   it handles all of the text commands entered
   via the command bar on the client"
   [message channel]
-  (let [player (core/sock->player channel)]
+  (let [player (sock->player channel)]
     (when (re-find #"^look" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
@@ -94,7 +94,7 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name %) " ") (core/players)))}
+                       (apply str (map #(str (:name %) " ") (players)))}
                       player))
     (when (re-find #"^reload" (get message "command"))
       (require 'witchazzan.common :reload)
@@ -109,23 +109,23 @@
     (when (re-find #"^reset" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content "Deleting save."} player)
-      (core/reset))
+      (reset))
     (when (re-find #"^save-game" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content "Saving."} player)
-      (core/save))
+      (save))
     (when (re-find #"^load-game" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content "Loading."} player)
-      (core/load-game))))
+      (load-game))))
 
 #_(defn handle-fireball
   "generate a fireball object and add it to the object registry"
   [message channel]
-  (let [player (core/sock->player channel) sprite (get message "sprite")]
+  (let [player (sock->player channel) sprite (get message "sprite")]
     (when (not (:dead player)); TODO this whole thing should probably be in a standard update
       (swap!
-       core/network-mail
+       network-mail
        #(conj %
               {:mail-to "new-object"
                :x (:x player) :y (:y player) :type "fireball"

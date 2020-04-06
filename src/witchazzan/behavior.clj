@@ -1,7 +1,6 @@
 ;;namespace
 (ns witchazzan.behavior
-  (:require [witchazzan.world :as world])
-  (:require [witchazzan.common :as core])
+  (:refer witchazzan.common)
   (:require [witchazzan.comms :as comms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
@@ -31,10 +30,10 @@
   [genes]
   (zipmap (keys genes)
           (map
-           #(cond (> % (core/setting "gene-max"))
-                  (- % (core/setting "gene-max"))
+           #(cond (> % (setting "gene-max"))
+                  (- % (setting "gene-max"))
                   (< % 0)
-                  (+ % (core/setting "gene-max"))
+                  (+ % (setting "gene-max"))
                   :else %)
            (vals genes))))
 
@@ -328,21 +327,18 @@
 ;;
 
 
-(comment
 
 (defprotocol game-piece
   (behavior [this]))
 
 (defrecord carrot [id name energy]
  game-piece
- (behavior [x] (println (str name " is my carrot name") this)))
+ (behavior [this] (println (str name " is my carrot name")) this))
 
 (def a-carrot (->carrot 5 "bob" 23))
 
 
 (behavior a-carrot)
-(def glist (atom []))
 
-(swap! glist #(merge % (agent (->carrot 1 "beth" 22))))
-(send (first @glist) (fn [this] (behavior this)))
-)
+(swap! game-pieces #(merge % (agent (->carrot 1 "beth" 22))))
+(send (first @game-pieces) (fn [this] (behavior this)))
