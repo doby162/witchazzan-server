@@ -17,6 +17,8 @@
 ;;configuration and global state
 ;;
 ;;websocket infrastructure
+
+
 (defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
   [name args]
@@ -51,13 +53,13 @@
 ;;
 ;;game loop
 (defn update-clients []
-    (run!
-     (fn [tilemap] (comms/broadcast
-                    {:messageType "game-piece-list"
-                     :pieces (map (fn [%] (dissoc % :sock))
-                                  (filter #(= (:scene %) (:name tilemap)) (game-pieces)))}
-                    (scene->players-all (:name tilemap))))
-     tilemaps))
+  (run!
+   (fn [tilemap] (comms/broadcast
+                  {:messageType "game-piece-list"
+                   :pieces (map (fn [%] (dissoc % :sock))
+                                (filter #(= (:scene %) (:name tilemap)) (game-pieces)))}
+                  (game-pieces "scene" (:name tilemap))))
+   tilemaps))
 
 (defn threadify [func] (future (func)))
 ;;game loop

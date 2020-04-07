@@ -1,7 +1,6 @@
 ;;namespace
 (ns witchazzan.behavior
   (:refer witchazzan.common)
-  (:require [witchazzan.comms :as comms])
   (:require [clojure.pprint :as pp])
   (:gen-class))
 ;;namespace
@@ -54,7 +53,20 @@
           (merge {:milliseconds time})
           (merge {:energy (+ (/ delta 1000) energy)})))))
 
-(defn add-game-piece
+(defrecord player
+           [id
+            socket
+            x
+            y
+            name
+            health
+            sprite]
+  game-piece
+  (behavior
+    [this]
+    this))
+
+(defn add-game-piece!
   [piece]
   (swap! game-state
          (fn [state] (update-in state [:game-pieces]
@@ -63,14 +75,14 @@
 (defn spawn-carrot []
   (let [scene "LoruleH8"
         coords (find-empty-tile scene)]
-  (add-game-piece
-   (map->carrot
-    {:id (gen-id)
-    :genes (generate-genes {:a-gene :b-gene})
-    :energy 20
-    :scene scene
-    :sprite "carrot"
-    :milliseconds (System/currentTimeMillis)
-    :x (:x coords)
-    :y (:y coords)
-    :health 1}))))
+    (add-game-piece!
+     (map->carrot
+      {:id (gen-id)
+       :genes (generate-genes {:a-gene :b-gene})
+       :energy 20
+       :scene scene
+       :sprite "carrot"
+       :milliseconds (System/currentTimeMillis)
+       :x (:x coords)
+       :y (:y coords)
+       :health 1}))))

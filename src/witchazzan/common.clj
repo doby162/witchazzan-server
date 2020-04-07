@@ -133,12 +133,12 @@
        (fn [state] (merge state {:game-pieces players})))))
 
 (defn game-pieces
-  []
-  (:game-pieces @game-state)
-  [id]
-  (ffilter #(= id (:id %)) (game-pieces))
-  [key value
-   (filter #(= value ((keyword key) %)) (game-pieces)))
+  ([]
+   (:game-pieces @game-state))
+  ([id]
+   (ffilter #(= id (:id %)) (game-pieces)))
+  ([key value]
+   (filter #(= value ((keyword key) %)) (game-pieces))))
 
 (defn tile-occupied
   [scene coords]

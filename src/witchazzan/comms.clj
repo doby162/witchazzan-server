@@ -1,6 +1,7 @@
 ;;namespace
 (ns witchazzan.comms
   (:refer witchazzan.common)
+  (:require [witchazzan.behavior :as behavior])
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
   (:gen-class))
@@ -8,22 +9,22 @@
 ;;namespace
 
 (defn message-player [data player]
-    (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
+  (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
 
 (defn broadcast
-    "takes an n-level map and distributes it to all/selected clients as json"
-    [data & [players]]
-    (run!
-     #(message-player data %)
-     (cond players players :else (players))))
+  "takes an n-level map and distributes it to all/selected clients as json"
+  [data & [players]]
+  (run!
+   #(message-player data %)
+   (cond players players :else (players))))
 
 (defn establish-identity
-    "comunicates to a client which player object belongs to them"
-    [player]
-    (message-player {:messageType "identity" :id (:id player)
-                     :name (:name player)} player)
-    (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
-                :content (str "Welcome, " (:name player))}))
+  "comunicates to a client which player object belongs to them"
+  [player]
+  (message-player {:messageType "identity" :id (:id player)
+                   :name (:name player)} player)
+  (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
+              :content (str "Welcome, " (:name player))}))
 
 #_(defn handle-chat
     "broadcasts chats as json"
@@ -42,37 +43,37 @@
                  (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
                  {:method "location-update" :mail-to (:id player)})))))
 
-#_(defn handle-login [message channel]
-    (let [username (get message "username") password (get message "password")
-          sprite (get message "sprite")
-          moving (get message "moving")
-          existing-user (filter #(= username (:name %)) (vals (:game-pieces @game-state)))]
-      (when (empty? existing-user)
-        (swap!
-         network-mail
-         #(conj %
-                {:mail-to "new-object"
-                 :x 0 :y 0 :type "player" :scene "LoruleH8"
-                 :health 100
-                 :animation nil
-                 :active true
-                 :defence 0 :sprite sprite
-                 :moving false
-                 :identity "true"
-                 :behavior "player-behavior"
-                 :handle-mail "player-inbox"
-                 :name username :sock channel})))
-      (when (not (empty? existing-user))
-        (swap!
-         network-mail
-         #(conj %
-                {:mail-to (:id (first existing-user))
-                 :method "location-update"
-                 :identity "true"
-                 :dead nil ;TODO better respawn
-                 :health 100
+(defn handle-login [message channel]
+  (let [username (get message "username") password (get message "password")
+        sprite (get message "sprite")
+        moving (get message "moving")
+        existing-user (first (game-pieces "name" username))]
+;      (when (empty? existing-user)
+    (behavior/add-game-piece!
+     (behavior/map->player
+      {:x 0
+       :y 0
+       :type "player"
+       :scene "LoruleH8"
+       :health 100
+       :active true
+       :defence 0
+       :sprite sprite
+       :identity "true"
+       :name username
+       :socket channel})))
+  #_(when (not (empty? existing-user))
+      (swap!
+       network-mail
+       #(conj %
+              {:mail-to (:id (first existing-user))
+               :method "location-update"
+               :identity "true"
+               :dead nil ;TODO better respawn
+               :health 100
               ;location updates set arbitrary values so we can ride on those coat tails
-                 :sock channel :sprite sprite :active true})))))
+               :sock channel :sprite sprite :active true}))))
+;)
 
 #_(defn handle-command
     "this handler is a bit of a switch case inside of a switch case,
