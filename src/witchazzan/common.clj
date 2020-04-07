@@ -9,7 +9,7 @@
 
 ;;settings
 (when (not (.exists (io/file "config/config.edn")))
-  (println "No config file found, creating config/config.edn with defaults.")
+  (println "No local config file found, creating config/config.edn.")
   (spit "config/config.edn" "{}"))
 
 (def ffilter "(first (filter ))" (comp first filter))
@@ -18,27 +18,10 @@
                      (edn/read-string (slurp "config/default-config.edn"))
                      (edn/read-string (slurp "config/config.edn")))))
 
-(defn rand-nth-safe
-  [list]
-  "If a list is empty, return nil"
-  (cond
-    (= (count list) 0)
-    nil
-    :else
-    (rand-nth list)))
-
 (defn setting
   ([key value]
    (swap! settings #(merge % {(keyword key) value})))
   ([key] ((keyword key) @settings)))
-
-(defn square-range
-  "like range but for coordinates. Delivers coords with 0.5 added to center
-  pieces on tiles"
-  [size]
-  (map
-   #(zipmap '(:x :y) (list (+ 0.5 (quot % size)) (+ 0.5 (rem % size))))
-   (range (* size size))))
 
 (defn process-map
   "returns an immutable representation of a single tilemap,
@@ -58,7 +41,6 @@
      :teleport teleport
      :tilewidth (get data "tilewidth")
      :objects objects
-     ;refactor me (get-tile-walkable)
      :get-tile-walkable (fn [coords] (= 0 (get syri (+ (int (:x coords)) (* width (int (:y coords)))))))}))
 
 (def tilemaps (map ; tilemaps don't go in the game state because they are immutable
@@ -66,6 +48,14 @@
                (setting "tilemaps")))
 ;;settings
 ;;game agnostic helpers
+(defn square-range
+  "like range but for coordinates. Delivers coords with 0.5 added to center
+  pieces on tiles"
+  [size]
+  (map
+   #(zipmap '(:x :y) (list (+ 0.5 (quot % size)) (+ 0.5 (rem % size))))
+   (range (* size size))))
+
 (defn thread-debug
   "both print and return the value"
   [x]
@@ -91,21 +81,6 @@
                 (fn [& pgroups] (doall (apply map f pgroups)))
                 (map (partial partition-all grain-size) colls))))
 
-(defmacro cmap
-  "configurable map, single or multi core:"
-  [one two]
-  (cond
-    (= "pmap" (setting "pmap"))
-    `(pmap ~one ~two)
-    (= "ppmap" (setting "ppmap"))
-    `(ppmap 256 ~one ~two)
-    ;this isn't really an optimal use of reducers, but that isn't really
-    ;the point right now, this macro is just for benchmarking.
-    (= "foldcat" (setting "foldcat"))
-    `(r/foldcat (r/map ~one ~two))
-    :else
-    `(map ~one ~two)))
-
 (defn within-n
   [a b n]
   (and (>= a (- b n)) (<= a (+ b n))))
@@ -114,12 +89,6 @@
 (defonce game-state (atom
                      {:game-pieces []
                       :auto-increment-id 0}))
-
-#_(defn players [] (filter
-                    #(and
-                      (not (= false (:active %)))
-                      (= "player" (:type %)))
-                    (vals (:game-pieces @game-state))))
 
 #_(defn load-game
     []
@@ -149,18 +118,6 @@
       (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
       (slurp "config/save.edn")))
 
-#_(defn scene->players-all
-    "only for network comms"
-    [scene]
-    (filter #(= (:scene %) scene) (players)))
-
-#_(defn scene->players
-    [scene]
-    (filter #(and (= (:scene %) scene) (not (:dead %))) (players)))
-
-#_(defn sock->player [sock]
-    (first (filter #(= (:sock %) sock) (vals (:game-pieces @game-state)))))
-
 #_(defn reset
     "delete save, but not player data"
     []
@@ -175,23 +132,13 @@
        game-state
        (fn [state] (merge state {:game-pieces players})))))
 
-#_(defn players [] (filter
-                    #(and
-                      (not (= false (:active %)))
-                      (= "player" (:type %)))
-                    (vals (:game-pieces @game-state))))
-
-#_(defn object-type
-    "filters the list of objects by type"
-    [t]
-    (filter #(= (:type %) t) (vals (:game-pieces @game-state))))
-
 (defn game-pieces
-  "it would be cool if this took optional args to sort by keys and values instead of having more helper funcs"
   []
-  (:game-pieces @game-state))
-
-(defn id->piece [id] (ffilter #(= (:id @%) id) (game-pieces)))
+  (:game-pieces @game-state)
+  [id]
+  (ffilter #(= id (:id %)) (game-pieces))
+  [key value
+   (filter #(= value ((keyword key) %)) (game-pieces)))
 
 (defn tile-occupied
   [scene coords]

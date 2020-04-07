@@ -14,5 +14,4 @@
  :auto-load true
  :gene-max 255
  :millis-per-hour 60000
- :threaded "ppmap"
  :log-to-repl false}
