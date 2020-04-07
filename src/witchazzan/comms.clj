@@ -7,17 +7,17 @@
 (use '[clojure.java.shell :only [sh]])
 ;;namespace
 
-#_(defn message-player [data player]
+(defn message-player [data player]
     (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
 
-#_(defn broadcast
+(defn broadcast
     "takes an n-level map and distributes it to all/selected clients as json"
     [data & [players]]
     (run!
      #(message-player data %)
      (cond players players :else (players))))
 
-#_(defn establish-identity
+(defn establish-identity
     "comunicates to a client which player object belongs to them"
     [player]
     (message-player {:messageType "identity" :id (:id player)

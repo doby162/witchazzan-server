@@ -12,33 +12,7 @@
 ;;namespace
 ;;configuration and global state
 
-(defn process-map
-  "returns an immutable representation of a single tilemap,
-  including a helper for collisions"
-  [data name]
-  (let [width (get data "width")
-        height (get data "height")
-        layers (get data "layers")
-        syri (get (ffilter #(= (get % "name") "Stuff You Run Into") layers) "data")
-        teleport (get (ffilter #(= (get % "name") "Teleport") layers) "layers")
-        objects (get (ffilter #(= (get % "name") "Objects") layers) "objects")]
-    {:name (first (str/split name #"\."))
-     :width width
-     :height height
-     :layers layers
-     :syri syri ; stuff you run into
-     :teleport teleport
-     :tilewidth (get data "tilewidth")
-     :objects objects
-     ;refactor me (get-tile-walkable)
-     :get-tile-walkable (fn [coords] (= 0 (get syri (+ (int (:x coords)) (* width (int (:y coords)))))))}))
 
-(def tilemaps (map ; tilemaps don't go in the game state because they are immutable
-               #(process-map (json/read-str (slurp (str (setting "tilemap-path") %))) %)
-               (setting "tilemaps")))
-
-(defn name->scene [name]
-  (first (filter #(= name (:name %)) tilemaps)))
 
 ;;configuration and global state
 ;;
@@ -57,6 +31,7 @@
     (server/on-close
      channel
      (fn [data]
+       ;logout
        #_(update-game-piece! (:id (sock->player channel)) {:active false})))
     (server/on-receive
      channel
@@ -75,28 +50,17 @@
 ;;websocket infrastructure
 ;;
 ;;game loop
-#_(defn update-clients []
+(defn update-clients []
     (run!
      (fn [tilemap] (comms/broadcast
                     {:messageType "game-piece-list"
                      :pieces (map (fn [%] (dissoc % :sock))
-                                  (scene->pieces (:name tilemap)))}
+                                  (filter #(= (:scene %) (:name tilemap)) (game-pieces)))}
                     (scene->players-all (:name tilemap))))
      tilemaps))
 
 (defn threadify [func] (future (func)))
 ;;game loop
-;;nature
-(defn square-range
-  "like range but for coordinates. Delivers coords with 0.5 added to center
-  pieces on tiles"
-  [size]
-  (map
-   #(zipmap '(:x :y) (list (+ 0.5 (quot % size)) (+ 0.5 (rem % size))))
-   (range (* size size))))
-
-
-;;nature
 ;;admin stuff
 
 
@@ -126,6 +90,7 @@
     ;to queue up the next round of agent actions. If it takes more than 100 millis to
     ;finish processing, they'll just pile up in order.
     ;agents keep track of elapsed time on an individual basis.
+    (update-clients)
     (try (Thread/sleep 10) (catch Exception e))
     (apply await-for 90 (:game-pieces @game-state))
     (recur)))
@@ -137,7 +102,7 @@
   (log (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
     (log "Not paused, running game")
-    #_(threadify game-loop)))
+    (threadify game-loop)))
 
 #_(defn spawn-points
     "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"

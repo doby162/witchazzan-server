@@ -32,7 +32,8 @@
 ;;helpers
 
 (defprotocol game-piece
-  (behavior [this]))
+  (behavior [this])
+  (die [this]))
 
 (defrecord carrot
            [id
@@ -41,7 +42,9 @@
             scene
             sprite
             milliseconds
-            health]
+            health
+            x
+            y]
   game-piece
   (behavior
     [this]
@@ -58,12 +61,16 @@
                                 (fn [game-pieces] (merge game-pieces (agent piece)))))))
 
 (defn spawn-carrot []
+  (let [scene "LoruleH8"
+        coords (find-empty-tile scene)]
   (add-game-piece
-   (->carrot
-    1
-    (generate-genes {:a-gene :b-gene})
-    20
-    "LoruleH8"
-    "carrot"
-    (System/currentTimeMillis)
-    1)))
+   (map->carrot
+    {:id (gen-id)
+    :genes (generate-genes {:a-gene :b-gene})
+    :energy 20
+    :scene scene
+    :sprite "carrot"
+    :milliseconds (System/currentTimeMillis)
+    :x (:x coords)
+    :y (:y coords)
+    :health 1}))))
