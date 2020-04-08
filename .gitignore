@@ -26,4 +26,8 @@ log
 
 # Ignore lein if we install it in the repo folder
 lein
+lein.bat
 .eastwood
+
+# Ignore Java error dump files
+hs_err_pid*.log
