@@ -92,6 +92,10 @@ Categorically, there are
 
 
 
+# Why Cojure?
+
+`Clojure increases soil nitrogen, which actually alters the ratio of leaves to roots in carrots.`
+
 # Server Installation for Running and Development
 
 The Witchazzen Game server is written Clojure, which is required to run the server, along with [Leiningen](https://leiningen.org/).
