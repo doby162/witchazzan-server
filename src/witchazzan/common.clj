@@ -154,7 +154,6 @@
   (first (filter #(= name (:name %)) tilemaps)))
 
 (defn find-empty-tile
-  ;tood FIXME
   [scene]
   (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
     (->>
@@ -162,7 +161,7 @@
      (shuffle)
      (filter #((:get-tile-walkable map) %))
      (filter #(not (tile-occupied scene %)))
-     (take 1))))
+     (first ))))
 ;;state management and access
 ;;init
 (defn init []

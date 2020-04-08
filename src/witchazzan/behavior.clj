@@ -78,7 +78,7 @@
     (add-game-piece!
      (map->carrot
       {:id (gen-id)
-       :genes (generate-genes {:a-gene :b-gene})
+       :genes (generate-genes :a-gene :b-gene)
        :energy 20
        :scene scene
        :sprite "carrot"
