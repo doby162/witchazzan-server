@@ -9,14 +9,14 @@
 ;;namespace
 
 (defn message-player [data player]
-  (try (server/send! (:sock player) (json/write-str data)) (catch Exception e)))
+  (try (server/send! (:socket player) (json/write-str data)) (catch Exception e)))
 
 (defn broadcast
   "takes an n-level map and distributes it to all/selected clients as json"
   [data & [players]]
   (run!
-   #(message-player data %)
-   (cond players players :else (players))))
+   #(message-player data @%)
+   (cond players players :else (game-pieces "type" "player"))))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -29,14 +29,14 @@
 #_(defn handle-chat
     "broadcasts chats as json"
     [message channel]
-    (let [player (sock->player channel)
+    (let [player (socked->player channel)
           id (get message "targetPlayerId")
           audience (if id [(ffilter #(= (:id %) id) (players))] (players))]
       (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                    :content (get message "text")} audience)))
 
 #_(defn handle-location-update [message channel]
-    (let [player (sock->player channel)]
+    (let [player (game-pieces "socket" channel)]
       (swap!
        network-mail
        #(conj % (merge
@@ -45,13 +45,15 @@
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
+        id (gen-id)
         sprite (get message "sprite")
         moving (get message "moving")
         existing-user (first (game-pieces "name" username))]
 ;      (when (empty? existing-user)
     (behavior/add-game-piece!
      (behavior/map->player
-      {:x 0
+      {:id id
+       :x 0
        :y 0
        :type "player"
        :scene "LoruleH8"
@@ -61,7 +63,8 @@
        :sprite sprite
        :identity "true"
        :name username
-       :socket channel})))
+       :socket channel}))
+    (establish-identity @(game-pieces id)))
   #_(when (not (empty? existing-user))
       (swap!
        network-mail
@@ -72,7 +75,7 @@
                :dead nil ;TODO better respawn
                :health 100
               ;location updates set arbitrary values so we can ride on those coat tails
-               :sock channel :sprite sprite :active true}))))
+               :socket channel :sprite sprite :active true}))))
 ;)
 
 #_(defn handle-command
@@ -80,7 +83,7 @@
   it handles all of the text commands entered
   via the command bar on the client"
     [message channel]
-    (let [player (sock->player channel)]
+    (let [player (game-pieces "socket" channel)]
       (when (re-find #"^look" (get message "command"))
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content
@@ -119,24 +122,3 @@
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content "Loading."} player)
         (load-game))))
-
-#_(defn handle-fireball
-    "generate a fireball object and add it to the object registry"
-    [message channel]
-    (let [player (sock->player channel) sprite (get message "sprite")]
-      (when (not (:dead player)); TODO this whole thing should probably be in a standard update
-        (swap!
-         network-mail
-         #(conj %
-                {:mail-to "new-object"
-                 :x (:x player) :y (:y player) :type "fireball"
-                 :scene (:scene player) ;standard properties
-                 :direction (get message "direction")
-                 :sprite sprite
-                 :behavior "fireball-behavior"
-                 :method
-                 (cond (= "joosh" (:sprite player)) "teleport-rand"
-                       :else "hit")
-                 :owner (:id player) ;attributes
-                 :speed 0.3
-                 :handle-mail "ignore-inbox"})))))

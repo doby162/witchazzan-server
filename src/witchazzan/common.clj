@@ -113,7 +113,7 @@
                           (apply merge (map (fn [object]
                                               {(keyword (str (:id object))) object})
                                             (map #(dissoc
-                                                   (merge % {:active false}) :sock)
+                                                   (merge % {:active false}) :socket)
                                                  (vals (:game-pieces @game-state)))))})]
       (spit "config/save.edn" (with-out-str (pp/pprint save-data)))
       (slurp "config/save.edn")))
@@ -136,9 +136,9 @@
   ([]
    (:game-pieces @game-state))
   ([id]
-   (ffilter #(= id (:id %)) (game-pieces)))
+   (ffilter #(= id (:id @%)) (game-pieces)))
   ([key value]
-   (filter #(= value ((keyword key) %)) (game-pieces))))
+   (filter #(= value ((keyword key) @%)) (game-pieces))))
 
 (defn tile-occupied
   [scene coords]
@@ -154,6 +154,7 @@
   (first (filter #(= name (:name %)) tilemaps)))
 
 (defn find-empty-tile
+  ;tood FIXME
   [scene]
   (let [map (name->scene scene) tile-size (max (:width map) (:height map))]
     (->>

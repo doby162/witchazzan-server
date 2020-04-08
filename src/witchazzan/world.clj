@@ -10,22 +10,14 @@
   (:require [clojure.java.io :as io])
   (:gen-class))
 ;;namespace
-;;configuration and global state
-
-
-
-;;configuration and global state
-;;
 ;;websocket infrastructure
-
-
 (defn call-func-by-string
   "(call-func-by-string \"+\" [5 5]) => 10"
   [name args]
   (try
     (apply (resolve (symbol name)) args)
     (catch NullPointerException e
-      (log (str "call-func-by-string failed: " name " " e)))))
+      (log (str "call-func-by-string failed: " name args " " e)))))
 
 (defn handler [request]
   (log "A player has entered Witchazzan!")
@@ -34,7 +26,7 @@
      channel
      (fn [data]
        ;logout
-       #_(update-game-piece! (:id (sock->player channel)) {:active false})))
+       #_(update-game-piece! (:id (game-pieces "socket" channel)) {:active false})))
     (server/on-receive
      channel
      (fn [data]
@@ -56,9 +48,9 @@
   (run!
    (fn [tilemap] (comms/broadcast
                   {:messageType "game-piece-list"
-                   :pieces (map (fn [%] (dissoc % :sock))
-                                (filter #(= (:scene %) (:name tilemap)) (game-pieces)))}
-                  (game-pieces "scene" (:name tilemap))))
+                   :pieces (map (fn [%] (dissoc (into {} @%) :socket))
+                                (game-pieces "scene" (:name tilemap)))}
+                  (filter #(= (:scene @%) (:name tilemap)) (game-pieces "type" "player"))))
    tilemaps))
 
 (defn threadify [func] (future (func)))
