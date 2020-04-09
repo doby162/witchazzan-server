@@ -40,7 +40,7 @@
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
            )(catch java.lang.Exception e
-              (log "invalid json: " data) (log e)))))))
+              (log (str "invalid json: " data)) (log e)))))))
 ;;websocket infrastructure
 ;;
 ;;game loop

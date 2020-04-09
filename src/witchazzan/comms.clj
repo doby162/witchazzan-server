@@ -35,13 +35,14 @@
       (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                    :content (get message "text")} audience)))
 
-#_(defn handle-location-update [message channel]
-    (let [player (game-pieces "socket" channel)]
-      (swap!
-       network-mail
-       #(conj % (merge
-                 (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message)))
-                 {:method "location-update" :mail-to (:id player)})))))
+(defn handle-location-update [message channel]
+    (let [player (first (game-pieces "socket" channel))]
+      (send
+       player
+       (fn [this]
+         (merge
+         this
+         (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
@@ -83,7 +84,7 @@
   it handles all of the text commands entered
   via the command bar on the client"
     [message channel]
-    (let [player (game-pieces "socket" channel)]
+    (let [player (first (game-pieces "socket" channel))]
       (when (re-find #"^look" (get message "command"))
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content
