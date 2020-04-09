@@ -26,12 +26,12 @@
   (broadcast {:messageType "chat" :id -1 :name "Witchazzan.core"
               :content (str "Welcome, " (:name player))}))
 
-#_(defn handle-chat
+(defn handle-chat
     "broadcasts chats as json"
     [message channel]
-    (let [player (socked->player channel)
+    (let [player @(first (game-pieces :socket channel))
           id (get message "targetPlayerId")
-          audience (if id [(ffilter #(= (:id %) id) (players))] (players))]
+          audience (if id (game-pieces id) (game-pieces :type "player"))]
       (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                    :content (get message "text")} audience)))
 
