@@ -29,6 +29,20 @@
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 ;;helpers
+;;shared behavior
+(defn add-game-piece!
+  [piece]
+  (swap! game-state
+         (fn [state] (update-in state [:game-pieces]
+                                (fn [game-pieces] (merge game-pieces (agent piece)))))))
+
+(defn delete
+    [this]
+    (swap! game-state
+      (fn [state] (update-in state [:game-pieces]
+                             (fn [game-pieces] (filter #(not (= (:id this) (:id @%))) game-pieces))))))
+;;shared behavior
+;;defprotocol
 
 (defprotocol game-piece
   (behavior [this])
@@ -45,6 +59,8 @@
             x
             y]
   game-piece
+  (die
+    [this]
   (behavior
     [this]
     (let [time (System/currentTimeMillis)
@@ -65,12 +81,6 @@
   (behavior
     [this]
     this))
-
-(defn add-game-piece!
-  [piece]
-  (swap! game-state
-         (fn [state] (update-in state [:game-pieces]
-                                (fn [game-pieces] (merge game-pieces (agent piece)))))))
 
 (defn spawn-carrot []
   (let [scene "LoruleH8"

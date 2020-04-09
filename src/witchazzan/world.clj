@@ -26,7 +26,8 @@
      channel
      (fn [data]
        ;logout
-       #_(update-game-piece! (:id (game-pieces "socket" channel)) {:active false})))
+       (behavior/delete
+         @(first (game-pieces :socket channel)))))
     (server/on-receive
      channel
      (fn [data]
@@ -87,7 +88,7 @@
     (update-clients)
     (try (Thread/sleep 10) (catch Exception e))
     (apply await-for 90 (:game-pieces @game-state))
-    (recur)))
+    (when (not (setting "pause")) (recur))))
 
 (defn main
   [& args]
