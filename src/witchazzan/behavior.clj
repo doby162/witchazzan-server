@@ -46,7 +46,13 @@
 
 (defprotocol game-piece
   (behavior [this])
-  (die [this]))
+  (die [this])
+  (reproduce [this]))
+
+;reproduce is next, just need to make a copy plus mutation
+;spells will be based off the of the :spell key and it's text
+;default is to do nothing, but if a spell matches one of our list
+;we dispatch it. All fireballs can be the same function and record type
 
 (defrecord carrot
            [id
@@ -69,7 +75,20 @@
           delta (- time milliseconds)]
       (-> this
           (merge {:milliseconds time})
-          (merge {:energy (+ (/ delta 1000) energy)})))))
+          (merge {:energy (+ (/ delta 1000) energy)}))))
+  (reproduce
+    [this]
+    (let [energy (/ energy 3)
+          tile (find-empty-tile scene)
+          genes (mutate-genes genes)]
+          (add-game-piece!
+            (map->carrot (into {} (merge this
+                                         {:genes genes
+                                          :x (:x tile)
+                                          :y (:y tile)
+                                          :energy energy
+                                          :id (gen-id)}))))
+          (merge this {:energy energy}))))
 
 (defrecord player
            [id
