@@ -60,7 +60,9 @@
             y]
   game-piece
   (die
-    [this])
+    [this]
+    (delete this)
+    nil)
   (behavior
     [this]
     (let [time (System/currentTimeMillis)
@@ -80,7 +82,8 @@
   game-piece
   (behavior
     [this]
-    this))
+    this
+    ))
 
 (defn spawn-carrot []
   (let [scene "LoruleH8"
