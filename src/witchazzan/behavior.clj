@@ -60,7 +60,7 @@
             y]
   game-piece
   (die
-    [this]
+    [this])
   (behavior
     [this]
     (let [time (System/currentTimeMillis)
