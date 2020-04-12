@@ -39,10 +39,8 @@
   (let [player (first (game-pieces "socket" channel))]
     (send
      player
-     (fn [this]
-       (merge
-        this
-        (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))))
+     merge
+     (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")

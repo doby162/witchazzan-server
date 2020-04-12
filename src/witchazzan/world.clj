@@ -80,7 +80,7 @@
   (loop []
     (run!
      (fn [game-piece]
-       (send game-piece (fn [this] (behavior/behavior this))))
+       (send game-piece behavior/behavior))
      (:game-pieces @game-state))
     ;wait for a minumum of 10 milliseconds and a maximum of 100 milliseconds
     ;to queue up the next round of agent actions. If it takes more than 100 millis to
