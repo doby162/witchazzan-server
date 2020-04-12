@@ -27,8 +27,8 @@
      (fn [data]
        ;logout
        (when (not (empty? (game-pieces :socket channel)))
-       (behavior/delete
-         @(first (game-pieces :socket channel))))))
+         (behavior/delete
+          @(first (game-pieces :socket channel))))))
     (server/on-receive
      channel
      (fn [data]

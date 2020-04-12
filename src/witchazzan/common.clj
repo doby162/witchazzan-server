@@ -161,7 +161,7 @@
      (shuffle)
      (filter #((:get-tile-walkable map) %))
      (filter #(not (tile-occupied scene %)))
-     (first ))))
+     (first))))
 ;;state management and access
 ;;init
 (defn init []

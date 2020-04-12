@@ -27,22 +27,22 @@
               :content (str "Welcome, " (:name player))}))
 
 (defn handle-chat
-    "broadcasts chats as json"
-    [message channel]
-    (let [player @(first (game-pieces :socket channel))
-          id (get message "targetPlayerId")
-          audience (if id (game-pieces id) (game-pieces :type "player"))]
-      (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
-                   :content (get message "text")} audience)))
+  "broadcasts chats as json"
+  [message channel]
+  (let [player @(first (game-pieces :socket channel))
+        id (get message "targetPlayerId")
+        audience (if id (game-pieces id) (game-pieces :type "player"))]
+    (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
+                 :content (get message "text")} audience)))
 
 (defn handle-location-update [message channel]
-    (let [player (first (game-pieces "socket" channel))]
-      (send
-       player
-       (fn [this]
-         (merge
-         this
-         (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))))
+  (let [player (first (game-pieces "socket" channel))]
+    (send
+     player
+     (fn [this]
+       (merge
+        this
+        (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
@@ -80,46 +80,46 @@
 ;)
 
 (defn handle-command
-    "this handler is a bit of a switch case inside of a switch case,
+  "this handler is a bit of a switch case inside of a switch case,
   it handles all of the text commands entered
   via the command bar on the client"
-    [message channel]
-    (let [player @(first (game-pieces "socket" channel))]
-      (when (re-find #"^look" (get message "command"))
-        (message-player {:messageType "chat" :name "Witchazzan.core"
-                         :content
-                         "You see a realm of unimaginable possibility."}
-                        player))
-      (when (re-find #"^listen" (get message "command"))
-        (message-player {:messageType "chat" :name "Witchazzan.core"
-                         :content
-                         "You hear the distant chatter of a keyboard.
+  [message channel]
+  (let [player @(first (game-pieces "socket" channel))]
+    (when (re-find #"^look" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
+                       "You see a realm of unimaginable possibility."}
+                      player))
+    (when (re-find #"^listen" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
+                       "You hear the distant chatter of a keyboard.
                      A developer is hard at work."}
-                        player))
-      (when (re-find #"^who" (get message "command"))
-        (message-player {:messageType "chat" :name "Witchazzan.core"
-                         :content
-                         (apply str (map #(str (:name @%) ", ") (game-pieces :type "player")))}
-                        player))
-      (when (re-find #"^reload" (get message "command"))
-        (require 'witchazzan.common :reload)
-        (require 'witchazzan.comms :reload)
-        (require 'witchazzan.behavior :reload)
-        (require 'witchazzan.world :reload)
-        (message-player {:messageType "chat" :name "Witchazzan.core"
-                         :content "Reloading source files"} player))
-      (when (re-find #"^git-pull" (get message "command"))
-        (message-player {:messageType "chat" :name "Witchazzan.core"
-                         :content (:out (sh "git" "pull"))} player))
-      #_(when (re-find #"^reset" (get message "command"))
+                      player))
+    (when (re-find #"^who" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content
+                       (apply str (map #(str (:name @%) ", ") (game-pieces :type "player")))}
+                      player))
+    (when (re-find #"^reload" (get message "command"))
+      (require 'witchazzan.common :reload)
+      (require 'witchazzan.comms :reload)
+      (require 'witchazzan.behavior :reload)
+      (require 'witchazzan.world :reload)
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content "Reloading source files"} player))
+    (when (re-find #"^git-pull" (get message "command"))
+      (message-player {:messageType "chat" :name "Witchazzan.core"
+                       :content (:out (sh "git" "pull"))} player))
+    #_(when (re-find #"^reset" (get message "command"))
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content "Deleting save."} player)
         (reset))
-      #_(when (re-find #"^save-game" (get message "command"))
+    #_(when (re-find #"^save-game" (get message "command"))
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content "Saving."} player)
         (save))
-      #_(when (re-find #"^load-game" (get message "command"))
+    #_(when (re-find #"^load-game" (get message "command"))
         (message-player {:messageType "chat" :name "Witchazzan.core"
                          :content "Loading."} player)
         (load-game))))

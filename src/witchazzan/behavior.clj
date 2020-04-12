@@ -28,6 +28,31 @@
   [& keywords]
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
+
+(defn teleport [this]
+  "check for and apply teleports"
+  (let [scene (name->scene (:scene this))
+        tp-collisions
+        (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
+    (cond
+      (and
+       (some #(not (= 0 %)) tp-collisions))
+      (let [target (nth (:teleport scene) (.indexOf tp-collisions (apply max tp-collisions)))
+            tilewidth (:tilewidth scene)
+            target-obj-name (get (first (get target "properties")) "value")
+            target-obj
+            (or
+             (ffilter ; intended entrance
+              #(= (get % "name") target-obj-name)
+              (:objects (name->scene (get target "name"))))
+             (ffilter ; backup entrance.
+              #(= (get % "name") "Default Spawn Point")
+              (:objects (name->scene (get target "name")))))]
+        (merge this
+               {:x (/ (get target-obj "x") tilewidth) ; null pointer on fail to find tp
+                :y (/ (get target-obj "y") tilewidth)
+                :scene (get target "name")}))
+      :else this)))
 ;;helpers
 ;;shared behavior
 (defn add-game-piece!
@@ -37,10 +62,10 @@
                                 (fn [game-pieces] (merge game-pieces (agent piece)))))))
 
 (defn delete
-    [this]
-    (swap! game-state
-      (fn [state] (update-in state [:game-pieces]
-                             (fn [game-pieces] (filter #(not (= (:id this) (:id @%))) game-pieces))))))
+  [this]
+  (swap! game-state
+         (fn [state] (update-in state [:game-pieces]
+                                (fn [game-pieces] (filter #(not (= (:id this) (:id @%))) game-pieces))))))
 ;;shared behavior
 ;;defprotocol
 
@@ -49,7 +74,7 @@
   (die [this])
   (reproduce [this]))
 
-;reproduce is next, just need to make a copy plus mutation
+;todo
 ;spells will be based off the of the :spell key and it's text
 ;default is to do nothing, but if a spell matches one of our list
 ;we dispatch it. All fireballs can be the same function and record type
@@ -75,20 +100,21 @@
           delta (- time milliseconds)]
       (-> this
           (merge {:milliseconds time})
-          (merge {:energy (+ (/ delta 1000) energy)}))))
+          (merge {:energy (+ (/ delta 1000) energy)})
+          (teleport))))
   (reproduce
     [this]
     (let [energy (/ energy 3)
           tile (find-empty-tile scene)
           genes (mutate-genes genes)]
-          (add-game-piece!
-            (map->carrot (into {} (merge this
-                                         {:genes genes
-                                          :x (:x tile)
-                                          :y (:y tile)
-                                          :energy energy
-                                          :id (gen-id)}))))
-          (merge this {:energy energy}))))
+      (add-game-piece!
+       (map->carrot (into {} (merge this
+                                    {:genes genes
+                                     :x (:x tile)
+                                     :y (:y tile)
+                                     :energy energy
+                                     :id (gen-id)}))))
+      (merge this {:energy energy}))))
 
 (defrecord player
            [id
@@ -101,8 +127,21 @@
   game-piece
   (behavior
     [this]
-    this
-    ))
+    this))
+
+;ok, how do carrots handle being crowded?
+;one genne determines the size of it's territory.
+;A higher number means it gets effected by more distand carrots.
+;A higher number ALSO means higher photosynthesis yield.
+;Then we want some strategies for handling incoming damage.
+;1, lower both of your energy by the (min en1 en2) and kill competitors
+;at the risk of starving?
+;2, parasite, sap sone energy every turn?
+;3 maybe a more cooperative option? How about a carrot that just takes reduced
+;penalty for having nearby carrot?
+;Not sure how these are for game balance but it would at least
+;be more interesting
+
 
 (defn spawn-carrot []
   (let [scene "LoruleH8"
@@ -110,7 +149,7 @@
     (add-game-piece!
      (map->carrot
       {:id (gen-id)
-       :genes (generate-genes :a-gene :b-gene)
+       :genes (generate-genes :repro-threshold :b-gene)
        :energy 20
        :scene scene
        :sprite "carrot"
