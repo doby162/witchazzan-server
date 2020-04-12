@@ -88,7 +88,10 @@
 ;;state management and access
 (defonce game-state (atom
                      {:game-pieces []
-                      :auto-increment-id 0}))
+                      :auto-increment-id 0
+                      :hour 0
+                      :day 0
+                      :start-time (System/currentTimeMillis)}))
 
 #_(defn load-game
     []

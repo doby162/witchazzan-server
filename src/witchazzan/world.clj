@@ -75,9 +75,31 @@
     (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
 
 ;;admin stuff
-;;
+;;loooop
+
+(defn keep-time! []
+  (let [old-state @game-state
+        new-hour (int (mod (/ (- (System/currentTimeMillis) (:start-time @game-state))
+                              (setting "millis-per-hour")) 24))
+        new-day (int (/ (/ (- (System/currentTimeMillis) (:start-time @game-state))
+                           (setting "millis-per-hour")) 24))]
+    (when (not (= new-hour (:hour old-state)))
+      (swap! game-state update-in [:hour]
+             (fn [_] new-hour))
+      (swap! game-state update-in [:day]
+             (fn [_] new-day))
+      (when (= new-hour 6)
+        (comms/broadcast
+         {:messageType "chat" :name "Witchazzan.core" :id -1
+          :content (str "Dawn of day " new-day)}))
+      (when (= new-hour 20)
+        (comms/broadcast
+         {:messageType "chat" :name "Witchazzan.core" :id -1
+          :content (str "Night Falls")})))))
+
 (defn game-loop []
   (loop []
+    (keep-time!)
     (run!
      (fn [game-piece]
        (send game-piece behavior/behavior))
@@ -87,8 +109,8 @@
     ;finish processing, they'll just pile up in order.
     ;agents keep track of elapsed time on an individual basis.
     (update-clients)
-    (try (Thread/sleep 10) (catch Exception e))
-    (apply await-for 90 (:game-pieces @game-state))
+    (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception e))
+    (apply await-for (setting "add-max-millis-per-frame") (:game-pieces @game-state))
     (when (not (setting "pause")) (recur))))
 
 (defn main
