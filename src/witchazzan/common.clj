@@ -135,11 +135,28 @@
        game-state
        (fn [state] (merge state {:game-pieces players})))))
 
+(defn map-sub?
+  "Is the second arg a superset of the first arg?"
+  [sub super]
+  (every?
+   true?
+   (map #(or
+          (= (second %) (get super (first %)))
+          (and
+           (number? (second %))
+           (number? (get super (first %)))
+           (== (second %) (get super (first %)))))
+        sub)))
+
 (defn game-pieces
   ([]
    (:game-pieces @game-state))
   ([id]
-   (ffilter #(= id (:id @%)) (game-pieces)))
+   (cond
+     (int? id)
+     (ffilter #(= id (:id @%)) (game-pieces))
+     :else
+     (filter #(map-sub? id @%) (game-pieces))))
   ([key value]
    (filter #(= value ((keyword key) @%)) (game-pieces))))
 
