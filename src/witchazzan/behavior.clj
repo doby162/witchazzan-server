@@ -66,6 +66,19 @@
   (swap! game-state
          (fn [state] (update-in state [:game-pieces]
                                 (fn [game-pieces] (filter #(not (= (:id this) (:id @%))) game-pieces))))))
+
+(defn shift [this]
+  (let [collisions (game-pieces {:scene (:scene this) :x (:x this) :y (:y this)})]
+    (cond
+      (and
+       (>= (count collisions) 2)
+       (<
+        (:energy this)
+        (reduce max
+                (map #(:energy @% -1) collisions))))
+      (merge this (find-empty-tile (:scene this)))
+      :else
+      this)))
 ;;shared behavior
 ;;defprotocol
 
@@ -101,6 +114,7 @@
       (-> this
           (merge {:milliseconds time})
           (merge {:energy (+ (/ delta 1000) energy)})
+          (shift)
           (teleport))))
   (reproduce
     [this]
