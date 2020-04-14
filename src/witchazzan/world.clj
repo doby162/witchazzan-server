@@ -116,7 +116,7 @@
     ;agents keep track of elapsed time on an individual basis.
     (update-clients)
     (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception e))
-    (apply await-for (setting "add-max-millis-per-frame") (:game-pieces @game-state))
+    (apply await (:game-pieces @game-state))
     (when (not (setting "pause")) (recur))))
 
 (defn main
