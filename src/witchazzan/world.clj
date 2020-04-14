@@ -58,7 +58,13 @@
 (defn threadify [func] (future (func)))
 ;;game loop
 ;;admin stuff
-
+(defn log-and-clear-agents
+  []
+  (run!
+   (fn [agent]
+     (log (with-out-str (println (agent-error agent))))
+     (behavior/delete @agent))
+   (filter #(agent-error %) (game-pieces))))
 
 (defn ten-x []
   (setting "millis-per-hour" (/ (setting "millis-per-hour") 10))
