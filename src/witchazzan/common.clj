@@ -145,7 +145,10 @@
           (and
            (number? (second %))
            (number? (get super (first %)))
-           (== (second %) (get super (first %)))))
+           ;All numbers are treated as integers for comparison.
+           ;This is because tiles, and not the actual location in space,
+           ;are the intended use case.
+           (== (int (second %)) (int (get super (first %))))))
         sub)))
 
 (defn game-pieces
