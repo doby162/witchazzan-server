@@ -169,6 +169,8 @@
                 (fn [object]
                   (let [ob-coords @object]
                     (and
+                     (not (nil? (:x ob-coords)))
+                     (not (nil? (:y ob-coords)))
                      (= (int (:x coords)) (int (:x ob-coords)))
                      (= (int (:y coords)) (int (:y ob-coords))))))
                 (game-pieces)))))
