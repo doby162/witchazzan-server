@@ -70,8 +70,8 @@
 (defn shift [this]
   (let [collisions
         (filter
-          #(= (class %) 'witchazzan.behavior.carrot)
-        (game-pieces {:scene (:scene this) :x (:x this) :y (:y this)}))]
+         #(= (str (class @%)) "class witchazzan.behavior.carrot")
+         (game-pieces {:scene (:scene this) :x (:x this) :y (:y this)}))]
     (cond
       (and
        (>= (count collisions) 2)
