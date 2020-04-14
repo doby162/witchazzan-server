@@ -1,3 +1,4 @@
+(set! *warn-on-reflection* true)
 (ns witchazzan.core
   (:require witchazzan.common) ;global state and access
   (:require witchazzan.behavior) ;definition of game pieces

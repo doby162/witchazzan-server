@@ -32,7 +32,7 @@
 (defn teleport [this]
   "check for and apply teleports"
   (let [scene (name->scene (:scene this))
-        tp-collisions
+        ^clojure.lang.LazySeq tp-collisions
         (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
     (cond
       (and
