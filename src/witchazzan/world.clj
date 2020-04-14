@@ -62,7 +62,7 @@
   []
   (run!
    (fn [agent]
-     (log (with-out-str (println (agent-error agent))))
+     (log (with-out-str (println (agent-error agent) " " @agent)))
      (behavior/delete @agent))
    (filter #(agent-error %) (game-pieces))))
 
