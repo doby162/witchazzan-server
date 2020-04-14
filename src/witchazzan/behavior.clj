@@ -48,10 +48,14 @@
              (ffilter ; backup entrance.
               #(= (get % "name") "Default Spawn Point")
               (:objects (name->scene (get target "name")))))]
-        (merge this
-               {:x (/ (get target-obj "x") tilewidth) ; null pointer on fail to find tp
-                :y (/ (get target-obj "y") tilewidth)
-                :scene (get target "name")}))
+        (cond
+          target-obj
+          (merge this
+                 {:x (/ (get target-obj "x") tilewidth)
+                  :y (/ (get target-obj "y") tilewidth)
+                  :scene (get target "name")})
+          :else (merge this (find-empty-tile (:scene this)))))
+        ;if we can't find a target-obj, the scene we want doesn't exist.
       :else this)))
 ;;helpers
 ;;shared behavior
