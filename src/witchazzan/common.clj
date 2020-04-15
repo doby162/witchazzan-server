@@ -152,6 +152,10 @@
         sub)))
 
 (defn game-pieces
+  "Access game pieces in the form of agents.
+  Returns all pieces when called with no args, the piece with a given ID when called
+  with an integer, the pieces for which key A matches value B when called with two args,
+  and returns all pieces which are a superset of a supplied map when called with a map."
   ([]
    (:game-pieces @game-state))
   ([id]
@@ -162,6 +166,13 @@
      (filter #(map-sub? id @%) (game-pieces))))
   ([key value]
    (filter #(= value ((keyword key) @%)) (game-pieces))))
+
+(defn typed-pieces
+  "[a ...], calls game-pieces with the trailing args and filter the outut by
+  checking the class against the value of a, which should be of the form
+  witchazzan.behavior.carrot or similar."
+  [filter-class & rest]
+  (filter #(= filter-class (class @%)) (apply game-pieces rest)))
 
 (defn tile-occupied
   [scene coords]
