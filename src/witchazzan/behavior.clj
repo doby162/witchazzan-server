@@ -73,9 +73,7 @@
 
 (defn shift [this]
   (let [collisions
-        (filter
-         #(= (str (class @%)) "class witchazzan.behavior.carrot")
-         (game-pieces {:scene (:scene this) :x (:x this) :y (:y this)}))]
+        (typed-pieces (class this) {:scene (:scene this) :x (:x this) :y (:y this)})]
     (cond
       (and
        (>= (count collisions) 2)
@@ -137,6 +135,16 @@
                                      :id (gen-id)}))))
       (merge this {:energy energy}))))
 
+(defn cast-spell
+  [this]
+  (let [spell (:spell this)]
+    (cond
+      (= "fireball" spell)
+      (do)
+      (= "teleball" spell)
+      (do))
+    (dissoc this :spell)))
+
 (defrecord player
            [id
             socket
@@ -144,11 +152,15 @@
             y
             name
             health
-            sprite]
+            sprite
+            milliseconds]
   game-piece
   (behavior
     [this]
-    this))
+    (let [time (System/currentTimeMillis)
+          delta (- time milliseconds)]
+      (-> this
+          (cast-spell)))))
 
 ;ok, how do carrots handle being crowded?
 ;one genne determines the size of it's territory.
@@ -167,14 +179,17 @@
 (defn spawn-carrot []
   (let [scene "LoruleH8"
         coords (find-empty-tile scene)]
-    (add-game-piece!
-     (map->carrot
-      {:id (gen-id)
-       :genes (generate-genes :repro-threshold :b-gene)
-       :energy 20
-       :scene scene
-       :sprite "carrot"
-       :milliseconds (System/currentTimeMillis)
-       :x (:x coords)
-       :y (:y coords)
-       :health 1}))))
+    (cond
+      coords
+      (add-game-piece!
+       (map->carrot
+        {:id (gen-id)
+         :genes (generate-genes :repro-threshold :b-gene)
+         :energy 20
+         :scene scene
+         :sprite "carrot"
+         :milliseconds (System/currentTimeMillis)
+         :x (:x coords)
+         :y (:y coords)
+         :health 1}))
+      :else (log "spawn-carrot failed to find an empty tile"))))

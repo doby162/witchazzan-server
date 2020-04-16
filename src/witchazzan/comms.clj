@@ -62,7 +62,8 @@
        :sprite sprite
        :identity "true"
        :name username
-       :socket channel}))
+       :socket channel
+       :milliseconds (System/currentTimeMillis)}))
     (establish-identity @(game-pieces id)))
   #_(when (not (empty? existing-user))
       (swap!
