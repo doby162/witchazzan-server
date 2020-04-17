@@ -176,9 +176,9 @@
 ;be more interesting
 
 
-(defn spawn-carrot []
-  (let [scene "LoruleH8"
-        coords (find-empty-tile scene)]
+(defn spawn-carrot [& coords]
+  (let [scene (or (:scene (first coords)) "LoruleH8")
+        coords (or (first coords) (find-empty-tile scene))]
     (cond
       coords
       (add-game-piece!

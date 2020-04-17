@@ -79,9 +79,32 @@
 
 #_(defn seed-nature []
     (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
-
 ;;admin stuff
 ;;loooop
+(defn spawn-points
+  "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
+  [type]
+  (let [coord-pairs
+        (filter #(:x %) ;check if valid coords were returned
+                (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
+                       (let [properties
+                             (ffilter
+                              #(= (str "spawn-" type) (get % "name"))
+                              (:objects tilemap))]
+                         (when properties
+                           {:scene (:name tilemap)
+                            :x (/ (get properties "x") (:tilewidth tilemap))
+                            :y (/ (get properties "y") (:tilewidth tilemap))})))
+                     tilemaps))]
+    (run!
+     #(call-func-by-string (str "witchazzan.behavior/spawn-" type) (list %))
+     coord-pairs)))
+
+(defn coordinate-spawns []
+  #_(when (empty? (typed-pieces witchazzan.behavior.slime))
+      (spawn-points "slime"))
+  (when (empty? (typed-pieces witchazzan.behavior.carrot))
+    (spawn-points "carrot")))
 
 (defn keep-time! []
   (let [old-state @game-state
@@ -101,7 +124,8 @@
       (when (= new-hour 20)
         (comms/broadcast
          {:messageType "chat" :name "Witchazzan.core" :id -1
-          :content (str "Night Falls")})))))
+          :content (str "Night Falls")}))
+      (coordinate-spawns))))
 
 (defn game-loop []
   (loop []
@@ -110,10 +134,6 @@
      (fn [game-piece]
        (send game-piece behavior/behavior))
      (:game-pieces @game-state))
-    ;wait for a minumum of 10 milliseconds and a maximum of 100 milliseconds
-    ;to queue up the next round of agent actions. If it takes more than 100 millis to
-    ;finish processing, they'll just pile up in order.
-    ;agents keep track of elapsed time on an individual basis.
     (update-clients)
     (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception e))
     (apply await (:game-pieces @game-state))
@@ -127,37 +147,3 @@
   (when (not (setting "pause"))
     (log "Not paused, running game")
     (threadify game-loop)))
-
-#_(defn spawn-points
-    "assumes spawn-type is both a function and a valid object name, upgrade this to take a list later"
-    [type & rand]
-    (let [coord-pairs
-          (filter #(:x %) ;check if valid coords were returned
-                  (map (fn [tilemap] ; assume one spawn of type per scene because it's easy
-                         (let [properties
-                               (ffilter
-                                #(= (str "spawn-" type) (get % "name"))
-                                (:objects tilemap))]
-                           (when properties
-                             {:scene (:name tilemap)
-                              :x (/ (get properties "x") (:tilewidth tilemap))
-                              :y (/ (get properties "y") (:tilewidth tilemap))})))
-                       tilemaps))]
-      (cond
-        rand
-        (run! #(call-func-by-string (str "witchazzan.world/spawn-" type)
-                                    (list (:scene %) (find-empty-tile (:scene %))))
-              coord-pairs)
-        :else
-        (run! #(call-func-by-string (str "witchazzan.world/spawn-" type) (list (:scene %) %))
-              coord-pairs))))
-
-#_(defn coordinate-spawns []
-    (when (and
-           (< (:clock @game-state) 5)
-           (< (count (filter #(= (:type %) "slime") (objects))) 5))
-      (spawn-points "slime"))
-    (when (and
-           (> (:clock @game-state) 20)
-           (< (count (filter #(= (:type %) "carrot") (objects))) 5))
-      (spawn-points "carrot" true)))
