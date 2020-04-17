@@ -176,15 +176,19 @@
 
 (defn tile-occupied
   [scene coords]
-  (not (empty? (filter
+  (seq (filter
                 (fn [object]
                   (let [ob-coords @object]
                     (and
-                     (not (nil? (:x ob-coords)))
-                     (not (nil? (:y ob-coords)))
                      (= (int (:x coords)) (int (:x ob-coords)))
                      (= (int (:y coords)) (int (:y ob-coords))))))
-                (game-pieces)))))
+                (game-pieces :scene scene))))
+
+;this version of the function is so much nicer but
+;it takes longer. Revisit after improving game-pieces
+#_(defn tile-occupied
+  [scene coords]
+  (not (empty? (game-pieces {:scene scene :x (:x coords) :y (:y coords)}))))
 
 (defn name->scene [name]
   (first (filter #(= name (:name %)) tilemaps)))
