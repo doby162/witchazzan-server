@@ -8,6 +8,7 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [com.clojure-goes-fast/clj-async-profiler "0.4.0"]
                  [http-kit "2.3.0"]
+                 [criterium "0.4.5"]
                  [org.clojure/data.json "0.2.6"]]
   :main ^:skip-aot witchazzan.core
   :target-path "target/%s"

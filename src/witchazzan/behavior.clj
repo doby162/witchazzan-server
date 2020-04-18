@@ -69,7 +69,10 @@
   [this]
   (swap! game-state
          (fn [state] (update-in state [:game-pieces]
-                                (fn [game-pieces] (filter #(not (= (:id this) (:id @%))) game-pieces))))))
+                                (fn [game-pieces]
+                                  (filterv
+                                   #(not (= (:id this) (:id @%)))
+                                   game-pieces))))))
 
 (defn shift [this]
   (let [collisions
@@ -177,8 +180,8 @@
 
 
 (defn spawn-carrot [& coords]
-  (let [scene (or (:scene (first coords)) "LoruleH8")
-        coords (or (first coords) (find-empty-tile scene))]
+  (let [scene (or (:scene coords) "LoruleH8")
+        coords (or coords (find-empty-tile scene))]
     (cond
       coords
       (add-game-piece!

@@ -147,6 +147,12 @@ Slow down the game to 1/10th speed.
 
 ## Profiling
 This project used this clojure profiler: https://github.com/clojure-goes-fast/clj-async-profiler
+And this clojure profiler: https://github.com/hugoduncan/criterium
+
+## Flame Graphs
+Flamegraphs visual deconstruct the process into a stack of function calls,
+with their respective sizes showing how many cycles they're eating.
+Very handy for finding bottlenecks!
 
 ### Get your environment ready:
 `sudo echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid`
@@ -161,6 +167,12 @@ Serve the flamegraph: `(prof/serve-files 8082)`
 Profile a single frame while paused: `(prof/profile (game-loop))`
 
 Profile the running application with the UI hosted by the profiler.
+
+## Profiling for speed:
+When you want to know how fast a function runs, as accurately as possible, use Criterium!
+`(use 'criterium.core)`
+`(setting "pause" true)`
+`(bench (game-looop))`
 
 
 ## Contribution
