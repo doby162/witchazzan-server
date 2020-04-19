@@ -5,6 +5,10 @@
   (:gen-class))
 ;;namespace
 ;;game-piece creation helpers
+;normalize settings values
+(def hunger-constant (/ (setting :hunger) (setting :millis-per-hour)))
+(def photosynthesis-constant (/ (setting :photosynthesis) (setting :millis-per-hour)))
+
 (defn normalize-genes
   "prevent mutation from moving genes outside the 0-gene-max range"
   [genes]
@@ -20,8 +24,9 @@
 (defn mutate-genes
   "each gene can be incremeneted, decremented or stay the same with equal chance"
   [genes]
-  (zipmap (keys genes)
-          (map #(+ (- (rand-int 3) 1) %) (vals genes))))
+  (normalize-genes
+    (zipmap (keys genes)
+            (map #(+ (- (rand-int 3) 1) %) (vals genes)))))
 
 (defn generate-genes
   "makes a list of keywords into a map of ints, arbitrarily limited by settings"
@@ -105,7 +110,7 @@
 (defn hunger
   [this]
   (when (< (:energy this) 0) (die this))
-  (merge this {:energy (- (:energy this) (* (:delta this) (setting "hunger")))}))
+  (merge this {:energy (- (:energy this) (* (:delta this) hunger-constant))}))
 
 (defn sunny?
   [this]
@@ -118,15 +123,14 @@
   [this]
   (cond
     (sunny? this)
-    (merge this {:energy (+ (:energy this) (* (:delta this) (setting "hunger")))})
+    (merge this {:energy (+ (:energy this) (* (:delta this) photosynthesis-constant))})
     :else this))
 
 (defn carrot-repro-decide
   [this]
   (cond
     (> (:energy this) (:repro-threshold (:genes this)))
-    ; (reproduce this)
-    this
+    (reproduce this)
     :else this))
 
 (defrecord carrot
@@ -150,8 +154,7 @@
           delta (- time milliseconds)]
       (-> this
           (merge {:milliseconds time})
-          (merge this {:delta delta})
-          ; (merge {:energy (+ (/ delta 1000) energy)})
+          (merge {:delta delta})
           (photosynthesis)
           (shift)
           (hunger)
@@ -164,7 +167,7 @@
           genes (mutate-genes genes)]
       (add-game-piece!
        (map->carrot (into {} (merge this
-                                    {:genes (mutate-genes genes)
+                                    {:genes genes
                                      :x (:x tile)
                                      :y (:y tile)
                                      :energy energy

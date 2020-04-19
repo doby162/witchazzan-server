@@ -18,6 +18,6 @@
  :hours-per-day 24
  :dawn 6
  :sunset 20
- :hunger 0
- :photosynthesis 0
+ :hunger 1
+ :photosynthesis 2
  }
