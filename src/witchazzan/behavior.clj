@@ -29,7 +29,8 @@
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
-(defn teleport [this]
+(defn teleport
+  [this]
   "check for and apply teleports"
   (let [scene (name->scene (:scene this))
         ^clojure.lang.LazySeq tp-collisions
@@ -74,7 +75,8 @@
                                    #(not (= (:id this) (:id @%)))
                                    game-pieces))))))
 
-(defn shift [this]
+(defn shift
+  [this]
   (let [collisions
         (typed-pieces (class this) {:scene (:scene this) :x (:x this) :y (:y this)})]
     (cond
@@ -100,6 +102,33 @@
 ;default is to do nothing, but if a spell matches one of our list
 ;we dispatch it. All fireballs can be the same function and record type
 
+(defn hunger
+  [this]
+  (when (< (:energy this) 0) (die this))
+  (merge this {:energy (- (:energy this) (* (:delta this) (setting "hunger")))}))
+
+(defn sunny?
+  [this]
+  (and
+   (> (:hour @game-state) (setting "dawn"))
+   (< (:hour @game-state) (setting "sunset"))
+   (not (re-seq #"Cave" (:scene this)))))
+
+(defn photosynthesis
+  [this]
+  (cond
+    (sunny? this)
+    (merge this {:energy (+ (:energy this) (* (:delta this) (setting "hunger")))})
+    :else this))
+
+(defn carrot-repro-decide
+  [this]
+  (cond
+    (> (:energy this) (:repro-threshold (:genes this)))
+    ; (reproduce this)
+    this
+    :else this))
+
 (defrecord carrot
            [id
             genes
@@ -121,8 +150,12 @@
           delta (- time milliseconds)]
       (-> this
           (merge {:milliseconds time})
-          (merge {:energy (+ (/ delta 1000) energy)})
+          (merge this {:delta delta})
+          ; (merge {:energy (+ (/ delta 1000) energy)})
+          (photosynthesis)
           (shift)
+          (hunger)
+          (carrot-repro-decide)
           (teleport))))
   (reproduce
     [this]
@@ -131,7 +164,7 @@
           genes (mutate-genes genes)]
       (add-game-piece!
        (map->carrot (into {} (merge this
-                                    {:genes genes
+                                    {:genes (mutate-genes genes)
                                      :x (:x tile)
                                      :y (:y tile)
                                      :energy energy
@@ -180,8 +213,8 @@
 
 
 (defn spawn-carrot [& coords]
-  (let [scene (or (:scene coords) "LoruleH8")
-        coords (or coords (find-empty-tile scene))]
+  (let [scene (or (:scene (into {} coords)) "LoruleH8")
+        coords (if (seq coords) (into {} coords) (find-empty-tile scene))]
     (cond
       coords
       (add-game-piece!

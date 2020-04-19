@@ -14,4 +14,10 @@
  :auto-load true
  :gene-max 255
  :millis-per-hour 60000
- :log-to-repl false}
+ :log-to-repl false
+ :hours-per-day 24
+ :dawn 6
+ :sunset 20
+ :hunger 0
+ :photosynthesis 0
+ }

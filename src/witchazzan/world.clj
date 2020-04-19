@@ -97,7 +97,7 @@
                             :y (/ (get properties "y") (:tilewidth tilemap))})))
                      tilemaps))]
     (run!
-     #(call-func-by-string (str "witchazzan.behavior/spawn-" type) (list %))
+     #(call-func-by-string (str "witchazzan.behavior/spawn-" type) %)
      coord-pairs)))
 
 (defn coordinate-spawns []
@@ -109,19 +109,19 @@
 (defn keep-time! []
   (let [old-state @game-state
         new-hour (int (mod (/ (- (System/currentTimeMillis) (:start-time @game-state))
-                              (setting "millis-per-hour")) 24))
+                              (setting "millis-per-hour")) (setting "hours-per-day")))
         new-day (int (/ (/ (- (System/currentTimeMillis) (:start-time @game-state))
-                           (setting "millis-per-hour")) 24))]
+                           (setting "millis-per-hour")) (setting "hours-per-day")))]
     (when (not (= new-hour (:hour old-state)))
       (swap! game-state update-in [:hour]
              (fn [_] new-hour))
       (swap! game-state update-in [:day]
              (fn [_] new-day))
-      (when (= new-hour 6)
+      (when (= new-hour (setting "dawn"))
         (comms/broadcast
          {:messageType "chat" :name "Witchazzan.core" :id -1
           :content (str "Dawn of day " new-day)}))
-      (when (= new-hour 20)
+      (when (= new-hour (setting "sunset"))
         (comms/broadcast
          {:messageType "chat" :name "Witchazzan.core" :id -1
           :content (str "Night Falls")}))
