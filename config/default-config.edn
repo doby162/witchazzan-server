@@ -19,5 +19,6 @@
  :dawn 6
  :sunset 20
  :hunger 1
- :photosynthesis 2
+ :photosynthesis 3
+ :crowding-factor 2
  }

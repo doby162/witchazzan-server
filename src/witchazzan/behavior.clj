@@ -25,8 +25,8 @@
   "each gene can be incremeneted, decremented or stay the same with equal chance"
   [genes]
   (normalize-genes
-    (zipmap (keys genes)
-            (map #(+ (- (rand-int 3) 1) %) (vals genes)))))
+   (zipmap (keys genes)
+           (map #(+ (- (rand-int 3) 1) %) (vals genes)))))
 
 (defn generate-genes
   "makes a list of keywords into a map of ints, arbitrarily limited by settings"
@@ -119,10 +119,20 @@
    (< (:hour @game-state) (setting "sunset"))
    (not (re-seq #"Cave" (:scene this)))))
 
+(defn crowded?
+  [this]
+  (let [this-scene (typed-pieces (class this) :scene (:scene this))]
+    (seq (filter
+          #(and
+            (not (= (:id this) (:id @%)))
+            (within-n (:x @%) (:x this) (setting :crowding-factor))
+            (within-n (:y @%) (:y this) (setting :crowding-factor)))
+          this-scene))))
+
 (defn photosynthesis
   [this]
   (cond
-    (sunny? this)
+    (and (sunny? this) (not (crowded? this)))
     (merge this {:energy (+ (:energy this) (* (:delta this) photosynthesis-constant))})
     :else this))
 
