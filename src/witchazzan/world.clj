@@ -5,9 +5,6 @@
   (:require [witchazzan.behavior :as behavior])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
-  (:require [clojure.string :as str])
-  (:require [clojure.pprint :as pp])
-  (:require [clojure.java.io :as io])
   (:gen-class))
 ;;namespace
 ;;websocket infrastructure
@@ -26,7 +23,7 @@
      channel
      (fn [data]
        ;logout
-       (when (not (empty? (game-pieces :socket channel)))
+       (when (seq (game-pieces :socket channel))
          (behavior/delete
           @(first (game-pieces :socket channel))))))
     (server/on-receive
@@ -135,12 +132,12 @@
        (send game-piece behavior/behavior))
      (:game-pieces @game-state))
     (update-clients)
-    (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception e))
+    (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
     (apply await (:game-pieces @game-state))
     (when (not (setting "pause")) (recur))))
 
 (defn main
-  [& args]
+  [& _]
   (log "Booting...")
   (server/run-server handler {:port (setting "port")})
   (log (str "Running server on port " (setting "port")))

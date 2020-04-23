@@ -4,7 +4,6 @@
   (:require [clojure.data.json :as json])
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
-  (:require [clojure.core.reducers :as r])
   (:gen-class))
 
 ;;settings

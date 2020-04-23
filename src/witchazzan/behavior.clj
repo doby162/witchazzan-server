@@ -1,7 +1,6 @@
 ;;namespace
 (ns witchazzan.behavior
   (:refer witchazzan.common)
-  (:require [clojure.pprint :as pp])
   (:gen-class))
 ;;namespace
 ;;game-piece creation helpers
@@ -35,8 +34,8 @@
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
 (defn teleport
-  [this]
   "check for and apply teleports"
+  [this]
   (let [scene (name->scene (:scene this))
         ^clojure.lang.LazySeq tp-collisions
         (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
