@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.behavior
-  (:refer witchazzan.common)
+  (:require [witchazzan.common :refer :all])
   (:gen-class))
 ;;namespace
 ;;game-piece creation helpers

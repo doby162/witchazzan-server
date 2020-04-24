@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.comms
-  (:refer witchazzan.common)
+  (:require [witchazzan.common :refer :all])
   (:require [witchazzan.behavior :as behavior])
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])

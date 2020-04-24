@@ -1,6 +1,6 @@
 ;;namespace
 (ns witchazzan.world
-  (:refer witchazzan.common)
+  (:require [witchazzan.common :refer :all])
   (:require [witchazzan.comms :as comms])
   (:require [witchazzan.behavior :as behavior])
   (:require [clojure.data.json :as json])
