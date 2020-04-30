@@ -191,7 +191,7 @@
       (do)
       (= "teleball" spell)
       (do))
-    (dissoc this :spell)))
+    (merge this {:spell nil})))
 
 (defrecord player
            [id
