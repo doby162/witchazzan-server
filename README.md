@@ -11,9 +11,9 @@ The game exists in two parts:
 Both parts are required for the game to function.
 
 # Admin client API
-## Clients can send messages directly to the admin api by sending a chat message begining with a slash
+## Clients can send messages directly to the admin api by sending a chat message beginning with a slash
 ## This allows all players, eventually all players with admin rights, to coordinate server actions.
-NOTE: These **are** case sensitive
+NOTE: These **are** case-sensitive
 
 ### look
 This will eventually give players information of some sort, it basically does nothing.
@@ -40,18 +40,18 @@ Saves the game, stores all game-state in save.edn. Works even if autosave and au
 Clears and loads game state from save.edn, but keeps all players connected.
 
 ### debug-teleport
-Under maintenance, this function tells the client to display the hitboxes of the teleport zones.
+Under maintenance, this function tells the client to display the hit boxes of the teleport zones.
 
 # Namespace Documents - a contributor's guide 
 
 ## Core
 This namespace's function is to load all required namespaces and to contain the -main function.
-It's role as a top level namespace without any content or dependencies is important for hotloading new code into
+Its role as a top-level namespace without any content or dependencies is important for hot loading new code into
 a live server instance.
 
 ## World
 Originally called core, this file contained the entire witchazzan server project, and continues to house anything
-not yet big enough to warrant a namespace of it's own. Generally, this file contains the rules and mechanisms of the world.
+not yet big enough to warrant a namespace of its own. Generally, this file contains the rules and mechanisms of the world.
 Many world rules are in the form of helper functions, but the processing of tilemaps, core game loop and server boilerplate also reside here.
 
 The core game loop isn't intuitive, here's a break down:
@@ -68,13 +68,13 @@ This simplest namespace, this file implements the API of the server.
 The majority of data passed in by the client application is handled by handle-location-update, which attaches newly received state information to the client's avatar via the mail queue.
 
 The api is, approximately, as follows:
-* Handle-login: when a new client is connected, they are assigned an in game avatar and they recieve the output of establish-identity, which allows client programs to know which game object is their avatar.
+* Handle-login: when a new client is connected, they are assigned an in game avatar and they receive the output of establish-identity, which allows client programs to know which game object is their avatar.
 * Handle-location-update: The main update handler, this function expects new X and Y values for the avatar, as well as
 any additional key/value pairs the client program would like to associate with the avatar. It's a current goal of the project to implement validation for this incoming data, by disallowing setting certain keys and validating updates to other keys.
 * Handle-chat: Chat messages get broadcast to all clients, they are not stored.
 * Handle-command: Various commands can be entered via the client by sending a chat message beginning with a forward slash.
   * /look and /listen give information about the location.
-  * /reload hotloads the current version of the source code into memory, soon to be accompanied by /git-pull
+  * /reload hot loads the current version of the source code into memory, soon to be accompanied by /git-pull
   * /who returns a list of all connected players
 * Handle-fireball: Creates a new fireball object depending on the state of the originating avatar.
 
@@ -92,7 +92,7 @@ Categorically, there are
 
 
 
-# Why Cojure?
+# Why Clojure?
 
 `Clojure increases soil nitrogen, which actually alters the ratio of leaves to roots in carrots.`
 
@@ -126,7 +126,7 @@ java --version
 
 ## Run the server interactively
     lein repl
-this starts the server, and also plunks you down into a console where you can manually interact with the code. This will allow the administrator to invoke top level functions, such as setting the framerate of the game or making a player invincible.
+This starts the server, and plunks you down into a console where you can manually interact with the code. This will allow the administrator to invoke top-level functions, such as setting the framerate of the game or making a player invincible.
 
 Use `Ctrl+d` to quit.
 
@@ -150,7 +150,7 @@ This project used this clojure profiler: https://github.com/clojure-goes-fast/cl
 And this clojure profiler: https://github.com/hugoduncan/criterium
 
 ## Flame Graphs
-Flamegraphs visual deconstruct the process into a stack of function calls,
+Flame graphs visual deconstruct the process into a stack of function calls,
 with their respective sizes showing how many cycles they're eating.
 Very handy for finding bottlenecks!
 
@@ -162,7 +162,7 @@ Very handy for finding bottlenecks!
 ### In the repl:
 `(require '[clj-async-profiler.core :as prof])`
 
-Serve the flamegraph: `(prof/serve-files 8082)`
+Serve the flame graph: `(prof/serve-files 8082)`
 
 Profile a single frame while paused: `(prof/profile (game-loop))`
 
