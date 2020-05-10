@@ -31,7 +31,7 @@
   [message channel]
   (let [player @(first (game-pieces :socket channel))
         id (get message "targetPlayerId")
-        audience (if id (game-pieces id) (game-pieces :type "player"))]
+        audience (if id [(game-pieces id)] (game-pieces :type "player"))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
