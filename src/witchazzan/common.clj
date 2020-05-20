@@ -166,6 +166,9 @@
   ([key value]
    (filter #(= value ((keyword key) @%)) (game-pieces))))
 
+(defn game-pieces-active [args]
+  (game-pieces (merge args {:active true})))
+
 (defn typed-pieces
   "[a ...], calls game-pieces with the trailing args and filter the outut by
   checking the class against the value of a, which should be of the form

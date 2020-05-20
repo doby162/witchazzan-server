@@ -47,36 +47,37 @@
         id (gen-id)
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (first (game-pieces "name" username))]
-;      (when (empty? existing-user)
-    (behavior/add-game-piece!
-     (behavior/map->player
-      {:id id
-       :x 0
-       :y 0
-       :type "player"
-       :scene "LoruleH8"
-       :health 100
-       :active true
-       :defence 0
-       :sprite sprite
-       :identity "true"
-       :name username
-       :socket channel
-       :milliseconds (System/currentTimeMillis)}))
-    (establish-identity @(game-pieces id)))
-  #_(when (not (empty? existing-user))
-      (swap!
-       network-mail
-       #(conj %
-              {:mail-to (:id (first existing-user))
-               :method "location-update"
-               :identity "true"
-               :dead nil ;TODO better respawn
-               :health 100
-              ;location updates set arbitrary values so we can ride on those coat tails
-               :socket channel :sprite sprite :active true}))))
-;)
+        existing-user (first (game-pieces "name" username))
+        default-health 100]
+    (cond
+      (not existing-user)
+      (do
+        (behavior/add-game-piece!
+         (behavior/map->player
+          {:id id
+           :x 0
+           :y 0
+           :type "player"
+           :scene "LoruleH8"
+           :health default-health
+           :active true
+           :defence 0
+           :sprite sprite
+           :name username
+           :socket channel
+           :milliseconds (System/currentTimeMillis)}))
+        (establish-identity @(game-pieces id)))
+      :else
+      (do
+        (send
+         existing-user
+         merge
+         {:health default-health
+          :socket channel
+          :sprite sprite
+          :active true})
+        (await existing-user)
+        (establish-identity @existing-user)))))
 
 (defn handle-command
   "this handler is a bit of a switch case inside of a switch case,

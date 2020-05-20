@@ -24,8 +24,7 @@
      (fn [data]
        ;logout
        (when (seq (game-pieces :socket channel))
-         (behavior/delete
-          @(first (game-pieces :socket channel))))))
+         (send (first (game-pieces :socket channel)) #(merge % {:active false})))))
     (server/on-receive
      channel
      (fn [data]
@@ -48,7 +47,7 @@
    (fn [tilemap] (comms/broadcast
                   {:messageType "game-piece-list"
                    :pieces (map (fn [%] (dissoc (into {} @%) :socket))
-                                (game-pieces "scene" (:name tilemap)))}
+                                (game-pieces-active {:scene (:name tilemap)}))}
                   (filter #(= (:scene @%) (:name tilemap)) (game-pieces "type" "player"))))
    tilemaps))
 
