@@ -183,14 +183,31 @@
                                      :id (gen-id)}))))
       (merge this {:energy energy}))))
 
+(defrecord spell
+           [id
+            x
+            y
+            spell
+            sprite
+            scene
+            milliseconds]
+  game-piece
+  (behavior
+    [this]
+    this))
+
 (defn cast-spell
   [this]
   (let [spell (:spell this)]
     (cond
-      (= "fireball" spell)
-      (do)
-      (= "teleball" spell)
-      (do))
+      (or (= "teleball" spell) (= "fireball" spell))
+      (add-game-piece! (map->spell {:id (gen-id)
+                                    :x (:x this)
+                                    :y (:y this)
+                                    :spell spell
+                                    :scene (:scene this)
+                                    :sprite "fireball"
+                                    :milliseconds (:milliseconds this)})))
     (merge this {:spell nil})))
 
 (defrecord player
