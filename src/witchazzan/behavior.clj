@@ -101,11 +101,6 @@
   (die [this])
   (reproduce [this]))
 
-;todo
-;spells will be based off the of the :spell key and it's text
-;default is to do nothing, but if a spell matches one of our list
-;we dispatch it. All fireballs can be the same function and record type
-
 (defn hunger
   [this]
   (when (< (:energy this) 0) (die this))
@@ -189,12 +184,27 @@
             y
             spell
             sprite
+            speed
             scene
+            direction
             milliseconds]
   game-piece
   (behavior
     [this]
-    this))
+    (let [time (System/currentTimeMillis)
+          delta (- time milliseconds)]
+      (-> this
+          (merge {:milliseconds time})
+          (merge
+           (cond
+             (= (:direction this) "up")
+             {:y (- y (* speed delta))}
+             (= (:direction this) "down")
+             {:y (+ y (* speed delta))}
+             (= (:direction this) "left")
+             {:x (- x (* speed delta))}
+             (= (:direction this) "right")
+             {:x (+ x (* speed delta))}))))))
 
 (defn cast-spell
   [this]
@@ -207,7 +217,9 @@
                                     :spell spell
                                     :scene (:scene this)
                                     :sprite "fireball"
-                                    :milliseconds (:milliseconds this)})))
+                                    :speed 0.01
+                                    :direction (:direction this)
+                                    :milliseconds (System/currentTimeMillis)})))
     (merge this {:spell nil})))
 
 (defrecord player
