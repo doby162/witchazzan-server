@@ -166,8 +166,8 @@
   ([key value]
    (filter #(= value ((keyword key) @%)) (game-pieces))))
 
-(defn game-pieces-active [args]
-  (filter #(:active % true) (game-pieces args)))
+(defn game-pieces-active [& args]
+  (filter #(:active @% true) (game-pieces args)))
 
 (defn typed-pieces
   "[a ...], calls game-pieces with the trailing args and filter the outut by
