@@ -133,6 +133,7 @@
     (update-clients)
     (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
     (apply await (:game-pieces @game-state))
+    (try (Thread/sleep (setting "add-millis-per-frame")) (catch Exception _))
     (when (not (setting "pause")) (recur))))
 
 (defn main
