@@ -106,6 +106,14 @@
   (when (< (:energy this) 0) (die this))
   (merge this {:energy (- (:energy this) (* (:delta this) hunger-constant))}))
 
+(defn hit-points
+  [this]
+  (cond
+    (< (:health this) 1)
+    (delete this)
+    :else
+    this))
+
 (defn sunny?
   [this]
   (and
@@ -162,6 +170,7 @@
           (photosynthesis)
           (shift)
           (hunger)
+          (hit-points)
           (carrot-repro-decide)
           (teleport))))
   (reproduce
@@ -178,6 +187,23 @@
                                      :id (gen-id)}))))
       (merge this {:energy energy}))))
 
+(defn spell-terrain-collide [this]
+  (cond
+    (not ((:get-tile-walkable (name->scene (:scene this))) this))
+    (delete this)
+    :else this))
+
+(defn spell-object-collide [this]
+  (let [collisions (filter
+                    #(and (not= (:id this) (:id @%)) (not= (:owner-id this) (:id @%)))
+                    (game-pieces {:x (:x this) :y (:y this) :scene (:scene this)}))]
+    (cond
+      (seq collisions)
+      (when (= "fireball" (:spell this))
+        (run! (fn [that] (send that merge {:health (- (:health @that 1) 1)})) collisions)
+        (delete this))
+      :else this)))
+
 (defrecord spell
            [id
             x
@@ -187,7 +213,8 @@
             speed
             scene
             direction
-            milliseconds]
+            milliseconds
+            owner-id]
   game-piece
   (behavior
     [this]
@@ -204,7 +231,10 @@
              (= (:direction this) "left")
              {:x (- x (* speed delta))}
              (= (:direction this) "right")
-             {:x (+ x (* speed delta))}))))))
+             {:x (+ x (* speed delta))}))
+          (spell-terrain-collide)
+          (spell-object-collide)
+          (teleport)))))
 
 (defn cast-spell
   [this]
@@ -219,7 +249,8 @@
                                     :sprite "fireball"
                                     :speed 0.01
                                     :direction (:direction this)
-                                    :milliseconds (System/currentTimeMillis)})))
+                                    :milliseconds (System/currentTimeMillis)
+                                    :owner-id (:id this)})))
     (merge this {:spell nil})))
 
 (defrecord player
