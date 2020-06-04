@@ -199,8 +199,11 @@
                     (game-pieces {:x (:x this) :y (:y this) :scene (:scene this)}))]
     (cond
       (seq collisions)
-      (when (= "fireball" (:spell this))
-        (run! (fn [that] (send that merge {:health (- (:health @that 1) 1)})) collisions)
+      (do
+        (when (= "fireball" (:spell this))
+          (run! (fn [that] (send that merge {:health (- (:health @that 1) 1)})) collisions))
+        (when (= "teleball" (:spell this))
+          (run! (fn [that] (send that merge (find-empty-tile (:scene this)) {:force true})) collisions))
         (delete this))
       :else this)))
 
