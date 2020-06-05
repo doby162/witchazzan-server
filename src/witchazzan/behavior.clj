@@ -295,7 +295,7 @@
       (add-game-piece!
        (map->carrot
         {:id (gen-id)
-         :genes (generate-genes :repro-threshold :color)
+         :genes (generate-genes :repro-threshold :color-r :color-g :color-b)
          :energy 20
          :scene scene
          :sprite "carrot"
