@@ -64,11 +64,14 @@
       :else this)))
 ;;helpers
 ;;shared behavior
+(def init-piece)
 (defn add-game-piece!
   [piece]
-  (swap! game-state
-         (fn [state] (update-in state [:game-pieces]
-                                (fn [game-pieces] (merge game-pieces (agent piece)))))))
+  (let [new-piece (agent piece)]
+    (swap! game-state
+           (fn [state] (update-in state [:game-pieces]
+                                  (fn [game-pieces] (merge game-pieces new-piece)))))
+    (send new-piece init-piece)))
 
 (defn delete
   [this]
@@ -99,7 +102,8 @@
 (defprotocol game-piece
   (behavior [this])
   (die [this])
-  (reproduce [this]))
+  (reproduce [this])
+  (init-piece [this]))
 
 (defn hunger
   [this]
@@ -156,6 +160,11 @@
             x
             y]
   game-piece
+  (init-piece
+    [this]
+    (if (> (:leech-seed (:genes this)) 200)
+      (merge this {:leech-seed true})
+      this))
   (die
     [this]
     (delete this)
@@ -219,6 +228,9 @@
             milliseconds
             owner-id]
   game-piece
+  (init-piece
+    [this]
+    this)
   (behavior
     [this]
     (let [time (System/currentTimeMillis)
@@ -266,6 +278,9 @@
             sprite
             milliseconds]
   game-piece
+  (init-piece
+    [this]
+    this)
   (behavior
     [this]
     (let [time (System/currentTimeMillis)
@@ -295,7 +310,7 @@
       (add-game-piece!
        (map->carrot
         {:id (gen-id)
-         :genes (generate-genes :repro-threshold :color-r :color-g :color-b)
+         :genes (generate-genes :repro-threshold :leech-seed :color-r :color-g :color-b)
          :energy 20
          :scene scene
          :sprite "carrot"
