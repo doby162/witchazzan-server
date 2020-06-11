@@ -71,8 +71,10 @@
 (defn short-day []
   (setting "millis-per-hour" 600))
 
-#_(defn seed-nature []
-    (run! (fn [scene] (spawn-carrot (:name scene))) tilemaps))
+(defn seed-nature []
+  (run!
+   (fn [scene] (behavior/spawn-carrot (merge {:scene (:name scene)} (find-empty-tile (:name scene)))))
+   tilemaps))
 ;;admin stuff
 ;;loooop
 (defn spawn-points
@@ -143,4 +145,5 @@
   (log (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
     (log "Not paused, running game")
-    (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps))))
+    (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
+  (seed-nature))
