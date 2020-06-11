@@ -8,8 +8,8 @@
             "LoruleK8.json"
             "arena1.json" "backYard1.json"
             "EmptyCave.json" "SlimeCave.json" "CaveF8.json"]
- :min-millis-per-frame 10
- :add-millis-per-frame 5
+ :min-millis-per-frame 15
+ :idle-millis-per-frame 500
  :pause false
  :auto-save true
  :auto-load true

@@ -42,14 +42,12 @@
 ;;websocket infrastructure
 ;;
 ;;game loop
-(defn update-clients []
-  (run!
-   (fn [tilemap] (comms/broadcast
-                  {:messageType "game-piece-list"
-                   :pieces (map (fn [%] (dissoc (into {} @%) :socket))
-                                (game-pieces-active {:scene (:name tilemap)}))}
-                  (filter #(= (:scene @%) (:name tilemap)) (game-pieces "type" "player"))))
-   tilemaps))
+(defn update-clients [scene]
+  (comms/broadcast
+   {:messageType "game-piece-list"
+    :pieces (map (fn [%] (dissoc (into {} @%) :socket))
+                 (game-pieces-active {:scene scene}))}
+   (typed-pieces witchazzan.behavior.player {:scene scene})))
 
 (defn threadify [func] (future (func)))
 ;;game loop
@@ -123,17 +121,19 @@
           :content (str "Night Falls")}))
       (coordinate-spawns))))
 
-(defn game-loop []
+(defn game-loop [scene]
+  (log scene)
   (loop []
     (keep-time!)
     (run!
      (fn [game-piece]
        (send game-piece behavior/behavior))
-     (:game-pieces @game-state))
-    (update-clients)
+     (game-pieces {:scene scene}))
     (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
-    (apply await (:game-pieces @game-state))
-    (try (Thread/sleep (setting "add-millis-per-frame")) (catch Exception _))
+    (apply await (game-pieces {:scene scene}))
+    (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
+      (update-clients scene)
+      (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))
     (when (not (setting "pause")) (recur))))
 
 (defn main
@@ -143,4 +143,4 @@
   (log (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
     (log "Not paused, running game")
-    (threadify game-loop)))
+    (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps))))
