@@ -23,8 +23,8 @@
      channel
      (fn [data]
        ;logout
-       (when (seq (game-pieces :socket channel))
-         (send (first (game-pieces :socket channel)) #(merge % {:active false})))))
+       (when (seq (game-pieces {:socket channel}))
+         (send (first (game-pieces {:socket channel})) #(merge % {:active false})))))
     (server/on-receive
      channel
      (fn [data]
@@ -46,7 +46,7 @@
   (comms/broadcast
    {:messageType "game-piece-list"
     :pieces (map (fn [%] (dissoc (into {} @%) :socket))
-                 (game-pieces-active {:scene scene}))}
+                 (active-pieces {:scene scene}))}
    (typed-pieces witchazzan.behavior.player {:scene scene})))
 
 (defn threadify [func] (future (func)))
@@ -130,9 +130,9 @@
     (run!
      (fn [game-piece]
        (send game-piece behavior/behavior))
-     (game-pieces {:scene scene}))
+     (active-pieces {:scene scene}))
     (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
-    (apply await (game-pieces {:scene scene}))
+    (apply await (active-pieces {:scene scene}))
     (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
       (update-clients scene)
       (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))

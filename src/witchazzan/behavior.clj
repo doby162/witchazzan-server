@@ -205,7 +205,7 @@
 (defn spell-object-collide [this]
   (let [collisions (filter
                     #(and (not= (:id this) (:id @%)) (not= (:owner-id this) (:id @%)))
-                    (game-pieces {:x (:x this) :y (:y this) :scene (:scene this)}))]
+                    (active-pieces {:x (:x this) :y (:y this) :scene (:scene this)}))]
     (cond
       (seq collisions)
       (do

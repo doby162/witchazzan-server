@@ -16,7 +16,7 @@
   [data & [players]]
   (run!
    #(message-player data @%)
-   (cond players players :else (game-pieces "type" "player"))))
+   (cond players players :else (game-pieces {:type "player"}))))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -29,14 +29,14 @@
 (defn handle-chat
   "broadcasts chats as json"
   [message channel]
-  (let [player @(first (game-pieces :socket channel))
+  (let [player @(first (game-pieces {:socket channel}))
         id (get message "targetPlayerId")
-        audience (if id [(game-pieces id)] (game-pieces :type "player"))]
+        audience (if id [(one-game-piece id)] (game-pieces {:type "player"}))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
 (defn handle-location-update [message channel]
-  (let [player (first (game-pieces "socket" channel))]
+  (let [player (first (game-pieces {:socket channel}))]
     (send
      player
      merge
@@ -47,7 +47,7 @@
         id (gen-id)
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (first (game-pieces "name" username))
+        existing-user (first (game-pieces {:name username}))
         default-health 100]
     (cond
       (not existing-user)
@@ -66,7 +66,7 @@
            :name username
            :socket channel
            :milliseconds (System/currentTimeMillis)}))
-        (establish-identity @(game-pieces id)))
+        (establish-identity @(one-game-piece id)))
       :else
       (do
         (send
@@ -84,7 +84,7 @@
   it handles all of the text commands entered
   via the command bar on the client"
   [message channel]
-  (let [player @(first (game-pieces "socket" channel))]
+  (let [player @(first (game-pieces {:socket channel}))]
     (when (re-find #"^look" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
@@ -99,7 +99,7 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name @%) ", ") (game-pieces :type "player")))}
+                       (apply str (map #(str (:name @%) ", ") (typed-pieces witchazzan.behavior.player)))}
                       player))
     (when (re-find #"^reload" (get message "command"))
       (require 'witchazzan.common :reload)

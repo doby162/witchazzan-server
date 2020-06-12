@@ -158,15 +158,14 @@
   ([]
    (:game-pieces @game-state))
   ([id]
-   (cond
-     (int? id)
-     (ffilter #(= id (:id @%)) (game-pieces))
-     :else
-     (filter #(map-sub? id @%) (game-pieces))))
-  ([key value]
-   (filter #(= value ((keyword key) @%)) (game-pieces))))
+   (filter #(map-sub? id @%) (game-pieces))))
 
-(defn game-pieces-active [& args]
+(defn one-game-piece
+  [id]
+  (ffilter #(= id (:id @%)) (game-pieces)))
+
+(defn active-pieces
+  [& args]
   (filter #(:active @% true) (apply game-pieces args)))
 
 (defn typed-pieces
@@ -174,7 +173,7 @@
   checking the class against the value of a, which should be of the form
   witchazzan.behavior.carrot or similar."
   [filter-class & rest]
-  (filter #(= filter-class (class @%)) (apply game-pieces rest)))
+  (filter #(= filter-class (class @%)) (apply active-pieces rest)))
 
 (defn tile-occupied
   [scene coords]
@@ -184,7 +183,7 @@
             (and
              (= (int (:x coords)) (int (:x ob-coords)))
              (= (int (:y coords)) (int (:y ob-coords))))))
-        (game-pieces :scene scene))))
+        (game-pieces {:scene scene}))))
 
 ;this version of the function is so much nicer but
 ;it takes longer. Revisit after improving game-pieces
