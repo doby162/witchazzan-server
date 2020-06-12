@@ -127,7 +127,7 @@
 
 (defn crowded?
   [this]
-  (let [this-scene (typed-pieces (class this) :scene (:scene this))]
+  (let [this-scene (typed-pieces (class this) {:scene (:scene this)})]
     (seq (filter
           #(and
             (not (= (:id this) (:id @%)))
