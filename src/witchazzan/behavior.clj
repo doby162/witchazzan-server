@@ -158,7 +158,8 @@
             milliseconds
             health
             x
-            y]
+            y
+            parent-id]
   game-piece
   (init-piece
     [this]
@@ -193,6 +194,7 @@
                                      :x (:x tile)
                                      :y (:y tile)
                                      :energy energy
+                                     :parent-id (:id this)
                                      :id (gen-id)}))))
       (merge this {:energy energy}))))
 
@@ -317,5 +319,6 @@
          :milliseconds (System/currentTimeMillis)
          :x (:x coords)
          :y (:y coords)
+         :parent-id -1
          :health 1}))
       :else (log "spawn-carrot failed to find an empty tile"))))
