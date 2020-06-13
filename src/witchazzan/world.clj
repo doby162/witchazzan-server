@@ -127,15 +127,20 @@
   (log scene)
   (loop []
     (keep-time!)
-    (run!
-     (fn [game-piece]
-       (send game-piece behavior/behavior))
-     (active-pieces {:scene scene}))
-    (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
-    (apply await (active-pieces {:scene scene}))
-    (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
-      (update-clients scene)
-      (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))
+    (try
+      (run!
+        (fn [game-piece]
+          (send game-piece behavior/behavior))
+        (active-pieces {:scene scene}))
+      (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
+      (apply await (active-pieces {:scene scene}))
+      (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
+        (update-clients scene)
+        (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))
+      (catch Exception e
+        (log (str "error in " scene))
+        (log e)
+        (log-and-clear-agents)))
     (when (not (setting "pause")) (recur))))
 
 (defn main

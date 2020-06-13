@@ -68,7 +68,7 @@
 (defn log [data]
   (when (setting "log-to-repl") (println data))
   (spit "config/log"
-        (str (System/currentTimeMillis) " : " data "\n")
+        (str (new java.util.Date) " : " data "\n")
         :append true))
 
 (defn ppmap
