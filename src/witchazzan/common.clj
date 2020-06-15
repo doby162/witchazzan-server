@@ -81,6 +81,7 @@
                 (map (partial partition-all grain-size) colls))))
 
 (defn within-n
+  "are a and b within n"
   [a b n]
   (and (>= a (- b n)) (<= a (+ b n))))
 ;;game agnostic helpers

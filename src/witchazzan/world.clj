@@ -129,9 +129,9 @@
     (keep-time!)
     (try
       (run!
-        (fn [game-piece]
-          (send game-piece behavior/behavior))
-        (active-pieces {:scene scene}))
+       (fn [game-piece]
+         (send game-piece behavior/behavior))
+       (active-pieces {:scene scene}))
       (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
       (apply await (active-pieces {:scene scene}))
       (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
@@ -152,3 +152,33 @@
     (log "Not paused, running game")
     (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
   (seed-nature))
+
+(defn ascii-graph
+  [dataset]
+  (let [increment 10 min 5 max (setting "gene-max")]
+    (loop [i min]
+      (let [num
+            (get (frequencies (map #(within-n % i min) dataset)) true 0)]
+        (println (- i min) "-" (- (+ increment i) min) ":" (apply str (repeatedly num #(str "#")))))
+      (when (< i max) (recur (+ i 10))))))
+
+
+;;analysis functions
+
+
+(defn analyze-gene
+  [gene population]
+  (let [dataset (sort (filter #(not (nil? %)) (map #((keyword gene) (:genes @%)) population)))]
+    (print "Sample size: ")
+    (prn (count dataset))
+    (print "Mode: ")
+    (prn (first (last (sort-by second (frequencies dataset)))))
+    (print "Mean: ")
+    (prn (int (/ (apply + dataset) (count dataset))))
+    (print "Median: ")
+    (prn (nth dataset (/ (count dataset) 2)))
+    (println "frequencies")
+    (ascii-graph dataset)
+    (print "Full dataset: ")
+    (prn dataset)))
+
