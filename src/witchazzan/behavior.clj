@@ -263,7 +263,7 @@
                                     :y (:y this)
                                     :spell spell
                                     :scene (:scene this)
-                                    :sprite "fireball"
+                                    :sprite spell
                                     :speed 0.01
                                     :direction (:direction this)
                                     :milliseconds (System/currentTimeMillis)
