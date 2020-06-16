@@ -5,6 +5,9 @@
   (:require [witchazzan.behavior :as behavior])
   (:require [clojure.data.json :as json])
   (:require [org.httpkit.server :as server])
+  (:require [clojure.string :as str])
+  (:require [compojure.core :as compojure])
+  (:require [compojure.route :as route])
   (:gen-class))
 ;;namespace
 ;;websocket infrastructure
@@ -39,6 +42,69 @@
                                         ;the second half of a function name and calling that function
            )(catch java.lang.Exception e
               (log (str "invalid json: " data)) (log e)))))))
+
+;;analysis functions
+(defn ascii-graph
+  [dataset]
+  (let [increment 10 min 5 max (setting "gene-max")]
+    (loop [i min]
+      (let [num
+            (get (frequencies (map #(within-n % i min) dataset)) true 0)]
+        (println (- i min) "-" (- (+ increment i) min) ":" (apply str (repeatedly num #(str "#")))))
+      (when (< i max) (recur (+ i 10))))))
+
+(defn analyze-gene
+  [gene population]
+  (let [dataset (sort (filter #(not (nil? %)) (map #((keyword gene) (:genes @%)) population)))]
+    (print "Sample size: ")
+    (prn (count dataset))
+    (print "Mode: ")
+    (prn (first (last (sort-by second (frequencies dataset)))))
+    (print "Mean: ")
+    (prn (int (/ (apply + dataset) (count dataset))))
+    (print "Median: ")
+    (prn (nth dataset (/ (count dataset) 2)))
+    (println "frequencies")
+    (ascii-graph dataset)
+    (print "Full dataset: ")
+    (prn dataset)))
+;;analysis functions
+
+(defn json-output [data]
+  {:headers {"Content-Type" "application/json; charset=utf-8"}
+   :body (json/write-str data)
+   :status 200})
+
+(defn nl->br [data]
+  (str/replace data "\n" "<br/>"))
+
+(defn sitemap []
+  "<a href='/api/players'> players </a><br/>
+  <a href='/api/plants'> plants </a><br/>
+  <a href='/api/game-pieces'> game pieces </a><br/>
+  <a href='/api/settings'> settings </a><br/>
+  <a href='/log'> log </a><br/>
+  <a href='/graph'> gene statistics for repro-threshold </a><br/>")
+
+(compojure/defroutes all-routes
+  (compojure/GET "/" []
+                 handler) ; websocket connection
+  (compojure/GET "/api" []
+                 (sitemap))
+  (compojure/GET "/api/players" []
+                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.player))))
+  (compojure/GET "/api/plants" []
+                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.carrot))))
+  (compojure/GET "/api/game-pieces" []
+                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+  (compojure/GET "/graph" []
+                 (nl->br (with-out-str (analyze-gene "repro-threshold" (typed-pieces witchazzan.behavior.carrot)))))
+  (compojure/GET "/api/settings" []
+                 (json-output @settings))
+  (compojure/GET "/log" []
+                 (nl->br (slurp "config/log")))
+  (route/not-found
+    (sitemap)))
 ;;websocket infrastructure
 ;;
 ;;game loop
@@ -146,39 +212,9 @@
 (defn main
   [& _]
   (log "Booting...")
-  (server/run-server handler {:port (setting "port")})
+  (server/run-server all-routes {:port (setting "port")})
   (log (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
     (log "Not paused, running game")
     (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
   (seed-nature))
-
-(defn ascii-graph
-  [dataset]
-  (let [increment 10 min 5 max (setting "gene-max")]
-    (loop [i min]
-      (let [num
-            (get (frequencies (map #(within-n % i min) dataset)) true 0)]
-        (println (- i min) "-" (- (+ increment i) min) ":" (apply str (repeatedly num #(str "#")))))
-      (when (< i max) (recur (+ i 10))))))
-
-
-;;analysis functions
-
-
-(defn analyze-gene
-  [gene population]
-  (let [dataset (sort (filter #(not (nil? %)) (map #((keyword gene) (:genes @%)) population)))]
-    (print "Sample size: ")
-    (prn (count dataset))
-    (print "Mode: ")
-    (prn (first (last (sort-by second (frequencies dataset)))))
-    (print "Mean: ")
-    (prn (int (/ (apply + dataset) (count dataset))))
-    (print "Median: ")
-    (prn (nth dataset (/ (count dataset) 2)))
-    (println "frequencies")
-    (ascii-graph dataset)
-    (print "Full dataset: ")
-    (prn dataset)))
-
