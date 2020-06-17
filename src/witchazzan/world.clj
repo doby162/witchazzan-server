@@ -84,27 +84,37 @@
   <a href='/api/game-pieces'> game pieces </a><br/>
   <a href='/api/settings'> settings </a><br/>
   <a href='/log'> log </a><br/>
+  <a href='/api/scenes'> scenes </a><br/>
+  <a href='/api/scenes/active'> active scenes </a><br/>
+  <a href='/api/scenes/inactive'> inactive scenes </a><br/>
   <a href='/graph'> gene statistics for repro-threshold </a><br/>")
 
 (compojure/defroutes all-routes
   (compojure/GET "/" []
-                 handler) ; websocket connection
+    handler) ; websocket connection
   (compojure/GET "/api" []
-                 (sitemap))
+    (sitemap))
   (compojure/GET "/api/players" []
-                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.player))))
+    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.player))))
   (compojure/GET "/api/plants" []
-                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.carrot))))
+    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.carrot))))
   (compojure/GET "/api/game-pieces" []
-                 (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
   (compojure/GET "/graph" []
-                 (nl->br (with-out-str (analyze-gene "repro-threshold" (typed-pieces witchazzan.behavior.carrot)))))
+    (nl->br (with-out-str (analyze-gene "repro-threshold" (typed-pieces witchazzan.behavior.carrot)))))
   (compojure/GET "/api/settings" []
-                 (json-output @settings))
+    (json-output @settings))
+  (compojure/GET "/api/scenes" []
+    (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
+  (compojure/GET "/api/scenes/:param" [param]
+    (json-output
+     (filter
+      #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
+      (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
   (compojure/GET "/log" []
-                 (nl->br (slurp "config/log")))
+    (nl->br (slurp "config/log")))
   (route/not-found
-    (sitemap)))
+   (sitemap)))
 ;;websocket infrastructure
 ;;
 ;;game loop
@@ -200,7 +210,7 @@
        (active-pieces {:scene scene}))
       (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
       (apply await (active-pieces {:scene scene}))
-      (if (seq (typed-pieces witchazzan.behavior.player {:scene scene}))
+      (if (scene-active scene)
         (update-clients scene)
         (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))
       (catch Exception e
