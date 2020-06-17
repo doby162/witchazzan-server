@@ -99,7 +99,7 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name @%) ", ") (typed-pieces witchazzan.behavior.player)))}
+                       (apply str (map #(str (:name @%) ", ") (active-pieces {:type "player"})))}
                       player))
     (when (re-find #"^reload" (get message "command"))
       (require 'witchazzan.common :reload)

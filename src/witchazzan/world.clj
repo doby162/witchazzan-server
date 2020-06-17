@@ -96,13 +96,13 @@
   (compojure/GET "/api" []
     (sitemap))
   (compojure/GET "/api/players" []
-    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.player))))
+    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
   (compojure/GET "/api/plants" []
-    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (typed-pieces witchazzan.behavior.carrot))))
+    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
   (compojure/GET "/api/game-pieces" []
     (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
   (compojure/GET "/graph" []
-    (nl->br (with-out-str (analyze-gene "repro-threshold" (typed-pieces witchazzan.behavior.carrot)))))
+    (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
   (compojure/GET "/api/settings" []
     (json-output @settings))
   (compojure/GET "/api/scenes" []
@@ -127,7 +127,7 @@
    {:messageType "game-piece-list"
     :pieces (map (fn [%] (dissoc (into {} @%) :socket))
                  (active-pieces {:scene scene}))}
-   (typed-pieces witchazzan.behavior.player {:scene scene})))
+   (active-pieces {:type "player" :scene scene})))
 
 (defn threadify [func] (future (func)))
 ;;game loop
@@ -177,9 +177,9 @@
      coord-pairs)))
 
 (defn coordinate-spawns []
-  #_(when (empty? (typed-pieces witchazzan.behavior.slime))
+  #_(when (empty? (active-pieces {:type "slime"}))
       (spawn-points "slime"))
-  (when (empty? (typed-pieces witchazzan.behavior.carrot))
+  (when (empty? (active-pieces {:type "carrot"}))
     (spawn-points "carrot")))
 
 (defn keep-time! []

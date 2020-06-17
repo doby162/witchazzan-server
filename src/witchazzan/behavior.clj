@@ -85,7 +85,7 @@
 (defn shift
   [this]
   (let [collisions
-        (typed-pieces (class this) {:scene (:scene this) :x (:x this) :y (:y this)})]
+        (active-pieces {:type (:type this) :scene (:scene this) :x (:x this) :y (:y this)})]
     (cond
       (and
        (>= (count collisions) 2)
@@ -127,7 +127,7 @@
 
 (defn crowded?
   [this]
-  (let [this-scene (typed-pieces (class this) {:scene (:scene this)})]
+  (let [this-scene (active-pieces {:type (:type this) :scene (:scene this)})]
     (seq (filter
           #(and
             (not (= (:id this) (:id @%)))

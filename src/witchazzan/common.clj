@@ -169,13 +169,6 @@
   [& args]
   (filter #(:active @% true) (apply game-pieces args)))
 
-(defn typed-pieces
-  "[a ...], calls game-pieces with the trailing args and filter the outut by
-  checking the class against the value of a, which should be of the form
-  witchazzan.behavior.carrot or similar."
-  [filter-class & rest]
-  (filter #(= filter-class (class @%)) (apply active-pieces rest)))
-
 (defn tile-occupied
   [scene coords]
   (seq (filter
