@@ -87,6 +87,7 @@
   <a href='/api/scenes'> scenes </a><br/>
   <a href='/api/scenes/active'> active scenes </a><br/>
   <a href='/api/scenes/inactive'> inactive scenes </a><br/>
+  <a href='/quit'> kill server </a><br/>
   <a href='/graph'> gene statistics for repro-threshold </a><br/>")
 
 (compojure/defroutes all-routes
@@ -113,6 +114,9 @@
       (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
   (compojure/GET "/log" []
     (nl->br (slurp "config/log")))
+  (compojure/GET "/quit" []
+    (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
+    "Killing server...")
   (route/not-found
    (sitemap)))
 ;;websocket infrastructure
