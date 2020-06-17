@@ -159,7 +159,8 @@
             health
             x
             y
-            parent-id]
+            parent-id
+            type]
   game-piece
   (init-piece
     [this]
@@ -228,7 +229,8 @@
             scene
             direction
             milliseconds
-            owner-id]
+            owner-id
+            type]
   game-piece
   (init-piece
     [this]
@@ -261,6 +263,7 @@
       (add-game-piece! (map->spell {:id (gen-id)
                                     :x (:x this)
                                     :y (:y this)
+                                    :type "spell"
                                     :spell spell
                                     :scene (:scene this)
                                     :sprite spell
@@ -278,7 +281,8 @@
             name
             health
             sprite
-            milliseconds]
+            milliseconds
+            type]
   game-piece
   (init-piece
     [this]
@@ -320,5 +324,6 @@
          :x (:x coords)
          :y (:y coords)
          :parent-id -1
-         :health 1}))
+         :health 1
+         :type "carrot"}))
       :else (log "spawn-carrot failed to find an empty tile"))))

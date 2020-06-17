@@ -216,3 +216,6 @@
 ;;init
 (let [count (atom 0)]
   (defn gen-id [] (swap! count #(+ 1 %))))
+
+(defn scene-active [scene]
+  (seq (active-pieces {:type "player" :scene scene})))
