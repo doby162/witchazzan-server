@@ -122,7 +122,13 @@ java --version
 # Usage
 
 ## Create a configuration file
-    cp config/.config.clj.default config/config.clj
+    `touch config/config.edn`
+    all options in default-config.edn can be overwriten
+
+## Compile to a jar
+    `lein uberjar`
+    Run with
+    `java -jar target/uberjar/witchazzan-server.jar`
 
 ## Run the server interactively
     lein repl

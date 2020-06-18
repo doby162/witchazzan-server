@@ -11,8 +11,11 @@
                  [criterium "0.4.5"]
                  [compojure "1.6.1"]
                  [org.clojure/data.json "0.2.6"]]
-  :main ^:skip-aot witchazzan.core
+  :main witchazzan.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
   :jvm-opts ["-Djdk.attach.allowAttachSelf"]
-  :repl-options {:port 8081})
+  :global-vars {*warn-on-reflection* true}
+  :uberjar-name "witchazzan-server.jar"
+  :jar-name "broken_jar"
+  :repl-options {:port 8081 :init (-main)})
