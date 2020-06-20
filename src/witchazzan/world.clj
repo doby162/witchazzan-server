@@ -19,7 +19,7 @@
     (catch NullPointerException e
       (log (str "call-func-by-string failed: " name args " " e)))))
 
-(defn handler [request]
+(defn socket-handler [request]
   (log "A player has entered Witchazzan!")
   (server/with-channel request channel
     (server/on-close
@@ -78,47 +78,75 @@
 (defn nl->br [data]
   (str/replace data "\n" "<br/>"))
 
-(defn sitemap []
+(defn sitemap [req]
   "<a href='/api/players'> players </a><br/>
   <a href='/api/plants'> plants </a><br/>
   <a href='/api/game-pieces'> game pieces </a><br/>
   <a href='/api/settings'> settings </a><br/>
-  <a href='/log'> log </a><br/>
+  <a href='/api/log'> log </a><br/>
   <a href='/api/scenes'> scenes </a><br/>
   <a href='/api/scenes/active'> active scenes </a><br/>
   <a href='/api/scenes/inactive'> inactive scenes </a><br/>
-  <a href='/quit'> kill server </a><br/>
-  <a href='/graph'> gene statistics for repro-threshold </a><br/>")
+  <a href='/api/graph'> gene statistics for repro-threshold </a><br/>
+  <a href='/api/auth'> authenticate </a><br/>
+  <a href='/api/quit'> kill server </a><br/>")
+
+(use 'ring.middleware.session
+     'ring.util.response)
+
+(defn BytesInputStream-to-string
+  "This is the wrong way to do this"
+  [^org.httpkit.BytesInputStream bytes offset]
+  (.skip bytes offset)
+  (apply str
+         (map
+          #(char %)
+          (loop [acc []]
+            (let [byte (.read bytes)]
+              (if (not= byte -1)
+                (recur (conj acc byte))
+                acc))))))
+
+(defn authenticate-post
+  [{body :body session :session}]
+  (let [pass (BytesInputStream-to-string body 9)]
+    (if (= (hash pass) (setting "api-password-hash"))
+      (-> (response "Auth succesful")
+          (assoc :session (assoc session :auth true)))
+      "try again")))
+
+(defn kill-api [{session :session}]
+  (if (:auth session)
+    (do (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0))) "Killing server...")
+    "Please authenticate for access"))
 
 (compojure/defroutes all-routes
-  (compojure/GET "/" []
-    handler) ; websocket connection
-  (compojure/GET "/api" []
-    (sitemap))
-  (compojure/GET "/api/players" []
-    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
-  (compojure/GET "/api/plants" []
-    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
-  (compojure/GET "/api/game-pieces" []
-    (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
-  (compojure/GET "/graph" []
-    (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
-  (compojure/GET "/api/settings" []
-    (json-output @settings))
-  (compojure/GET "/api/scenes" []
-    (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
-  (compojure/GET "/api/scenes/:param" [param]
-    (json-output
-     (filter
-      #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-      (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
-  (compojure/GET "/log" []
-    (nl->br (slurp "config/log")))
-  (compojure/GET "/quit" []
-    (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
-    "Killing server...")
-  (route/not-found
-   (sitemap)))
+  (wrap-session
+   (compojure/routes
+    (compojure/GET "/" [] socket-handler) ; websocket connection
+    (compojure/GET "/api" [] sitemap)
+    (compojure/GET "/api/auth" [] "<form method='post'><input type='text' name='password'><input type='submit'></form>")
+    (compojure/POST "/api/auth" [] authenticate-post)
+    (compojure/GET "/api/players" []
+      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
+    (compojure/GET "/api/plants" []
+      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
+    (compojure/GET "/api/game-pieces" []
+      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+    (compojure/GET "/api/graph" []
+      (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
+    (compojure/GET "/api/settings" []
+      (json-output @settings))
+    (compojure/GET "/api/scenes" []
+      (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
+    (compojure/GET "/api/scenes/:param" [param]
+      (json-output
+       (filter
+        #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
+        (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
+    (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
+    (compojure/GET "/api/quit" [] kill-api)
+    (route/not-found sitemap))))
 ;;websocket infrastructure
 ;;
 ;;game loop

@@ -22,4 +22,5 @@
  :hunger 1
  :photosynthesis 3
  :crowding-factor 2
+ :api-password-hash 0 ; default password is an empty string
  }
