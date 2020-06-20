@@ -3,7 +3,7 @@ while (1) {
   git pull
   cd ..\witchazzan-server
   git pull
-  # Without the cmd /C the entire batch file exits when lein exits, because it is a batch file itself.
-  cmd /C lein.bat trampoline run
-  del config\save.edn
+  ./lein.bat uberjar
+  java -jar .\target\uberjar\witchazzan-server.jar
+  mv -Force .\config\log D:\Dropbox\Witchazzan\latest-log\log.txt
 }
