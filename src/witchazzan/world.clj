@@ -8,6 +8,7 @@
   (:require [clojure.string :as str])
   (:require [compojure.core :as compojure])
   (:require [compojure.route :as route])
+  (:require [crypto.password.bcrypt :as password])
   (:gen-class))
 ;;namespace
 ;;websocket infrastructure
@@ -110,15 +111,22 @@
 (defn authenticate-post
   [{body :body session :session}]
   (let [pass (BytesInputStream-to-string body 9)]
-    (if (= (hash pass) (setting "api-password-hash"))
-      (-> (response "Auth succesful")
+    (if (password/check pass (setting "api-password-hash"))
+      (-> (response "<a href='/api'> Auth succesful</a>")
           (assoc :session (assoc session :auth true)))
       "try again")))
 
-(defn kill-api [{session :session}]
-  (if (:auth session)
-    (do (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0))) "Killing server...")
-    "Please authenticate for access"))
+(defn auth? [request]
+  (:auth (:session request)))
+
+(def auth-message "<a href='/api/auth'> Please authenticate for access </a>")
+
+(defn kill-api [request]
+  (if (auth? request)
+    (do
+      (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
+      "Killing server...")
+    auth-message))
 
 (compojure/defroutes all-routes
   (wrap-session
@@ -135,8 +143,7 @@
       (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
     (compojure/GET "/api/graph" []
       (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
-    (compojure/GET "/api/settings" []
-      (json-output @settings))
+    (compojure/GET "/api/settings" [] #(if (auth? %) (json-output @settings) auth-message))
     (compojure/GET "/api/scenes" []
       (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
     (compojure/GET "/api/scenes/:param" [param]

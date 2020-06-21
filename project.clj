@@ -6,6 +6,7 @@
   :plugins [[lein-cloverage "1.1.2"] [lein-bikeshed "0.5.2"] [lein-cljfmt "0.6.7"] [jonase/eastwood "0.3.5"]]
   :bikeshed {:max-line-length 120}
   :dependencies [[org.clojure/clojure "1.10.0"]
+                 [crypto-password "0.2.1"]
                  [seancorfield/next.jdbc "1.0.462"]
                  [org.mariadb.jdbc/mariadb-java-client "2.5.4"]
                  [com.clojure-goes-fast/clj-async-profiler "0.4.0"]

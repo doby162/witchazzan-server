@@ -214,7 +214,6 @@
 (defn scene-active [scene]
   (seq (active-pieces {:type "player" :scene scene})))
 
-
 (def db
   {:dbtype "mariadb" :dbname (setting :db-db) :user (setting :db-username)
    :password (setting :db-password) :host (setting :db-host) :port (setting :db-port)})
