@@ -5,7 +5,10 @@
             "LoruleI7.json" "LoruleI8.json" "LoruleJ8.json"
             "LoruleE8.json" "LoruleF7.json" "LoruleG6.json"
             "LoruleH5.json" "LoruleI6.json" "LoruleJ7.json"
-            "LoruleK8.json"
+            "LoruleK8.json" "LoruleK7.json" "LoruleL8.json"
+            "LoruleJ6.json" "LoruleI5.json" "LoruleH4.json"
+            "LoruleG5.json" "LoruleF6.json" "LoruleE7.json"
+            "LoruleD8.json"
             "arena1.json" "backYard1.json"
             "EmptyCave.json" "SlimeCave.json" "CaveF8.json"]
  :min-millis-per-frame 15
