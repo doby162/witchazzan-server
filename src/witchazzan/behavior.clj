@@ -44,7 +44,14 @@
        (some #(not (= 0 %)) tp-collisions))
       (let [target (nth (:teleport scene) (.indexOf tp-collisions (apply max tp-collisions)))
             tilewidth (:tilewidth scene)
-            target-obj-name (get (first (get target "properties")) "value")
+            target-obj-name
+            (get
+             (ffilter
+              #(=
+                "DestinationScene"
+                (get % "name")) ;get the value of the property name DestinationScene
+              (get target "properties"))
+             "value")
             target-obj
             (or
              (ffilter ; intended entrance
