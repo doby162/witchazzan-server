@@ -4,6 +4,7 @@
   (:require [clojure.data.json :as json])
   (:require [clojure.pprint :as pp])
   (:require [clojure.java.io :as io])
+  (:require [next.jdbc :as jdbc])
   (:gen-class))
 
 ;;settings
@@ -212,3 +213,14 @@
 
 (defn scene-active [scene]
   (seq (active-pieces {:type "player" :scene scene})))
+
+
+(def db
+  {:dbtype "mariadb" :dbname (setting :db-db) :user (setting :db-username)
+   :password (setting :db-password) :host (setting :db-host) :port (setting :db-port)})
+(def ds (jdbc/get-datasource db))
+
+;(jdbc/execute! ds ["select * from _table_"])
+;db example code
+;(jdbc/execute! ds ["select * from _table_"])
+;(jdbc/execute! ds ["insert into _table_ (bupkis) values('dog');"])

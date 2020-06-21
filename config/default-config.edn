@@ -26,4 +26,9 @@
  :photosynthesis 3
  :crowding-factor 2
  :api-password-hash 0 ; default password is an empty string
+ :db-db "test"
+ :db-username "test"
+ :db-password "test"
+ :db-host "localhost"
+ :db-port 3306
  }

@@ -3,7 +3,8 @@
   (:require witchazzan.behavior) ;definition of game pieces
   (:require witchazzan.comms) ; json messaging between server and client
   (:require witchazzan.world) ; main loop and general things that happen, top level
-  (:require [clojure.pprint :as pp])
+  (:require [clojure.pprint :as pp]) ; allow easy repl ppringting
+  (:require [next.jdbc :as jdbc]) ; allow easy repl database queries
   (:gen-class))
 
 ;repl boilerplate
