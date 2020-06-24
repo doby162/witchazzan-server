@@ -9,6 +9,8 @@
   (:require [compojure.core :as compojure])
   (:require [compojure.route :as route])
   (:require [crypto.password.bcrypt :as password])
+  (:require [ring.middleware.params :as params])
+  (:require [next.jdbc :as jdbc])
   (:gen-class))
 ;;namespace
 ;;websocket infrastructure
@@ -90,69 +92,75 @@
   <a href='/api/scenes/inactive'> inactive scenes </a><br/>
   <a href='/api/graph'> gene statistics for repro-threshold </a><br/>
   <a href='/api/auth'> authenticate </a><br/>
+  <a href='/api/sign-up'> make an account </a><br/>
   <a href='/api/quit'> kill server </a><br/>")
 
 (use 'ring.middleware.session
      'ring.util.response)
 
-(defn BytesInputStream-to-string
-  "This is the wrong way to do this"
-  [^org.httpkit.BytesInputStream bytes offset]
-  (.skip bytes offset)
-  (apply str
-         (map
-          #(char %)
-          (loop [acc []]
-            (let [byte (.read bytes)]
-              (if (not= byte -1)
-                (recur (conj acc byte))
-                acc))))))
-
 (defn authenticate-post
-  [{body :body session :session}]
-  (let [pass (BytesInputStream-to-string body 9)]
-    (if (password/check pass (setting "api-password-hash"))
+  [{params :params session :session}]
+  (let [name (get params "name")
+        password (get params "password")
+        user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
+    (if (and user (password/check password (:users/password user)))
       (-> (response "<a href='/api'> Auth succesful</a>")
-          (assoc :session (assoc session :auth true)))
+          (assoc :session (assoc session :auth (:users/id user))))
       "try again")))
 
-(defn auth? [request]
-  (:auth (:session request)))
-
-(def auth-message "<a href='/api/auth'> Please authenticate for access </a>")
+(defn create-account
+  [{params :form-params}]
+  (let [name (get params "name")
+        password (get params "password")
+        user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
+    (if user
+      "That username seems to be in use already"
+      (do (jdbc/execute! ds ["insert into users (username, password, admin)
+                         values(?, ?, 0)" name (password/encrypt password)])
+          "Success"))))
 
 (defn kill-api [request]
-  (if (auth? request)
-    (do
-      (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
-      "Killing server...")
-    auth-message))
+  (do
+    (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
+    "Killing server..."))
+
+(defn auth? [handler]
+  (fn [request]
+    (if (:auth (:session request))
+      (handler request)
+      nil)))
 
 (compojure/defroutes all-routes
   (wrap-session
    (compojure/routes
-    (compojure/GET "/" [] socket-handler) ; websocket connection
+    (auth?
+     (compojure/routes
+      (compojure/GET "/" [] socket-handler) ; websocket connection
+      (compojure/GET "/api/players" []
+        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
+      (compojure/GET "/api/plants" []
+        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
+      (compojure/GET "/api/game-pieces" []
+        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+      (compojure/GET "/api/graph" []
+        (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
+      (compojure/GET "/api/settings" [] (json-output @settings))
+      (compojure/GET "/api/scenes" []
+        (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
+      (compojure/GET "/api/scenes/:param" [param]
+        (json-output
+         (filter
+          #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
+          (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
+      (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
+      (compojure/GET "/api/quit" [] kill-api)))
     (compojure/GET "/api" [] sitemap)
-    (compojure/GET "/api/auth" [] "<form method='post'><input type='text' name='password'><input type='submit'></form>")
-    (compojure/POST "/api/auth" [] authenticate-post)
-    (compojure/GET "/api/players" []
-      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
-    (compojure/GET "/api/plants" []
-      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
-    (compojure/GET "/api/game-pieces" []
-      (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
-    (compojure/GET "/api/graph" []
-      (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
-    (compojure/GET "/api/settings" [] #(if (auth? %) (json-output @settings) auth-message))
-    (compojure/GET "/api/scenes" []
-      (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
-    (compojure/GET "/api/scenes/:param" [param]
-      (json-output
-       (filter
-        #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-        (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
-    (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
-    (compojure/GET "/api/quit" [] kill-api)
+    (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='text' name='password'><input type='submit'></form>")
+    (params/wrap-params
+     (compojure/routes
+      (compojure/POST "/api/sign-up" [] create-account)
+      (compojure/POST "/api/auth" [] authenticate-post)))
+    (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='text' name='password'><input type='submit'></form>")
     (route/not-found sitemap))))
 ;;websocket infrastructure
 ;;

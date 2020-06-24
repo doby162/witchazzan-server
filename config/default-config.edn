@@ -25,10 +25,9 @@
  :hunger 1
  :photosynthesis 3
  :crowding-factor 2
- :api-password-hash "0$2a$11$LIZ5e8A/TpSszgDD4xgMRuNAsz4oDk1XjHoRVS7nqgFYtzmTmzrs." ;default password is an empty string
- :db-db "test"
- :db-username "test"
- :db-password "test"
- :db-host "localhost"
+ :db-db ""
+ :db-username ""
+ :db-password ""
+ :db-host ""
  :db-port 3306
  }

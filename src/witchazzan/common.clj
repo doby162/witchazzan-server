@@ -216,10 +216,19 @@
 
 (def db
   {:dbtype "mariadb" :dbname (setting :db-db) :user (setting :db-username)
-   :password (setting :db-password) :host (setting :db-host) :port (setting :db-port)})
+   :password (setting :db-password) :host (setting :db-host)
+   :useSSL true :port (setting :db-port) :trustServerCertificate true})
+; https://mariadb.com/kb/en/using-tls-ssl-with-mariadb-java-connector/
 (def ds (jdbc/get-datasource db))
 
-;(jdbc/execute! ds ["select * from _table_"])
-;db example code
-;(jdbc/execute! ds ["select * from _table_"])
+(comment
+  (jdbc/execute! ds ["create table users(id int not null auto_increment,
+                     username text, password text, admin tinyint(1) not null,
+                     primary key (id));"]))
+(comment
+  (jdbc/execute! ds ["show tables;"]))
+(comment
+  (jdbc/execute! ds ["select * from users;"]))
+(comment
+  (jdbc/execute! ds ["drop table users;"]))
 ;(jdbc/execute! ds ["insert into _table_ (bupkis) values('dog');"])
