@@ -8,9 +8,10 @@
             "LoruleK8.json" "LoruleK7.json" "LoruleL8.json"
             "LoruleJ6.json" "LoruleI5.json" "LoruleH4.json"
             "LoruleG5.json" "LoruleF6.json" "LoruleE7.json"
-            "LoruleD8.json"
+            "LoruleD8.json" "LoruleD7.json" "LoruleI4.json"
             "arena1.json" "backYard1.json"
-            "EmptyCave.json" "SlimeCave.json" "CaveF8.json"]
+            "EmptyCave.json" "SlimeCave.json" "CaveF8.json"
+            "CaveE7.json"]
  :min-millis-per-frame 15
  :idle-millis-per-frame 500
  :pause false
