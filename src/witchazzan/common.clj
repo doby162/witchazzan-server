@@ -92,6 +92,7 @@
                       :auto-increment-id 0
                       :hour 0
                       :day 0
+                      :last-updated (System/currentTimeMillis)
                       :start-time (System/currentTimeMillis)}))
 
 #_(defn load-game

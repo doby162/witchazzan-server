@@ -163,12 +163,12 @@
           #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
           (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))))
     (compojure/GET "/api" [] sitemap)
-    (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='text' name='password'><input type='submit'></form>")
+    (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='password' name='password'><input type='submit'></form>")
     (params/wrap-params
      (compojure/routes
       (compojure/POST "/api/sign-up" [] create-account)
       (compojure/POST "/api/auth" [] authenticate-post)))
-    (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='text' name='password'><input type='submit'></form>")
+    (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
     (route/not-found sitemap))))
 ;;websocket infrastructure
 ;;
@@ -179,8 +179,6 @@
     :pieces (map (fn [%] (dissoc (into {} @%) :socket))
                  (active-pieces {:scene scene}))}
    (active-pieces {:type "player" :scene scene})))
-
-(defn threadify [func] (future (func)))
 ;;game loop
 ;;admin stuff
 (defn log-and-clear-agents
@@ -239,6 +237,7 @@
                               (setting "millis-per-hour")) (setting "hours-per-day")))
         new-day (int (/ (/ (- (System/currentTimeMillis) (:start-time @game-state))
                            (setting "millis-per-hour")) (setting "hours-per-day")))]
+    (swap! game-state merge {:last-updated (System/currentTimeMillis)})
     (when (not (= new-hour (:hour old-state)))
       (swap! game-state update-in [:hour]
              (fn [_] new-hour))
@@ -257,7 +256,6 @@
 (defn game-loop [scene]
   (log scene)
   (loop []
-    (keep-time!)
     (try
       (run!
        (fn [game-piece]
@@ -274,6 +272,31 @@
         (log-and-clear-agents)))
     (when (not (setting "pause")) (recur))))
 
+(defn threadify [func] (future (func)))
+
+(defn launch-threads []; this function will also advance all scenes by one tic when the game is paused
+  (threadify
+    #(loop [] (keep-time!) (try (Thread/sleep (setting "idle-millis-per-frame"))
+                                (catch Exception _)) (when (not (setting "pause")) (recur))))
+  (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
+
+(defn pause
+  "stops the game, but not the flow of time. Use justify-time before unpausing"
+  []
+  (swap! settings merge {:pause true}))
+
+(defn unpause []
+  (swap! settings merge {:pause false})
+  (launch-threads))
+
+(defn justify-time
+  "after the simulation has been paused, run this to catch the clock up with reality"
+  []
+  (run! #(send % merge {:milliseconds (System/currentTimeMillis)}) (game-pieces))
+  (swap!
+    game-state
+    #(merge % {:start-time (+ (- (System/currentTimeMillis) (:last-updated %)) (:start-time %))})))
+
 (defn main
   [& _]
   (log "Booting...")
@@ -281,5 +304,5 @@
   (log (str "Running server on port " (setting "port")))
   (when (not (setting "pause"))
     (log "Not paused, running game")
-    (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
+    (launch-threads))
   (seed-nature))
