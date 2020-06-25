@@ -231,4 +231,5 @@
   (jdbc/execute! ds ["select * from users;"]))
 (comment
   (jdbc/execute! ds ["drop table users;"]))
-;(jdbc/execute! ds ["insert into _table_ (bupkis) values('dog');"])
+(comment
+  (jdbc/execute! ds ["update users set admin = 1 where id=1;"]))

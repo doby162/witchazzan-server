@@ -105,7 +105,7 @@
         user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
     (if (and user (password/check password (:users/password user)))
       (-> (response "<a href='/api'> Auth succesful</a>")
-          (assoc :session (assoc session :auth (:users/id user))))
+          (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user))))
       "try again")))
 
 (defn create-account
@@ -130,6 +130,12 @@
       (handler request)
       nil)))
 
+(defn admin? [handler]
+  (fn [request]
+    (if (:admin (:session request))
+      (handler request)
+      nil)))
+
 (compojure/defroutes all-routes
   (wrap-session
    (compojure/routes
@@ -144,16 +150,18 @@
         (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
       (compojure/GET "/api/graph" []
         (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
-      (compojure/GET "/api/settings" [] (json-output @settings))
+      (admin?
+       (compojure/routes
+        (compojure/GET "/api/quit" [] kill-api)
+        (compojure/GET "/api/settings" [] (json-output @settings))))
+      (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
       (compojure/GET "/api/scenes" []
         (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
       (compojure/GET "/api/scenes/:param" [param]
         (json-output
          (filter
           #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-          (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
-      (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
-      (compojure/GET "/api/quit" [] kill-api)))
+          (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))))
     (compojure/GET "/api" [] sitemap)
     (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='text' name='password'><input type='submit'></form>")
     (params/wrap-params
