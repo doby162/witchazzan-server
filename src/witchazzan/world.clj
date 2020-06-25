@@ -276,8 +276,8 @@
 
 (defn launch-threads []; this function will also advance all scenes by one tic when the game is paused
   (threadify
-    #(loop [] (keep-time!) (try (Thread/sleep (setting "idle-millis-per-frame"))
-                                (catch Exception _)) (when (not (setting "pause")) (recur))))
+   #(loop [] (keep-time!) (try (Thread/sleep (setting "idle-millis-per-frame"))
+                               (catch Exception _)) (when (not (setting "pause")) (recur))))
   (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
 
 (defn pause
@@ -294,8 +294,8 @@
   []
   (run! #(send % merge {:milliseconds (System/currentTimeMillis)}) (game-pieces))
   (swap!
-    game-state
-    #(merge % {:start-time (+ (- (System/currentTimeMillis) (:last-updated %)) (:start-time %))})))
+   game-state
+   #(merge % {:start-time (+ (- (System/currentTimeMillis) (:last-updated %)) (:start-time %))})))
 
 (defn main
   [& _]

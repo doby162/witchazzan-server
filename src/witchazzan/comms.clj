@@ -53,19 +53,18 @@
       (not existing-user)
       (do
         (behavior/add-game-piece!
-         (behavior/map->player
-          {:id id
-           :x 0
-           :y 0
-           :type "player"
-           :scene "LoruleH8"
-           :health default-health
-           :active true
-           :defence 0
-           :sprite sprite
-           :name username
-           :socket channel
-           :milliseconds (System/currentTimeMillis)}))
+         {:id id
+          :x 0
+          :y 0
+          :type "player"
+          :scene "LoruleH8"
+          :health default-health
+          :active true
+          :defence 0
+          :sprite sprite
+          :name username
+          :socket channel
+          :milliseconds (System/currentTimeMillis)})
         (establish-identity @(one-game-piece id)))
       :else
       (do

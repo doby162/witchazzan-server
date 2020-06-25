@@ -2,6 +2,10 @@
 (ns witchazzan.behavior
   (:require [witchazzan.common :refer :all])
   (:gen-class))
+
+(declare die)
+(declare reproduce)
+(declare behavior)
 ;;namespace
 ;;game-piece creation helpers
 ;normalize settings values
@@ -71,14 +75,12 @@
       :else this)))
 ;;helpers
 ;;shared behavior
-(def init-piece)
 (defn add-game-piece!
   [piece]
   (let [new-piece (agent piece)]
     (swap! game-state
            (fn [state] (update-in state [:game-pieces]
-                                  (fn [game-pieces] (merge game-pieces new-piece)))))
-    (send new-piece init-piece)))
+                                  (fn [game-pieces] (merge game-pieces new-piece)))))))
 
 (defn delete
   [this]
@@ -105,12 +107,6 @@
       this)))
 ;;shared behavior
 ;;defprotocol
-
-(defprotocol game-piece
-  (behavior [this])
-  (die [this])
-  (reproduce [this])
-  (init-piece [this]))
 
 (defn hunger
   [this]
@@ -156,56 +152,6 @@
     (reproduce this)
     :else this))
 
-(defrecord carrot
-           [id
-            genes
-            energy
-            scene
-            sprite
-            milliseconds
-            health
-            x
-            y
-            parent-id
-            type]
-  game-piece
-  (init-piece
-    [this]
-    (if (> (:leech-seed (:genes this)) 200)
-      (merge this {:leech-seed true})
-      this))
-  (die
-    [this]
-    (delete this)
-    nil)
-  (behavior
-    [this]
-    (let [time (System/currentTimeMillis)
-          delta (- time milliseconds)]
-      (-> this
-          (merge {:milliseconds time})
-          (merge {:delta delta})
-          (photosynthesis)
-          (shift)
-          (hunger)
-          (hit-points)
-          (carrot-repro-decide)
-          (teleport))))
-  (reproduce
-    [this]
-    (let [energy (/ energy 3)
-          tile (find-empty-tile scene)
-          genes (mutate-genes genes)]
-      (add-game-piece!
-       (map->carrot (into {} (merge this
-                                    {:genes genes
-                                     :x (:x tile)
-                                     :y (:y tile)
-                                     :energy energy
-                                     :parent-id (:id this)
-                                     :id (gen-id)}))))
-      (merge this {:energy energy}))))
-
 (defn spell-terrain-collide [this]
   (cond
     (not ((:get-tile-walkable (name->scene (:scene this))) this))
@@ -226,94 +172,23 @@
         (delete this))
       :else this)))
 
-(defrecord spell
-           [id
-            x
-            y
-            spell
-            sprite
-            speed
-            scene
-            direction
-            milliseconds
-            owner-id
-            type]
-  game-piece
-  (init-piece
-    [this]
-    this)
-  (behavior
-    [this]
-    (let [time (System/currentTimeMillis)
-          delta (- time milliseconds)]
-      (-> this
-          (merge {:milliseconds time})
-          (merge
-           (cond
-             (= (:direction this) "up")
-             {:y (- y (* speed delta))}
-             (= (:direction this) "down")
-             {:y (+ y (* speed delta))}
-             (= (:direction this) "left")
-             {:x (- x (* speed delta))}
-             (= (:direction this) "right")
-             {:x (+ x (* speed delta))}))
-          (spell-terrain-collide)
-          (spell-object-collide)
-          (teleport)))))
-
 (defn cast-spell
   [this]
   (let [spell (:spell this)]
     (cond
       (or (= "teleball" spell) (= "fireball" spell))
-      (add-game-piece! (map->spell {:id (gen-id)
-                                    :x (:x this)
-                                    :y (:y this)
-                                    :type "spell"
-                                    :spell spell
-                                    :scene (:scene this)
-                                    :sprite spell
-                                    :speed 0.01
-                                    :direction (:direction this)
-                                    :milliseconds (System/currentTimeMillis)
-                                    :owner-id (:id this)})))
+      (add-game-piece! {:id (gen-id)
+                        :x (:x this)
+                        :y (:y this)
+                        :type "spell"
+                        :spell spell
+                        :scene (:scene this)
+                        :sprite spell
+                        :speed 0.01
+                        :direction (:direction this)
+                        :milliseconds (System/currentTimeMillis)
+                        :owner-id (:id this)}))
     (merge this {:spell nil})))
-
-(defrecord player
-           [id
-            socket
-            x
-            y
-            name
-            health
-            sprite
-            milliseconds
-            type]
-  game-piece
-  (init-piece
-    [this]
-    this)
-  (behavior
-    [this]
-    (let [time (System/currentTimeMillis)
-          delta (- time milliseconds)]
-      (-> this
-          (cast-spell)))))
-
-;ok, how do carrots handle being crowded?
-;one genne determines the size of it's territory.
-;A higher number means it gets effected by more distand carrots.
-;A higher number ALSO means higher photosynthesis yield.
-;Then we want some strategies for handling incoming damage.
-;1, lower both of your energy by the (min en1 en2) and kill competitors
-;at the risk of starving?
-;2, parasite, sap sone energy every turn?
-;3 maybe a more cooperative option? How about a carrot that just takes reduced
-;penalty for having nearby carrot?
-;Not sure how these are for game balance but it would at least
-;be more interesting
-
 
 (defn spawn-carrot [& coords]
   (let [scene (or (:scene (into {} coords)) "LoruleH8")
@@ -321,16 +196,99 @@
     (cond
       coords
       (add-game-piece!
-       (map->carrot
-        {:id (gen-id)
-         :genes (generate-genes :repro-threshold :leech-seed :color-r :color-g :color-b)
-         :energy 20
-         :scene scene
-         :sprite "carrot"
-         :milliseconds (System/currentTimeMillis)
-         :x (:x coords)
-         :y (:y coords)
-         :parent-id -1
-         :health 1
-         :type "carrot"}))
+       {:id (gen-id)
+        :genes (generate-genes :repro-threshold :leech-seed :color-r :color-g :color-b)
+        :energy 20
+        :scene scene
+        :sprite "carrot"
+        :milliseconds (System/currentTimeMillis)
+        :x (:x coords)
+        :y (:y coords)
+        :parent-id -1
+        :health 1
+        :type "carrot"})
       :else (log "spawn-carrot failed to find an empty tile"))))
+
+(defmulti behavior #(:type %))
+
+(defmethod behavior "carrot"
+  [this]
+  (let [time (System/currentTimeMillis)
+        delta (- time (:milliseconds this))]
+    (-> this
+        (merge {:milliseconds time})
+        (merge {:delta delta})
+        (photosynthesis)
+        (shift)
+        (hunger)
+        (hit-points)
+        (carrot-repro-decide)
+        (teleport))))
+
+(defmethod behavior "player"
+  [this]
+  (let [time (System/currentTimeMillis)
+        delta (- time (:milliseconds this))]
+    (-> this
+        (cast-spell))))
+
+(defmethod behavior "spell"
+  [this]
+  (let [time (System/currentTimeMillis)
+        delta (- time (:milliseconds this))]
+    (-> this
+        (merge {:milliseconds time})
+        (merge
+         (cond
+           (= (:direction this) "up")
+           {:y (- (:y this) (* (:speed this) delta))}
+           (= (:direction this) "down")
+           {:y (+ (:y this) (* (:speed this) delta))}
+           (= (:direction this) "left")
+           {:x (- (:x this) (* (:speed this) delta))}
+           (= (:direction this) "right")
+           {:x (+ (:x this) (* (:speed this) delta))}))
+        (spell-terrain-collide)
+        (spell-object-collide)
+        (teleport))))
+
+(defmulti die #(:type %))
+
+(defmethod die "carrot"
+  [this]
+  (delete this)
+  nil)
+
+(defmethod die "player"
+  [this]
+  this)
+
+(defmethod die "spell"
+  [this]
+  (delete this)
+  nil)
+
+(defmulti reproduce #(:type %))
+
+(defmethod reproduce "carrot"
+  [this]
+  (let [energy (/ (:energy this) 3)
+        tile (find-empty-tile (:scene this))
+        genes (mutate-genes (:genes this))]
+    (add-game-piece!
+     (merge this
+            {:genes genes
+             :x (:x tile)
+             :y (:y tile)
+             :energy energy
+             :parent-id (:id this)
+             :id (gen-id)}))
+    (merge this {:energy energy})))
+
+(defmethod reproduce "player"
+  [this]
+  this)
+
+(defmethod reproduce "spell"
+  [this]
+  this)
