@@ -16,7 +16,7 @@
   [data & [players]]
   (run!
    #(message-player data @%)
-   (cond players players :else (game-pieces {:type "player"}))))
+   (cond players players :else (game-pieces {:type :player}))))
 
 (defn establish-identity
   "comunicates to a client which player object belongs to them"
@@ -31,7 +31,7 @@
   [message channel]
   (let [player @(first (game-pieces {:socket channel}))
         id (get message "targetPlayerId")
-        audience (if id [(one-game-piece id)] (game-pieces {:type "player"}))]
+        audience (if id [(one-game-piece id)] (game-pieces {:type :player}))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
@@ -56,7 +56,7 @@
          {:id id
           :x 0
           :y 0
-          :type "player"
+          :type :player
           :scene "LoruleH8"
           :health default-health
           :active true
@@ -98,7 +98,7 @@
     (when (re-find #"^who" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"
                        :content
-                       (apply str (map #(str (:name @%) ", ") (active-pieces {:type "player"})))}
+                       (apply str (map #(str (:name @%) ", ") (active-pieces {:type :player})))}
                       player))
     (when (re-find #"^reload" (get message "command"))
       (require 'witchazzan.common :reload)

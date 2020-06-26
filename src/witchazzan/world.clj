@@ -143,13 +143,13 @@
      (compojure/routes
       (compojure/GET "/" [] socket-handler) ; websocket connection
       (compojure/GET "/api/players" []
-        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "player"}))))
+        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
       (compojure/GET "/api/plants" []
-        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type "carrot"}))))
+        (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
       (compojure/GET "/api/game-pieces" []
         (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
       (compojure/GET "/api/graph" []
-        (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type "carrot"})))))
+        (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
       (admin?
        (compojure/routes
         (compojure/GET "/api/quit" [] kill-api)
@@ -178,7 +178,7 @@
    {:messageType "game-piece-list"
     :pieces (map (fn [%] (dissoc (into {} @%) :socket))
                  (active-pieces {:scene scene}))}
-   (active-pieces {:type "player" :scene scene})))
+   (active-pieces {:type :player :scene scene})))
 ;;game loop
 ;;admin stuff
 (defn log-and-clear-agents
@@ -226,9 +226,9 @@
      coord-pairs)))
 
 (defn coordinate-spawns []
-  #_(when (empty? (active-pieces {:type "slime"}))
+  #_(when (empty? (active-pieces {:type :slime}))
       (spawn-points "slime"))
-  (when (empty? (active-pieces {:type "carrot"}))
+  (when (empty? (active-pieces {:type :carrot}))
     (spawn-points "carrot")))
 
 (defn keep-time! []

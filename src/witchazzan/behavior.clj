@@ -180,7 +180,7 @@
       (add-game-piece! {:id (gen-id)
                         :x (:x this)
                         :y (:y this)
-                        :type "spell"
+                        :type :spell
                         :spell spell
                         :scene (:scene this)
                         :sprite spell
@@ -206,12 +206,12 @@
         :y (:y coords)
         :parent-id -1
         :health 1
-        :type "carrot"})
+        :type :carrot})
       :else (log "spawn-carrot failed to find an empty tile"))))
 
-(defmulti behavior #(:type %))
+(defmulti behavior :type)
 
-(defmethod behavior "carrot"
+(defmethod behavior :carrot
   [this]
   (let [time (System/currentTimeMillis)
         delta (- time (:milliseconds this))]
@@ -225,14 +225,14 @@
         (carrot-repro-decide)
         (teleport))))
 
-(defmethod behavior "player"
+(defmethod behavior :player
   [this]
   (let [time (System/currentTimeMillis)
         delta (- time (:milliseconds this))]
     (-> this
         (cast-spell))))
 
-(defmethod behavior "spell"
+(defmethod behavior :spell
   [this]
   (let [time (System/currentTimeMillis)
         delta (- time (:milliseconds this))]
@@ -252,25 +252,25 @@
         (spell-object-collide)
         (teleport))))
 
-(defmulti die #(:type %))
+(defmulti die :type)
 
-(defmethod die "carrot"
+(defmethod die :carrot
   [this]
   (delete this)
   nil)
 
-(defmethod die "player"
+(defmethod die :player
   [this]
   this)
 
-(defmethod die "spell"
+(defmethod die :spell
   [this]
   (delete this)
   nil)
 
-(defmulti reproduce #(:type %))
+(defmulti reproduce :type)
 
-(defmethod reproduce "carrot"
+(defmethod reproduce :carrot
   [this]
   (let [energy (/ (:energy this) 3)
         tile (find-empty-tile (:scene this))
@@ -285,10 +285,10 @@
              :id (gen-id)}))
     (merge this {:energy energy})))
 
-(defmethod reproduce "player"
+(defmethod reproduce :player
   [this]
   this)
 
-(defmethod reproduce "spell"
+(defmethod reproduce :spell
   [this]
   this)

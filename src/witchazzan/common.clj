@@ -213,7 +213,7 @@
   (defn gen-id [] (swap! count #(+ 1 %))))
 
 (defn scene-active [scene]
-  (seq (active-pieces {:type "player" :scene scene})))
+  (seq (active-pieces {:type :player :scene scene})))
 
 (def db
   {:dbtype "mariadb" :dbname (setting :db-db) :user (setting :db-username)
