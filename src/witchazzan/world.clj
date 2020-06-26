@@ -121,7 +121,7 @@
 
 (defn kill-api [request]
   (do
-    (future (do (try (Thread/sleep 1000) (catch Exception _)) (System/exit 0)))
+    (future (do (Thread/sleep 1000) (System/exit 0)))
     "Killing server..."))
 
 (defn auth? [handler]
@@ -261,11 +261,11 @@
        (fn [game-piece]
          (send game-piece behavior/behavior))
        (active-pieces {:scene scene}))
-      (try (Thread/sleep (setting "min-millis-per-frame")) (catch Exception _))
+      (Thread/sleep (setting "min-millis-per-frame"))
       (apply await (active-pieces {:scene scene}))
       (if (scene-active scene)
         (update-clients scene)
-        (try (Thread/sleep (setting "idle-millis-per-frame")) (catch Exception _)))
+        (Thread/sleep (setting "idle-millis-per-frame")))
       (catch Exception e
         (log (str "error in " scene))
         (log e)
@@ -276,8 +276,8 @@
 
 (defn launch-threads []; this function will also advance all scenes by one tic when the game is paused
   (threadify
-   #(loop [] (keep-time!) (try (Thread/sleep (setting "idle-millis-per-frame"))
-                               (catch Exception _)) (when (not (setting "pause")) (recur))))
+   #(loop [] (keep-time!) (Thread/sleep (setting "idle-millis-per-frame"))
+      (when (not (setting "pause")) (recur))))
   (run! #(threadify (fn [] (game-loop %))) (map #(:name %) tilemaps)))
 
 (defn pause
