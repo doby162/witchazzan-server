@@ -10,6 +10,7 @@
   (:require [compojure.route :as route])
   (:require [crypto.password.bcrypt :as password])
   (:require [ring.middleware.params :as params])
+  (:require [ring.middleware.cors :refer [wrap-cors]])
   (:require [next.jdbc :as jdbc])
   (:gen-class))
 ;;namespace
@@ -74,7 +75,7 @@
 ;;analysis functions
 
 (defn json-output [data]
-  {:headers {"Content-Type" "application/json; charset=utf-8"}
+  {:headers {"Content-Type" "application/json; charset=utf-8" "Access-Control-Allow-Credentials" "true"}
    :body (json/write-str data)
    :status 200})
 
@@ -82,7 +83,7 @@
   (str/replace data "\n" "<br/>"))
 
 (defn sitemap [req]
-  "<a href='/api/players'> players </a><br/>
+  {:body "<a href='/api/players'> players </a><br/>
   <a href='/api/plants'> plants </a><br/>
   <a href='/api/game-pieces'> game pieces </a><br/>
   <a href='/api/settings'> settings </a><br/>
@@ -93,7 +94,8 @@
   <a href='/api/graph'> gene statistics for repro-threshold </a><br/>
   <a href='/api/auth'> authenticate </a><br/>
   <a href='/api/sign-up'> make an account </a><br/>
-  <a href='/api/quit'> kill server </a><br/>")
+  <a href='/api/quit'> kill server </a><br/>"
+   :headers {"Access-Control-Allow-Credentials" "true"}})
 
 (use 'ring.middleware.session
      'ring.util.response)
@@ -138,6 +140,7 @@
 
 (compojure/defroutes all-routes
   (wrap-session
+    (wrap-cors
    (compojure/routes
     (auth?
      (compojure/routes
@@ -169,7 +172,8 @@
       (compojure/POST "/api/sign-up" [] create-account)
       (compojure/POST "/api/auth" [] authenticate-post)))
     (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
-    (route/not-found sitemap))))
+    (route/not-found sitemap)
+    ) :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options])))
 ;;websocket infrastructure
 ;;
 ;;game loop
