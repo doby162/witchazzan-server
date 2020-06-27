@@ -33,7 +33,7 @@
         syri (get (ffilter #(= (get % "name") "Stuff You Run Into") layers) "data")
         teleport (get (ffilter #(= (get % "name") "Teleport") layers) "layers")
         objects (get (ffilter #(= (get % "name") "Objects") layers) "objects")]
-    {:name (first (str/split name #"\."))
+    {:name (keyword (first (str/split name #"\.")))
      :width width
      :height height
      :layers layers

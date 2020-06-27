@@ -60,16 +60,16 @@
             (or
              (ffilter ; intended entrance
               #(= (get % "name") target-obj-name)
-              (:objects (name->scene (get target "name"))))
+              (:objects (name->scene (keyword (get target "name")))))
              (ffilter ; backup entrance.
               #(= (get % "name") "Default Spawn Point")
-              (:objects (name->scene (get target "name")))))]
+              (:objects (name->scene (keyword (get target "name"))))))]
         (cond
           target-obj
           (merge this
                  {:x (/ (get target-obj "x") tilewidth)
                   :y (/ (get target-obj "y") tilewidth)
-                  :scene (get target "name")})
+                  :scene (keyword (get target "name"))})
           :else (merge this (find-empty-tile (:scene this)))))
         ;if we can't find a target-obj, the scene we want doesn't exist.
       :else this)))
@@ -191,7 +191,7 @@
     (merge this {:spell nil})))
 
 (defn spawn-carrot [& coords]
-  (let [scene (or (:scene (into {} coords)) "LoruleH8")
+  (let [scene (or (:scene (into {} coords)) :LoruleH8)
         coords (if (seq coords) (into {} coords) (find-empty-tile scene))]
     (cond
       coords

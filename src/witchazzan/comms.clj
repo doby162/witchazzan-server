@@ -40,7 +40,10 @@
     (send
      player
      merge
-     (apply merge (map (fn [pair] {(keyword (first pair)) (second pair)}) (seq message))))))
+     (apply merge
+            (map
+              (fn [pair]
+                {(keyword (first pair)) (if (= "scene" (first pair)) (keyword (second pair))(second pair))}) (seq message))))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
@@ -57,7 +60,7 @@
           :x 0
           :y 0
           :type :player
-          :scene "LoruleH8"
+          :scene :LoruleH8
           :health default-health
           :active true
           :defence 0
