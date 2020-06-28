@@ -93,6 +93,8 @@
   <a href='/api/scenes/inactive'> inactive scenes </a><br/>
   <a href='/api/graph'> gene statistics for repro-threshold </a><br/>
   <a href='/api/auth'> authenticate </a><br/>
+  <a href='/api/me'> account information </a><br/>
+  <a href='/api/log-out'> log-out </a><br/>
   <a href='/api/sign-up'> make an account </a><br/>
   <a href='/api/quit'> kill server </a><br/>"})
 
@@ -144,6 +146,11 @@
     (-> (handler request)
         (header "Access-Control-Allow-Credentials" "true"))))
 
+(defn api-me [request]
+  (let [data (jdbc/execute-one! ds ["select username, admin from users where id = ? ;" (:auth (:session request))])]
+    (json-output
+     {:username (:users/username data) :admin (:users/admin data)})))
+
 (compojure/defroutes all-routes
   (wrap-session
    (params/wrap-params
@@ -167,10 +174,6 @@
            (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
          (compojure/GET "/api/graph" []
            (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
-         (admin?
-          (compojure/routes
-           (compojure/GET "/api/quit" [] kill-api)
-           (compojure/GET "/api/settings" [] (json-output @settings))))
          (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
          (compojure/GET "/api/scenes" []
            (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
@@ -178,7 +181,14 @@
            (json-output
             (filter
              #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-             (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))))
+             (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
+         (compojure/GET "/api/me" [] api-me)
+         (compojure/GET "/api/log-out" []
+           (-> (response "<a href='/api'> de-auth succesful</a>") (assoc :session {})))
+         (admin?
+          (compojure/routes
+           (compojure/GET "/api/quit" [] kill-api)
+           (compojure/GET "/api/settings" [] (json-output @settings))))))
        (route/not-found sitemap))
       :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options])))))
 ;;websocket infrastructure
