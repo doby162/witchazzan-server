@@ -107,6 +107,7 @@
         user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
     (if (and user (password/check password (:users/password user)))
       (-> (response "<a href='/api'> Auth succesful</a>")
+          (header "Access-Control-Allow-Credentials" "true")
           (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user))))
       "try again")))
 
