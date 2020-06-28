@@ -111,7 +111,7 @@
       (let [token (str (java.util.UUID/randomUUID))]
         (jdbc/execute-one! ds ["update users set token = ? where id = ?;" token (:users/id user)])
         (-> (response "<a href='/api'> Auth succesful</a>")
-            (update-in [:cookies] #(merge % {"token" {:value token}}))
+            (update-in [:cookies] #(merge % {"token" {:value token :max-age 2592000}}))
             (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user)))))
       "try again")))
 
