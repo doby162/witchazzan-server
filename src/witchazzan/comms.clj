@@ -53,13 +53,14 @@
         db-id (:users/id db-data)
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (first (game-pieces {:type :player :name username}))
+        existing-user (first (game-pieces {:type :player :db-id db-id}))
         default-health 100]
     (cond
       (not existing-user)
       (do
         (behavior/add-game-piece!
          {:id id
+          :db-id db-id
           :x 0
           :y 0
           :type :player
