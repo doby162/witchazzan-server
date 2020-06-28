@@ -4,6 +4,7 @@
   (:require [witchazzan.behavior :as behavior])
   (:require [org.httpkit.server :as server])
   (:require [clojure.data.json :as json])
+  (:require [next.jdbc :as jdbc])
   (:gen-class))
 (use '[clojure.java.shell :only [sh]])
 ;;namespace
@@ -28,14 +29,14 @@
 
 (defn handle-chat
   "broadcasts chats as json"
-  [message channel]
+  [message channel _]
   (let [player @(first (game-pieces {:socket channel}))
         id (get message "targetPlayerId")
         audience (if id [(one-game-piece id)] (game-pieces {:type :player}))]
     (broadcast  {:messageType "chat" :name (:name player) :id (:id player)
                  :content (get message "text")} audience)))
 
-(defn handle-location-update [message channel]
+(defn handle-location-update [message channel _]
   (let [player (first (game-pieces {:socket channel}))]
     (send
      player
@@ -45,12 +46,14 @@
              (fn [pair]
                {(keyword (first pair)) (if (= "scene" (first pair)) (keyword (second pair)) (second pair))}) (seq message))))))
 
-(defn handle-login [message channel]
-  (let [username (get message "username") password (get message "password")
+(defn handle-login [message channel request]
+  (let [db-data (jdbc/execute-one! ds ["select * from users where id = ?;" (:auth (:session request))])
+        username (:users/username db-data)
         id (gen-id)
+        db-id (:users/id db-data)
         sprite (get message "sprite")
         moving (get message "moving")
-        existing-user (first (game-pieces {:name username}))
+        existing-user (first (game-pieces {:type :player :name username}))
         default-health 100]
     (cond
       (not existing-user)
@@ -85,7 +88,7 @@
   "this handler is a bit of a switch case inside of a switch case,
   it handles all of the text commands entered
   via the command bar on the client"
-  [message channel]
+  [message channel _]
   (let [player @(first (game-pieces {:socket channel}))]
     (when (re-find #"^look" (get message "command"))
       (message-player {:messageType "chat" :name "Witchazzan.core"

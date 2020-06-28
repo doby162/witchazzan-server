@@ -40,7 +40,7 @@
                message-type (get message "message_type")]
            (try ;checking if the function exists
              (call-func-by-string
-              (str "witchazzan.comms/handle-" message-type) [(dissoc message "message_type") channel])
+              (str "witchazzan.comms/handle-" message-type) [(dissoc message "message_type") channel request])
              (catch java.lang.NullPointerException e (log e)))
                                         ;here we are interpreting the "messasge_type" json value as
                                         ;the second half of a function name and calling that function
