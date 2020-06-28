@@ -225,6 +225,7 @@
 (comment
   (jdbc/execute! ds ["create table users(id int not null auto_increment,
                      username text, password text, admin tinyint(1) not null,
+                     token text,
                      primary key (id));"]))
 (comment
   (jdbc/execute! ds ["show tables;"]))
@@ -234,3 +235,5 @@
   (jdbc/execute! ds ["drop table users;"]))
 (comment
   (jdbc/execute! ds ["update users set admin = 1 where id=1;"]))
+(comment
+  (jdbc/execute-one! ds ["alter table users add column token text;"]))

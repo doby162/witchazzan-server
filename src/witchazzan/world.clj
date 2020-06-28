@@ -11,6 +11,7 @@
   (:require [crypto.password.bcrypt :as password])
   (:require [ring.middleware.params :as params])
   (:require [ring.middleware.cors :refer [wrap-cors]])
+  (:require [ring.middleware.cookies :refer [wrap-cookies]])
   (:require [next.jdbc :as jdbc])
   (:gen-class))
 ;;namespace
@@ -107,9 +108,22 @@
         password (get params "password")
         user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
     (if (and user (password/check password (:users/password user)))
-      (-> (response "<a href='/api'> Auth succesful</a>")
-          (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user))))
+      (let [token (str (java.util.UUID/randomUUID))]
+        (jdbc/execute-one! ds ["update users set token = ? where id = ?;" token (:users/id user)])
+        (-> (response "<a href='/api'> Auth succesful</a>")
+            (update-in [:cookies] #(merge % {"token" {:value token}}))
+            (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user)))))
       "try again")))
+
+(defn token-auth
+  [handler]
+  (fn [request]
+    (let [token (:value (get (:cookies request) "token"))
+          user (and (nil? (:auth (:session request))) token (jdbc/execute-one! ds ["select * from users where token = ?;" token]))]
+      (if user
+        (-> (handler (update-in request [:session] #(merge % {:auth (:users/id user) :admin (:users/admin user)})))
+            (update-in [:session] #(merge % {:auth (:users/id user) :admin (:users/admin user)})))
+        (handler request)))))
 
 (defn create-account
   [{params :form-params}]
@@ -151,46 +165,51 @@
     (json-output
      {:username (:users/username data) :admin (:users/admin data)})))
 
+(defn api-log-out [request]
+  (jdbc/execute-one! ds ["update users set token = null where id = ?" (:auth (:session request))])
+  (-> (response "<a href='/api'> de-auth succesful</a>") (assoc :session {})))
+
 (compojure/defroutes all-routes
   (wrap-session
    (params/wrap-params
     (wrap-universal-headers
-     (wrap-cors
-      (compojure/routes
-       (compojure/GET "/api" [] sitemap)
-       (compojure/GET "/api/" [] sitemap)
-       (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='password' name='password'><input type='submit'></form>")
-       (compojure/POST "/api/sign-up" [] create-account)
-       (compojure/POST "/api/auth" [] authenticate-post)
-       (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
-       (auth?
+     (wrap-cookies
+      (token-auth
+       (wrap-cors
         (compojure/routes
-         (compojure/GET "/" [] socket-handler) ; websocket connection
-         (compojure/GET "/api/players" []
-           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
-         (compojure/GET "/api/plants" []
-           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
-         (compojure/GET "/api/game-pieces" []
-           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
-         (compojure/GET "/api/graph" []
-           (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
-         (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
-         (compojure/GET "/api/scenes" []
-           (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
-         (compojure/GET "/api/scenes/:param" [param]
-           (json-output
-            (filter
-             #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-             (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
-         (compojure/GET "/api/me" [] api-me)
-         (compojure/GET "/api/log-out" []
-           (-> (response "<a href='/api'> de-auth succesful</a>") (assoc :session {})))
-         (admin?
+         (compojure/GET "/api" [] sitemap)
+         (compojure/GET "/api/" [] sitemap)
+         (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='password' name='password'><input type='submit'></form>")
+         (compojure/POST "/api/sign-up" [] create-account)
+         (compojure/POST "/api/auth" [] authenticate-post)
+         (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
+         (auth?
           (compojure/routes
-           (compojure/GET "/api/quit" [] kill-api)
-           (compojure/GET "/api/settings" [] (json-output @settings))))))
-       (route/not-found sitemap))
-      :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options])))))
+           (compojure/GET "/" [] socket-handler) ; websocket connection
+           (compojure/GET "/api/players" []
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
+           (compojure/GET "/api/plants" []
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
+           (compojure/GET "/api/game-pieces" []
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+           (compojure/GET "/api/graph" []
+             (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
+           (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
+           (compojure/GET "/api/scenes" []
+             (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
+           (compojure/GET "/api/scenes/:param" [param]
+             (json-output
+              (filter
+               #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
+               (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))
+           (compojure/GET "/api/me" [] api-me)
+           (compojure/GET "/api/log-out" [] api-log-out)
+           (admin?
+            (compojure/routes
+             (compojure/GET "/api/quit" [] kill-api)
+             (compojure/GET "/api/settings" [] (json-output @settings))))))
+         (route/not-found sitemap))
+        :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options])))))))
 ;;websocket infrastructure
 ;;
 ;;game loop
