@@ -75,7 +75,7 @@
 ;;analysis functions
 
 (defn json-output [data]
-  {:headers {"Content-Type" "application/json; charset=utf-8" "Access-Control-Allow-Credentials" "true"}
+  {:headers {"Content-Type" "application/json; charset=utf-8"}
    :body (json/write-str data)
    :status 200})
 
@@ -94,8 +94,7 @@
   <a href='/api/graph'> gene statistics for repro-threshold </a><br/>
   <a href='/api/auth'> authenticate </a><br/>
   <a href='/api/sign-up'> make an account </a><br/>
-  <a href='/api/quit'> kill server </a><br/>"
-   :headers {"Access-Control-Allow-Credentials" "true"}})
+  <a href='/api/quit'> kill server </a><br/>"})
 
 (use 'ring.middleware.session
      'ring.util.response)
@@ -107,7 +106,6 @@
         user (jdbc/execute-one! ds ["select * from users where username= ?" name])]
     (if (and user (password/check password (:users/password user)))
       (-> (response "<a href='/api'> Auth succesful</a>")
-          (header "Access-Control-Allow-Credentials" "true")
           (assoc :session (assoc session :auth (:users/id user) :admin (:users/admin user))))
       "try again")))
 
@@ -131,54 +129,58 @@
   (fn [request]
     (if (:auth (:session request))
       (handler request)
-      (-> (response "Access Denied" )
-          (status 401)
-          (header "Access-Control-Allow-Credentials" "true")))))
+      (-> (response "Access Denied")
+          (status 401)))))
 
 (defn admin? [handler]
   (fn [request]
     (if (:admin (:session request))
       (handler request)
       (-> (response "Access Denied")
-          (status 401)
-          (header "Access-Control-Allow-Credentials" "true")))))
+          (status 401)))))
+
+(defn wrap-universal-headers [handler]
+  (fn [request]
+    (-> (handler request)
+        (header "Access-Control-Allow-Credentials" "true"))))
 
 (compojure/defroutes all-routes
   (wrap-session
    (params/wrap-params
-    (wrap-cors
-     (compojure/routes
-      (compojure/GET "/api" [] sitemap)
-      (compojure/GET "/api/" [] sitemap)
-      (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='password' name='password'><input type='submit'></form>")
-      (compojure/POST "/api/sign-up" [] create-account)
-      (compojure/POST "/api/auth" [] authenticate-post)
-      (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
-      (auth?
-       (compojure/routes
-        (compojure/GET "/" [] socket-handler) ; websocket connection
-        (compojure/GET "/api/players" []
-          (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
-        (compojure/GET "/api/plants" []
-          (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
-        (compojure/GET "/api/game-pieces" []
-          (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
-        (compojure/GET "/api/graph" []
-          (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
-        (admin?
-         (compojure/routes
-          (compojure/GET "/api/quit" [] kill-api)
-          (compojure/GET "/api/settings" [] (json-output @settings))))
-        (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
-        (compojure/GET "/api/scenes" []
-          (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
-        (compojure/GET "/api/scenes/:param" [param]
-          (json-output
-           (filter
-            #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
-            (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))))
-      (route/not-found sitemap))
-     :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options]))))
+    (wrap-universal-headers
+     (wrap-cors
+      (compojure/routes
+       (compojure/GET "/api" [] sitemap)
+       (compojure/GET "/api/" [] sitemap)
+       (compojure/GET "/api/auth" [] "<form method='post'> <input placeholder='username' type='text' name='name'> <input placeholder='password' type='password' name='password'><input type='submit'></form>")
+       (compojure/POST "/api/sign-up" [] create-account)
+       (compojure/POST "/api/auth" [] authenticate-post)
+       (compojure/GET "/api/sign-up" [] "<form method='post'><input placeholder='username' type='text' name='name'><input placeholder='password' type='password' name='password'><input type='submit'></form>")
+       (auth?
+        (compojure/routes
+         (compojure/GET "/" [] socket-handler) ; websocket connection
+         (compojure/GET "/api/players" []
+           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
+         (compojure/GET "/api/plants" []
+           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
+         (compojure/GET "/api/game-pieces" []
+           (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+         (compojure/GET "/api/graph" []
+           (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
+         (admin?
+          (compojure/routes
+           (compojure/GET "/api/quit" [] kill-api)
+           (compojure/GET "/api/settings" [] (json-output @settings))))
+         (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
+         (compojure/GET "/api/scenes" []
+           (json-output (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps)))
+         (compojure/GET "/api/scenes/:param" [param]
+           (json-output
+            (filter
+             #(or (and (= param "active") (scene-active (:name %))) (and (= param "inactive") (not (scene-active (:name %)))))
+             (map #(dissoc (merge % {:active (boolean (scene-active (:name %)))}) :get-tile-walkable) tilemaps))))))
+       (route/not-found sitemap))
+      :access-control-allow-origin #".*" :access-control-allow-methods [:get :put :post :delete :options])))))
 ;;websocket infrastructure
 ;;
 ;;game loop
