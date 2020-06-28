@@ -88,7 +88,7 @@
 ;;game agnostic helpers
 ;;state management and access
 (defonce game-state (atom
-                     {:game-pieces []
+                     {:game-pieces #{}
                       :auto-increment-id 0
                       :hour 0
                       :day 0

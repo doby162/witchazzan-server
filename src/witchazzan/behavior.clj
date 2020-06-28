@@ -87,9 +87,10 @@
   (swap! game-state
          (fn [state] (update-in state [:game-pieces]
                                 (fn [game-pieces]
-                                  (filterv
-                                   #(not (= (:id this) (:id @%)))
-                                   game-pieces))))))
+                                  (into #{}
+                                        (filter
+                                         #(not (= (:id this) (:id @%)))
+                                         game-pieces)))))))
 
 (defn shift
   [this]
