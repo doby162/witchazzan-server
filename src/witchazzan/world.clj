@@ -130,15 +130,17 @@
   (fn [request]
     (if (:auth (:session request))
       (handler request)
-      (-> (response "Access Denied")
-          (status 401)))))
+      (-> (response "Access Denied" )
+          (status 401)
+          (header "Access-Control-Allow-Credentials" "true")))))
 
 (defn admin? [handler]
   (fn [request]
     (if (:admin (:session request))
       (handler request)
       (-> (response "Access Denied")
-          (status 401)))))
+          (status 401)
+          (header "Access-Control-Allow-Credentials" "true")))))
 
 (compojure/defroutes all-routes
   (wrap-session
