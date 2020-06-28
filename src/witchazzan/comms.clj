@@ -42,8 +42,8 @@
      merge
      (apply merge
             (map
-              (fn [pair]
-                {(keyword (first pair)) (if (= "scene" (first pair)) (keyword (second pair))(second pair))}) (seq message))))))
+             (fn [pair]
+               {(keyword (first pair)) (if (= "scene" (first pair)) (keyword (second pair)) (second pair))}) (seq message))))))
 
 (defn handle-login [message channel]
   (let [username (get message "username") password (get message "password")
