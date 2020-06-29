@@ -127,7 +127,7 @@
   (and
    (> (:hour @game-state) (setting "dawn"))
    (< (:hour @game-state) (setting "sunset"))
-   (not (re-seq #":Cave" (str (:scene this))))))
+   (not (re-seq #"Cave" (str (:scene this))))))
 
 (defn crowded?
   [this]
