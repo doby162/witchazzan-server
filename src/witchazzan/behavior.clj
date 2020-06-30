@@ -118,7 +118,7 @@
   [this]
   (cond
     (< (:health this) 1)
-    (delete this)
+    (die this)
     :else
     this))
 
@@ -156,7 +156,7 @@
 (defn spell-terrain-collide [this]
   (cond
     (not ((:get-tile-walkable (name->scene (:scene this))) this))
-    (delete this)
+    (die this)
     :else this))
 
 (defn spell-object-collide [this]
@@ -170,7 +170,7 @@
           (run! (fn [that] (send that merge {:health (- (:health @that 1) 1)})) collisions))
         (when (= "teleball" (:spell this))
           (run! (fn [that] (send that merge (find-empty-tile (:scene this)) {:force true})) collisions))
-        (delete this))
+        (die this))
       :else this)))
 
 (defn cast-spell
@@ -198,7 +198,7 @@
       coords
       (add-game-piece!
        {:id (gen-id)
-        :genes (generate-genes :repro-threshold :leech-seed :color-r :color-g :color-b)
+        :genes (generate-genes :repro-threshold :color-r :color-g :color-b)
         :energy 20
         :scene scene
         :sprite "carrot"
@@ -208,6 +208,25 @@
         :parent-id -1
         :health 1
         :type :carrot})
+      :else (log "spawn-carrot failed to find an empty tile"))))
+
+(defn spawn-herbivore [& coords]
+  (let [scene (or (:scene (into {} coords)) :LoruleH8)
+        coords (if (seq coords) (into {} coords) (find-empty-tile scene))]
+    (cond
+      coords
+      (add-game-piece!
+       {:id (gen-id)
+        :genes (generate-genes)
+        :energy 50
+        :scene scene
+        :sprite "herbivore"
+        :milliseconds (System/currentTimeMillis)
+        :x (:x coords)
+        :y (:y coords)
+        :parent-id -1
+        :health 1
+        :type :herbivore})
       :else (log "spawn-carrot failed to find an empty tile"))))
 
 (defmulti behavior :type)
@@ -231,7 +250,11 @@
   (let [time (System/currentTimeMillis)
         delta (- time (:milliseconds this))]
     (-> this
-        (cast-spell))))
+        (merge {:milliseconds time})
+        (merge {:delta delta})
+        (cast-spell)
+        (hit-points)
+        (hunger))))
 
 (defmethod behavior :spell
   [this]
@@ -253,6 +276,25 @@
         (spell-object-collide)
         (teleport))))
 
+(defn path-find
+  "for a creature with a given :destination and location,
+  find an opotimal path from location to destination"
+  [this]
+  this)
+
+(defn herbivore-choose-dest [this] this)
+
+(defmethod behavior :herbivore
+  [this]
+  (let [time (System/currentTimeMillis)
+        delta (- time (:milliseconds this))]
+    (-> this
+        (merge {:milliseconds time})
+        (merge {:delta delta})
+        (hunger)
+        (hit-points)
+        (teleport))))
+
 (defmulti die :type)
 
 (defmethod die :carrot
@@ -262,9 +304,15 @@
 
 (defmethod die :player
   [this]
-  this)
+  (log (str "player " (:name this) " would die if we implemented death! energy:" (int (:energy this)) " health:" (:health this)))
+  (merge this {:health 100 :energy 100}))
 
 (defmethod die :spell
+  [this]
+  (delete this)
+  nil)
+
+(defmethod die :herbivore
   [this]
   (delete this)
   nil)
@@ -291,5 +339,9 @@
   this)
 
 (defmethod reproduce :spell
+  [this]
+  this)
+
+(defmethod reproduce :herbivore
   [this]
   this)

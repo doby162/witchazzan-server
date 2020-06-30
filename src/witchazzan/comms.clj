@@ -66,6 +66,7 @@
           :type :player
           :scene :LoruleH8
           :health default-health
+          :energy 100
           :active true
           :defence 0
           :sprite sprite
@@ -79,6 +80,7 @@
          existing-user
          merge
          {:health default-health
+          :energy 100
           :socket channel
           :sprite sprite
           :active true})
