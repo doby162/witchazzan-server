@@ -1,7 +1,6 @@
 # System and IDE files
 Thumbs.db
 .DS_Store
-.idea
 *.suo
 *.sublime-project
 *.sublime-workspace
@@ -31,3 +30,9 @@ lein.bat
 
 # Ignore Java error dump files
 hs_err_pid*.log
+
+# IntelliJ will make and use these files
+# Do NOT Delete them, but also do not commit them
+.idea
+witchazzan.iml
+
