@@ -276,13 +276,27 @@
         (spell-object-collide)
         (teleport))))
 
-(defn path-find
-  "for a creature with a given :destination and location,
-  find an opotimal path from location to destination"
-  [this]
-  this)
-
-(defn herbivore-choose-dest [this] this)
+(defn apply-over-time
+  "Apply a change to a numeric value on the target spread over time.
+  Returns a future. Check status with (realized? future)"
+  [{target :target
+    key :key
+    value :value
+    time :time
+    absolute :absolute
+    force :force}]
+  (let [time-step (setting :min-millis-per-frame)
+        steps (Math/ceil (/ time time-step))
+        value-step (if absolute (/ (- value (key @target)) steps) (/ value steps))]
+    (future
+      (loop [n 1]
+        (send target #(merge % {key (+ (key @target) value-step) :force force}))
+        (Thread/sleep time-step)
+        (when force
+          (send target #(merge % {:force true})))
+        (if (< n steps)
+          (recur (inc n))
+          nil)))))
 
 (defmethod behavior :herbivore
   [this]
