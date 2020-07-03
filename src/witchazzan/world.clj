@@ -216,7 +216,7 @@
 (defn update-clients [scene]
   (comms/broadcast
    {:messageType "game-piece-list"
-    :pieces (map (fn [%] (dissoc (into {} @%) :socket))
+    :pieces (map (fn [%] (dissoc (into {} @%) :socket :vector))
                  (active-pieces {:scene scene}))}
    (active-pieces {:type :player :scene scene})))
 ;;game loop
@@ -268,6 +268,8 @@
 (defn coordinate-spawns []
   #_(when (empty? (active-pieces {:type :slime}))
       (spawn-points "slime"))
+  (when (empty? (active-pieces {:type :herbivore}))
+    (spawn-points "herbivore"))
   (when (empty? (active-pieces {:type :carrot}))
     (spawn-points "carrot")))
 

@@ -10,7 +10,8 @@
 ;;namespace
 
 (defn message-player [data player]
-  (try (server/send! (:socket player) (json/write-str data)) (catch Exception e)))
+  (try (server/send! (:socket player) (json/write-str data))
+       (catch Exception e (log "error sending data to client") (log e))))
 
 (defn broadcast
   "takes an n-level map and distributes it to all/selected clients as json"

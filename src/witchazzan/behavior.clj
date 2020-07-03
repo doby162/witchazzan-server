@@ -247,7 +247,7 @@
       coords
       (add-game-piece!
        {:id (gen-id)
-        :genes (generate-genes)
+        :genes (generate-genes :repro-threshold)
         :energy 50
         :scene scene
         :sprite "herbivore"
@@ -256,8 +256,9 @@
         :y (:y coords)
         :parent-id -1
         :health 1
-        :type :herbivore})
-      :else (log "spawn-carrot failed to find an empty tile"))))
+        :type :herbivore
+        :vector (future nil)})
+      :else (log "spawn-herbivore failed to find an empty tile"))))
 
 (defmulti behavior :type)
 
@@ -306,6 +307,46 @@
         (spell-object-collide)
         (teleport))))
 
+; (defn path-find
+;   "for a creature with a given :destination and location,
+;   find an optimal path from location to destination"
+;   [this]
+;   this)
+
+(defn walk-step
+  "one small step for an animal, one giant leap for this game engine"
+  [this]
+  (if (realized? (:vector this))
+    (merge this {:vector
+                 (apply-over-time {:target (one-game-piece (:id this))
+                                   :key (if (rand-bool) :x :y)
+                                   :value (- 1 (rand-int 3))
+                                   :time (setting :idle-millis-per-frame)})})
+    this))
+
+(defn munch
+  [this types]
+  (let [collision-object
+        (ffilter #(contains? types (:type @%))
+                 (active-pieces {:scene (:scene this) :x (:x this) :y (:y this)}))]
+    (if collision-object
+      (let [collision-data @collision-object]
+        (send collision-object die) ; plz to be eaten
+        (merge this {:energy (+ (:energy this) (/ (:energy collision-data) 10))}))
+      this)))
+
+; (defn herbivore-choose-dest
+;   "Pick somewhere to walk to"
+;   [this]
+;   (merge this {:destination (find-empty-tile (:scene this))}))
+
+; (defn check-dest
+;   "Are we there yet?"
+;   [this]
+;   (if (and (within-n 1 (:x this) (:x (:destination this))) (within-n 1 (:y this) (:y (:destination this))))
+;     (dissoc this :destination)
+;     this))
+
 (defmethod behavior :herbivore
   [this]
   (let [time (System/currentTimeMillis)
@@ -313,8 +354,13 @@
     (-> this
         (merge {:milliseconds time})
         (merge {:delta delta})
+        ; (as-> t (if (:dest t) this (herbivore-choose-dest t)))
+        ; (check-dest)
+        (walk-step)
         (hunger)
+        (munch #{:carrot})
         (hit-points)
+        (carrot-repro-decide)
         (teleport))))
 
 (defmulti die :type)
@@ -366,4 +412,15 @@
 
 (defmethod reproduce :herbivore
   [this]
-  this)
+  (let [energy (/ (:energy this) 3)
+        tile (find-empty-tile (:scene this))
+        genes (mutate-genes (:genes this))]
+    (add-game-piece!
+     (merge this
+            {:genes genes
+             :x (:x tile)
+             :y (:y tile)
+             :energy energy
+             :parent-id (:id this)
+             :id (gen-id)}))
+    (merge this {:energy energy})))
