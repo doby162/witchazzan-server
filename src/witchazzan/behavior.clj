@@ -37,6 +37,30 @@
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
+(defn apply-over-time
+  "Apply a change to a numeric value on the target spread over time.
+  Returns a future. Check status with (realized? future)"
+  [{target :target
+    key :key
+    value :value
+    time :time
+    absolute :absolute
+    force :force}]
+  (let [time-step (setting :min-millis-per-frame)
+        steps (Math/ceil (/ time time-step))
+        value-step (if absolute (/ (- value (key @target)) steps) (/ value steps))]
+    (future
+      (loop [n 1]
+        (send target #(merge % {key (+ (key @target) value-step) :force force}))
+        (Thread/sleep time-step)
+        (when force
+          (send target #(merge % {:force true})))
+        (if (< n steps)
+          (recur (inc n))
+          nil)))))
+
+(defn rand-bool [] (zero? (rand-int 2)))
+
 (defn teleport
   "check for and apply teleports"
   [this]
@@ -170,6 +194,12 @@
           (run! (fn [that] (send that merge {:health (- (:health @that 1) 1)})) collisions))
         (when (= "teleball" (:spell this))
           (run! (fn [that] (send that merge (find-empty-tile (:scene this)) {:force true})) collisions))
+        (when (= "push" (:spell this))
+          (run! (fn [that] (apply-over-time {:target that
+                                             :key (if (rand-bool) :x :y)
+                                             :value (if (rand-bool) (+ 1 (rand-int 3)) (- 0 (+ 1 (rand-int 3))))
+                                             :time 250
+                                             :force true})) collisions))
         (die this))
       :else this)))
 
@@ -177,7 +207,7 @@
   [this]
   (let [spell (:spell this)]
     (cond
-      (or (= "teleball" spell) (= "fireball" spell))
+      (or (= "push" spell) (= "teleball" spell) (= "fireball" spell))
       (add-game-piece! {:id (gen-id)
                         :x (:x this)
                         :y (:y this)
@@ -275,28 +305,6 @@
         (spell-terrain-collide)
         (spell-object-collide)
         (teleport))))
-
-(defn apply-over-time
-  "Apply a change to a numeric value on the target spread over time.
-  Returns a future. Check status with (realized? future)"
-  [{target :target
-    key :key
-    value :value
-    time :time
-    absolute :absolute
-    force :force}]
-  (let [time-step (setting :min-millis-per-frame)
-        steps (Math/ceil (/ time time-step))
-        value-step (if absolute (/ (- value (key @target)) steps) (/ value steps))]
-    (future
-      (loop [n 1]
-        (send target #(merge % {key (+ (key @target) value-step) :force force}))
-        (Thread/sleep time-step)
-        (when force
-          (send target #(merge % {:force true})))
-        (if (< n steps)
-          (recur (inc n))
-          nil)))))
 
 (defmethod behavior :herbivore
   [this]
