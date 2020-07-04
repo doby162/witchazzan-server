@@ -84,7 +84,8 @@
   (str/replace data "\n" "<br/>"))
 
 (defn sitemap [req]
-  {:body "<a href='/api/players'> players </a><br/>
+  {:body "<a href='/api/players/active'> players </a><br/>
+  <a href='/api/players/inactive'> inactive players </a><br/>
   <a href='/api/plants'> plants </a><br/>
   <a href='/api/game-pieces'> game pieces </a><br/>
   <a href='/api/settings'> settings </a><br/>
@@ -187,11 +188,15 @@
           (compojure/routes
            (compojure/GET "/" [] socket-handler) ; websocket connection
            (compojure/GET "/api/players" []
-             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :player}))))
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (active-pieces {:type :player}))))
+           (compojure/GET "/api/players/inactive" []
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (game-pieces {:type :player :active false}))))
+           (compojure/GET "/api/players/active" []
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (active-pieces {:type :player}))))
            (compojure/GET "/api/plants" []
-             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces {:type :carrot}))))
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (active-pieces {:type :carrot}))))
            (compojure/GET "/api/game-pieces" []
-             (json-output (map (fn [%] (dissoc (into {} @%) :socket)) (active-pieces))))
+             (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (active-pieces))))
            (compojure/GET "/api/graph" []
              (nl->br (with-out-str (analyze-gene "repro-threshold" (active-pieces {:type :carrot})))))
            (compojure/GET "/api/log" [] (nl->br (slurp "config/log")))
