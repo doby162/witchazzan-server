@@ -37,6 +37,79 @@
   (zipmap keywords
           (repeatedly #(rand-int (+ 1 (setting "gene-max"))))))
 
+;;let's define A* pathfinding with a few functions
+;;thank you, "The Joy of Clojure"
+
+(def world [[1 1 1 1 1]
+            [9 9 9 9 1]
+            [1 1 1 1 1]
+            [1 9 9 9 9]
+            [1 1 1 1 1]])
+
+(defn min-by
+  "Find the smallest in a collection, by supplied metric"
+  [f coll]
+  (when (seq coll)
+    (reduce (fn [min other]
+              (if (> (f min) (f other))
+                other
+                min))
+            coll)))
+
+(defn neighbors
+  ([size yx] (neighbors [[-1 0] [1 0] [0 -1] [0 1]]
+                                     size
+                                     yx))
+  ([deltas size yx]
+   (filter (fn [new-yx]
+             (every? #(< -1 % size) new-yx))
+           (map #(vec (map + yx %))
+                deltas))))
+
+(defn estimate-cost [step-cost-est size y x]
+  (* step-cost-est
+     (- (+ size size) y x 2)))
+
+(defn path-cost [node-cost cheapest-nbr]
+  (+ node-cost
+     (or (:cost cheapest-nbr) 0)))
+
+(defn total-cost [newcost step-cost-est size y x]
+  (+ newcost
+     (estimate-cost step-cost-est size y x)))
+
+(defn astar [start-yx step-est cell-costs]
+  (let [size (count cell-costs)]
+    (loop [steps 0
+           routes (vec (replicate size (vec (replicate size nil))))
+           work-todo (sorted-set [0 start-yx])]
+      (if (empty? work-todo)
+        [(peek (peek routes)) :steps steps]
+        (let [[_ yx :as work-item] (first work-todo)
+              rest-work-todo (disj work-todo work-item)
+              nbr-yxs (neighbors size yx)
+              cheapest-nbr (min-by :cost
+                                   (keep #(get-in routes %)
+                                         nbr-yxs))
+              newcost (path-cost (get-in cell-costs yx)
+                                 cheapest-nbr)
+              oldcost (:cost (get-in routes yx))]
+          (if (and oldcost (>= newcost oldcost))
+            (recur (inc steps) routes rest-work-todo)
+            (recur (inc steps)
+                   (assoc-in routes yx
+                             {:cost newcost
+                              :yxs (conj (:yxs cheapest-nbr [])
+                                         yx)})
+                   (into rest-work-todo
+                         (map
+                           (fn [w]
+                             (let [[y x] w]
+                               [(total-cost newcost step-est size y x) w]))
+                           nbr-yxs)))))))))
+
+(comment (astar [0 0] 5 world))
+
 (defn apply-over-time
   "Apply a change to a numeric value on the target spread over time.
   Returns a future. Check status with (realized? future)"
@@ -45,16 +118,14 @@
     value :value
     time :time
     absolute :absolute
-    force :force}]
+    added-values :added-values}]
   (let [time-step (setting :min-millis-per-frame)
         steps (Math/ceil (/ time time-step))
         value-step (if absolute (/ (- value (key @target)) steps) (/ value steps))]
     (future
       (loop [n 1]
-        (send target #(merge % {key (+ (key @target) value-step) :force force}))
+        (send target #(merge % added-values {key (+ (key @target) value-step)}))
         (Thread/sleep time-step)
-        (when force
-          (send target #(merge % {:force true})))
         (if (< n steps)
           (recur (inc n))
           nil)))))
@@ -199,7 +270,7 @@
                                              :key (if (rand-bool) :x :y)
                                              :value (if (rand-bool) (+ 1 (rand-int 3)) (- 0 (+ 1 (rand-int 3))))
                                              :time 250
-                                             :force true})) collisions))
+                                             :added-values {:force true}})) collisions))
         (die this))
       :else this)))
 
@@ -307,12 +378,6 @@
         (spell-object-collide)
         (teleport))))
 
-; (defn path-find
-;   "for a creature with a given :destination and location,
-;   find an optimal path from location to destination"
-;   [this]
-;   this)
-
 (defn walk-step
   "one small step for an animal, one giant leap for this game engine"
   [this]
@@ -335,17 +400,29 @@
         (merge this {:energy (+ (:energy this) (/ (:energy collision-data) 10))}))
       this)))
 
-; (defn herbivore-choose-dest
-;   "Pick somewhere to walk to"
-;   [this]
-;   (merge this {:destination (find-empty-tile (:scene this))}))
+ (defn herbivore-choose-dest
+   "Pick somewhere to walk to"
+   [this]
+   (let [dest (find-empty-tile (:scene this))
+         start-yx [(int (:y this)) (int (:x this))]
+         step-est 10
+         tile-map (name->scene (:scene this))
+         terrain-layer (map #(+ 1 (* 10 %)) (:syri tile-map))
+         map-height (:height tile-map)
+         map-width (:width tile-map)
+         veggie-tiles (->> (square-range (max map-height map-width )) (filter #(not (tile-occupied (:scene this) %))))
+         tiles-partitioned (partition map-width terrain-layer)
+         node-costs (vec (map #(vec %) tiles-partitioned))
+         path (astar start-yx step-est node-costs)
+         ]
+     (merge this {:destination dest :plan path})))
 
-; (defn check-dest
-;   "Are we there yet?"
-;   [this]
-;   (if (and (within-n 1 (:x this) (:x (:destination this))) (within-n 1 (:y this) (:y (:destination this))))
-;     (dissoc this :destination)
-;     this))
+ (defn check-dest
+   "Are we there yet?"
+   [this]
+   (if (and (within-n 1 (:x this) (:x (:destination this))) (within-n 1 (:y this) (:y (:destination this))))
+     (dissoc this :destination :path)
+     this))
 
 (defmethod behavior :herbivore
   [this]
@@ -354,8 +431,8 @@
     (-> this
         (merge {:milliseconds time})
         (merge {:delta delta})
-        ; (as-> t (if (:dest t) this (herbivore-choose-dest t)))
-        ; (check-dest)
+        (as-> t (if (:destination t) this (herbivore-choose-dest t)))
+        (check-dest)
         (walk-step)
         (hunger)
         (munch #{:carrot})
