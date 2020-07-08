@@ -310,7 +310,7 @@
         (spell-object-collide)
         (teleport))))
 
-(defn walk-step
+(defn walk-step-rand
   "one small step for an animal, one giant leap for this game engine"
   [this]
   (if (realized? (:vector this))
@@ -321,6 +321,27 @@
                                    :time (setting :idle-millis-per-frame)})})
     this))
 
+(defn walk-step
+  "one small step for an animal, one giant leap for this game engine
+  always attempts to stay centered on tiles"
+  [this]
+  (if (and (realized? (:vector this)) (peek (:path this)))
+    (let [path-next (peek (:path this))
+          path-rest (rest (:path this))
+          loc [(int (:y this)) (int (:x this))]
+          key (if (= (first loc) (first path-next)) :x :y)
+          difference (- (apply + path-next) (apply + loc))]
+      (if (>= 1 (Math/abs difference)) ; if difference is too high it indicates that we have teleported
+        (merge this {:path path-rest
+                     :vector
+                     (apply-over-time {:target (one-game-piece (:id this))
+                                       :key key
+                                       :value (+ 0.5 (if (= key :y) (first path-next) (last path-next)))
+                                       :time (setting :idle-millis-per-frame)
+                                       :absolute true})})
+        (dissoc this :path :dest)))
+    this))
+
 (defn munch
   [this types]
   (let [collision-object
@@ -329,34 +350,32 @@
     (if collision-object
       (let [collision-data @collision-object]
         (send collision-object die) ; plz to be eaten
-        (merge this {:energy (+ (:energy this) (/ (:energy collision-data) 10))}))
+        (merge this {:path [(list (:y this) (:x this))] :energy (+ (:energy this) (/ (:energy collision-data) (setting :herbivore-efficiency)))}))
       this)))
 
 (declare astar)
+(declare draw-path)
 
- (defn herbivore-choose-dest
-   "Pick somewhere to walk to"
-   [this]
-   (let [dest (find-empty-tile (:scene this))
-         start-xy [(int (:x this)) (int (:y this))]
-         step-est 10
-         tile-map (name->scene (:scene this))
-         terrain-layer (map #(+ 1 (* 10 %)) (:syri tile-map))
-         map-height (:height tile-map)
-         map-width (:width tile-map)
-         veggie-tiles (->> (square-range (max map-height map-width )) (filter #(not (tile-occupied (:scene this) %))))
-         tiles-partitioned (partition map-width terrain-layer)
-         node-costs (vec (map #(vec %) tiles-partitioned))
-         setup {:start start-xy, :finish [(int (:x dest)) (int (:y dest))]}
-         path (astar node-costs setup)]
-     (merge this {:destination dest :plan path})))
-
- (defn check-dest
-   "Are we there yet?"
-   [this]
-   (if (and (within-n 1 (:x this) (:x (:destination this))) (within-n 1 (:y this) (:y (:destination this))))
-     (dissoc this :destination :path)
-     this))
+(defn herbivore-choose-dest
+  "Pick somewhere to walk to"
+  [this]
+  (let [tile-map (name->scene (:scene this))
+        map-height (:height tile-map)
+        map-width (:width tile-map)
+        veggie-tiles (map #(deref %) (game-pieces {:scene (:scene this) :type :carrot}))
+        dest (if (seq veggie-tiles) (rand-nth veggie-tiles) (find-empty-tile (:scene this)))
+        start-xy [(int (:y this)) (int (:x this))]
+        dest-xy [(int (:y dest)) (int (:x dest))]
+        terrain-layer (map #(if (zero? %) 1 100) (:syri tile-map))
+        tiles-partitioned (partition map-width terrain-layer)
+        node-costs (vec (map #(vec %) tiles-partitioned))
+        setup {:start start-xy, :finish dest-xy}
+        path (astar node-costs setup)
+        correctness (map #((:get-tile-walkable (name->scene (:scene this))) {:y (first %) :x (last %)}) (:path path))]
+    ;(draw-path node-costs (:path path)) ; uncomment for some rad debugging
+    (if (> 99 (:cost path))
+      (merge this {:destination dest :path (:path path)})
+      this)))
 
 (defmethod behavior :herbivore
   [this]
@@ -365,8 +384,7 @@
     (-> this
         (merge {:milliseconds time})
         (merge {:delta delta})
-        (as-> t (if (:destination t) this (herbivore-choose-dest t)))
-        (check-dest)
+        (as-> t (if (and (:destination t) (peek (:path t))) this (herbivore-choose-dest t)))
         (walk-step)
         (hunger)
         (munch #{:carrot})
@@ -455,7 +473,7 @@
 
 (defn random-world [rows cols]
   (vec (repeatedly rows
-    (fn [] (vec (repeatedly cols #(random-tile 0.7)))))))
+                   (fn [] (vec (repeatedly cols #(random-tile 0.7)))))))
 
 (defn create-empty-ascii
   [world]
@@ -467,11 +485,10 @@
 (defn build-basic-ascii
   [world]
   (vec (for [row world]
-    (vec (for [node row]
-      (if (> node 0)
-        "#"
-        " "))))))
-
+         (vec (for [node row]
+                (if (> node 0)
+                  "#"
+                  " "))))))
 
 (defn build-ascii-path
   [world path]
@@ -519,10 +536,8 @@
         ;; Add tie-breaker nudge into h-cost. Note that this breaks
         ;; admissability, so path may not be optimal.
         ;; http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#breaking-ties
-        h-cost (* (+ (Math/abs (- r r2)) (Math/abs (- c c2))) 1.005)
-        ]
+        h-cost (* (+ (Math/abs (- r r2)) (Math/abs (- c c2))) 1.005)]
     (+ g-cost h-cost)))
-
 
 (defn find-path
   "Find path from start to finish. Previous is a backtrack mapping of nodes,
@@ -587,6 +602,7 @@
 ; - if finish has un-initialized g-costs, or if we can't traverse back to start,
 ;   then the path of start to finish is infinitely high
 
+
 (defn neighbors
   "Return the neighbors of node. Only four directions. Don't include start node
   as neighbor, because we assume it's never better to back through the start
@@ -599,13 +615,13 @@
                                col (+ (node 1) col-mod)]
                            (if (and
                                  ;; Don't include start node
-                                 (not (= [row col] start))
+                                (not (= [row col] start))
 
                                  ;; Check bounds.
-                                 (< row rows)
-                                 (>= row 0)
-                                 (< col cols)
-                                 (>= col 0))
+                                (< row rows)
+                                (>= row 0)
+                                (< col cols)
+                                (>= col 0))
                              (conj neighs [row col])
                              neighs)))]
     (reduce find-neighbors [] [[1 0] [0 1] [-1 0] [0 -1]])))
@@ -633,8 +649,8 @@
                                   [improved-nodes node]
                                   (let [new-cost (+ (lookup-g-cost g-costs base-node) (cost-fn world node))]
                                     (if (or
-                                          (not (contains? g-costs node))
-                                          (< new-cost (lookup-g-cost g-costs node)))
+                                         (not (contains? g-costs node))
+                                         (< new-cost (lookup-g-cost g-costs node)))
 
                                       ;; Use this node if it wasn't in the g-costs
                                       ;; before (never been traversed to), or if it's
@@ -677,7 +693,7 @@
       (let [node (first (first pq)) ;; Get highest priority node (throw away priority).
             pq (pop pq)
             neighs (neighbors world node setup)
-            
+
             ;; The *real* costs for these neighbors
             improved-neighbor-costs (nodes-with-improved-costs world g-costs node neighs cost)
             improved-neighbors (keys improved-neighbor-costs)
@@ -694,7 +710,6 @@
                                     (reduce #(assoc %1 %2 node) {} improved-neighbors))]
         ;; Push new neighbors into priority queue
         (recur (into pq (vec improved-neighbor-heuristics)) updated-g-costs updated-previous)))))
-
 
 (defn astar
   "A* algorithm.
@@ -756,7 +771,7 @@
         ;; then we'd never finish. Instead, just pop off stack and continue
         ;; finding other paths. Goal here isn't to just find any path, but to
         ;; find the best path using DFS.
-        (recur (pop stack) g-costs previous)
+      (recur (pop stack) g-costs previous)
 
       :else
         ;; Else, we need to do work.
@@ -766,17 +781,17 @@
         ; - modify g-costs of better-neighs
         ; - modify previous of better-neighs
         ; - push better-neighs into stack
-        (let [node (last stack)
-              stack (pop stack)
-              neighs (neighbors world node setup)
-              improved-neighbor-costs (nodes-with-improved-costs world g-costs node neighs)
-              improved-neighbors (keys improved-neighbor-costs)
-              updated-g-costs (merge g-costs improved-neighbor-costs)
-              updated-previous (merge previous
+      (let [node (last stack)
+            stack (pop stack)
+            neighs (neighbors world node setup)
+            improved-neighbor-costs (nodes-with-improved-costs world g-costs node neighs)
+            improved-neighbors (keys improved-neighbor-costs)
+            updated-g-costs (merge g-costs improved-neighbor-costs)
+            updated-previous (merge previous
                                       ;; Create map of neighbors to node
                                       ;; %1 is map, %2 neighbor.
-                                      (reduce #(assoc %1 %2 node) {} improved-neighbors))]
+                                    (reduce #(assoc %1 %2 node) {} improved-neighbors))]
           ;; Push new neighbors into stack.
-          (recur (into stack improved-neighbors) updated-g-costs updated-previous)))))
+        (recur (into stack improved-neighbors) updated-g-costs updated-previous)))))
 
 ;; arrows could be cool for planning http://www.alanwood.net/unicode/arrows.html

@@ -353,3 +353,5 @@
     (log "Not paused, running game")
     (launch-threads))
   (seed-nature))
+
+(defn frame [] (justify-time) (Thread/sleep 10) (unpause) (pause) nil)

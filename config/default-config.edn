@@ -31,4 +31,5 @@
  :db-password ""
  :db-host ""
  :db-port 3306
+ :herbivore-efficiency 5
  }
