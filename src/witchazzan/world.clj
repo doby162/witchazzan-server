@@ -246,9 +246,11 @@
   (setting "millis-per-hour" 600))
 
 (defn seed-nature []
-  (run!
-   (fn [scene] (behavior/spawn-carrot (merge {:scene (:name scene)} (find-empty-tile (:name scene)))))
-   tilemaps))
+  (loop [n 0]
+    (run!
+     (fn [scene] (behavior/spawn-carrot (merge {:scene (:name scene)} (find-empty-tile (:name scene)))))
+     tilemaps)
+    (when (< n (setting :starting-carrots)) (recur (inc n)))))
 ;;admin stuff
 ;;loooop
 (defn spawn-points

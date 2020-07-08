@@ -32,4 +32,5 @@
  :db-host ""
  :db-port 3306
  :herbivore-efficiency 5
+ :starting-carrots 2
  }
