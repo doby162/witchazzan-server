@@ -384,7 +384,7 @@
     (-> this
         (merge {:milliseconds time})
         (merge {:delta delta})
-        (as-> t (if (and (:destination t) (peek (:path t))) this (herbivore-choose-dest t)))
+        (as-> t (if (and (:destination t) (peek (:path t))) t (herbivore-choose-dest t)))
         (walk-step)
         (hunger)
         (munch #{:carrot})
