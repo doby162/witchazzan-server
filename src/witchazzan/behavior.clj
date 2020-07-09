@@ -325,12 +325,16 @@
   "one small step for an animal, one giant leap for this game engine
   always attempts to stay centered on tiles"
   [this]
-  (if (and (realized? (:vector this)) (peek (:path this)))
-    (let [path-next (peek (:path this))
+  (if (and (realized? (:vector this)) (first (:path this)))
+    (let [path-next (first (:path this))
           path-rest (rest (:path this))
           loc [(int (:y this)) (int (:x this))]
           key (if (= (first loc) (first path-next)) :x :y)
-          difference (- (apply + path-next) (apply + loc))]
+          difference (- (apply + path-next) (apply + loc))
+          direction (cond
+                      (and (= key :x) (> difference 0)) "right" (and (= key :x) (< difference 0)) "left"
+                      (and (= key :y) (> difference 0)) "down" (and (= key :y) (< difference 0)) "up")
+          ]
       (if (>= 1 (Math/abs difference)) ; if difference is too high it indicates that we have teleported
         (merge this {:path path-rest
                      :vector
@@ -338,7 +342,8 @@
                                        :key key
                                        :value (+ 0.5 (if (= key :y) (first path-next) (last path-next)))
                                        :time (setting :idle-millis-per-frame)
-                                       :absolute true})})
+                                       :absolute true
+                                       :added-values {:moving (if (zero? difference) false true) :direction direction}})})
         (dissoc this :path :dest)))
     this))
 
@@ -350,7 +355,7 @@
     (if collision-object
       (let [collision-data @collision-object]
         (send collision-object die) ; plz to be eaten
-        (merge this {:path [(list (:y this) (:x this))] :energy (+ (:energy this) (/ (:energy collision-data) (setting :herbivore-efficiency)))}))
+        (merge this {:path [(list (:y this) (:x this)) (list (:y this) (:x this))] :energy (+ (:energy this) (/ (:energy collision-data) (setting :herbivore-efficiency)))}))
       this)))
 
 (declare astar)
@@ -384,7 +389,7 @@
     (-> this
         (merge {:milliseconds time})
         (merge {:delta delta})
-        (as-> t (if (and (:destination t) (peek (:path t))) t (herbivore-choose-dest t)))
+        (as-> t (if (and (:destination t) (first (:path t))) t (herbivore-choose-dest t)))
         (walk-step)
         (hunger)
         (munch #{:carrot})
