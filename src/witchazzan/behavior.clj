@@ -83,22 +83,31 @@
                 (get % "name")) ;get the value of the property name DestinationScene
               (get target "properties"))
              "value")
+            target-entrance-name
+            (get
+             (ffilter
+              #(=
+                "Entrance"
+                (get % "name"))
+              (get target "properties"))
+             "value")
             target-obj
             (or
              (ffilter ; intended entrance
-              #(= (get % "name") target-obj-name)
-              (:objects (name->scene (keyword (get target "name")))))
+              #(= (get % "name") target-entrance-name)
+              (:objects (name->scene (keyword target-obj-name))))
              (ffilter ; backup entrance.
               #(= (get % "name") "Default Spawn Point")
-              (:objects (name->scene (keyword (get target "name"))))))]
-        (cond
-          target-obj
-          (merge this
-                 {:x (/ (get target-obj "x") tilewidth)
-                  :y (/ (get target-obj "y") tilewidth)
-                  :scene (keyword (get target "name"))})
-          :else (merge this (find-empty-tile (:scene this)))))
-        ;if we can't find a target-obj, the scene we want doesn't exist.
+              (:objects (name->scene (keyword target-obj-name)))))]
+        (if (and target-entrance-name target-obj-name target-obj)
+          (cond
+            target-obj
+            (merge this
+                   {:x (/ (get target-obj "x") tilewidth)
+                    :y (/ (get target-obj "y") tilewidth)
+                    :scene (keyword target-obj-name)})
+            :else (merge this (find-empty-tile target-obj-name)))
+          this)) ;if we can't find a target-obj, the scene we want doesn't exist.
       :else this)))
 ;;helpers
 ;;shared behavior
@@ -333,9 +342,8 @@
           difference (- (apply + path-next) (apply + loc))
           direction (cond
                       (and (= key :x) (> difference 0)) "right" (and (= key :x) (< difference 0)) "left"
-                      (and (= key :y) (> difference 0)) "down" (and (= key :y) (< difference 0)) "up")
-          ]
-      (if (>= 1 (Math/abs difference)) ; if difference is too high it indicates that we have teleported
+                      (and (= key :y) (> difference 0)) "down" (and (= key :y) (< difference 0)) "up")]
+      (if (and (instance? Long difference) (>= 1 (Math/abs difference))) ; if difference is too high it indicates that we have teleported
         (merge this {:path path-rest
                      :vector
                      (apply-over-time {:target (one-game-piece (:id this))
