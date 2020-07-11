@@ -237,3 +237,14 @@
   (jdbc/execute! ds ["update users set admin = 1 where id=1;"]))
 (comment
   (jdbc/execute-one! ds ["alter table users add column token text;"]))
+(comment
+  (jdbc/execute! ds ["create table clientData (
+                     `id` int not null auto_increment,
+                     `userId` int,
+                     `key` text,
+                     `value` text,
+                     primary key (id));"]))
+(comment
+  (jdbc/execute! ds ["select * from clientData"]))
+(comment
+  (jdbc/execute! ds ["drop table clientData"]))

@@ -14,6 +14,7 @@
                  [criterium "0.4.5"]
                  [compojure "1.6.1"]
                  [org.clojure/data.json "0.2.6"]
+                 [ring/ring-json "0.5.0"]
                  [org.clojure/data.priority-map "1.0.0"]
                  [ring-cors "0.1.13"]]
   :main witchazzan.core

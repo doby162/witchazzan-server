@@ -12,6 +12,8 @@
   (:require [ring.middleware.params :as params])
   (:require [ring.middleware.cors :refer [wrap-cors]])
   (:require [ring.middleware.cookies :refer [wrap-cookies]])
+  (:require [ring.middleware.json :refer [wrap-json-body]])
+  (:require [ring.util.response :refer [response]])
   (:require [next.jdbc :as jdbc])
   (:gen-class))
 ;;namespace
@@ -170,6 +172,20 @@
   (jdbc/execute-one! ds ["update users set token = null where id = ?" (:auth (:session request))])
   (-> (response "<a href='/api'> de-auth succesful</a>") (assoc :session {})))
 
+(defn player-data-get [request]
+  (let [existing-row (jdbc/execute-one! ds ["select * from clientData where userId = ? and `key` = ?" (:auth (:session request)) (:key (:body request))])]
+    (json-output existing-row)))
+
+(defn player-data-post [request]
+  (let [existing-row (jdbc/execute-one! ds ["select * from clientData where userId = ? and `key` = ?" (:auth (:session request)) (:key (:body request))])]
+    (if existing-row
+      (do
+        (jdbc/execute-one! ds ["update clientData set value = ? where id = ?" (:value (:body request)) (:clientData/id existing-row)])
+        (json-output {:action "updated"}))
+      (do
+        (jdbc/execute-one! ds ["insert into clientData (userId, `key`, value) values(?, ?, ?)" (:auth (:session request)) (:key (:body request)) (:value (:body request))])
+        (json-output {:action "row added"})))))
+
 (compojure/defroutes all-routes
   (wrap-session
    (params/wrap-params
@@ -187,6 +203,11 @@
          (auth?
           (compojure/routes
            (compojure/GET "/" [] socket-handler) ; websocket connection
+           (wrap-json-body ; this marks the json-in-json-out portion of tha api
+            (compojure/routes
+             (compojure/GET "/api/player-data" [] player-data-get)
+             (compojure/POST "/api/player-data" [] player-data-post))
+            {:keywords? true})
            (compojure/GET "/api/players" []
              (json-output (map (fn [%] (dissoc (into {} @%) :socket :vector)) (active-pieces {:type :player}))))
            (compojure/GET "/api/players/inactive" []
