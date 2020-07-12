@@ -61,6 +61,16 @@
 
 (defn rand-bool [] (zero? (rand-int 2)))
 
+(defn shift
+  [this]
+  (let [collisions
+        (active-pieces {:type (:type this) :scene (:scene this) :x (:x this) :y (:y this)})]
+    (cond
+       (>= (count collisions) 2)
+      (merge this (find-empty-tile (:scene this)))
+      :else
+      this)))
+
 (defn teleport
   "check for and apply teleports"
   [this]
@@ -99,11 +109,12 @@
         (if (and target-entrance-name target-obj-name target-obj)
           (cond
             target-obj
+            (shift
             (merge this
                    {:x (/ (get target-obj "x") tilewidth)
                     :y (/ (get target-obj "y") tilewidth)
-                    :scene (keyword target-obj-name)})
-            :else (merge this (find-empty-tile target-obj-name)))
+                    :scene (keyword target-obj-name)}))
+            :else (shift (merge this (find-empty-tile target-obj-name))))
           this)) ;if we can't find a target-obj, the scene we want doesn't exist.
       :else this)))
 ;;helpers
@@ -125,20 +136,6 @@
                                          #(not (= (:id this) (:id @%)))
                                          game-pieces)))))))
 
-(defn shift
-  [this]
-  (let [collisions
-        (active-pieces {:type (:type this) :scene (:scene this) :x (:x this) :y (:y this)})]
-    (cond
-      (and
-       (>= (count collisions) 2)
-       (<
-        (:energy this)
-        (reduce max
-                (map #(:energy @% -1) collisions))))
-      (merge this (find-empty-tile (:scene this)))
-      :else
-      this)))
 ;;shared behavior
 ;;defprotocol
 
@@ -279,7 +276,6 @@
         (merge {:milliseconds time})
         (merge {:delta delta})
         (photosynthesis)
-        (shift)
         (hunger)
         (hit-points)
         (carrot-repro-decide)
