@@ -80,7 +80,8 @@
         (send
          existing-user
          merge
-         {:health default-health
+         {:milliseconds (System/currentTimeMillis)
+          :health default-health
           :energy 100
           :socket channel
           :sprite sprite
