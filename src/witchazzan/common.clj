@@ -199,6 +199,15 @@
      (filter #((:get-tile-walkable map) %))
      (filter #(not (tile-occupied scene %)))
      (first))))
+
+(defn call-func-by-string
+  "(call-func-by-string \"+\" [5 5]) => 10"
+  [name args]
+  (try
+    (apply (resolve (symbol name)) args)
+    (catch NullPointerException e
+      (log (str "call-func-by-string failed: " name args " " e)))))
+
 ;;state management and access
 ;;init
 (defn init []
