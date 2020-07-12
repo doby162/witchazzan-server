@@ -21,7 +21,6 @@
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
   :jvm-opts ["-Djdk.attach.allowAttachSelf"]
-  :global-vars {*warn-on-reflection* true}
   :uberjar-name "witchazzan-server.jar"
   :jar-name "broken_jar"
   :repl-options {:port 8081 :init (-main)})

@@ -237,7 +237,7 @@
       coords
       (add-game-piece!
        {:id (gen-id)
-        :genes (generate-genes :repro-threshold :color-r :color-g :color-b)
+        :genes (generate-genes :repro-threshold :color)
         :energy 20
         :scene scene
         :sprite "carrot"
