@@ -64,10 +64,11 @@
 (defn shift
   [this]
   (let [collisions
-        (active-pieces {:type (:type this) :scene (:scene this) :x (:x this) :y (:y this)})]
+        (active-pieces {:type (:type this) :scene (:scene this) :x (:x this) :y (:y this)})
+        empty-tile (find-empty-tile (:scene this))]
     (cond
-       (>= (count collisions) 2)
-      (merge this (find-empty-tile (:scene this)))
+      (and (>= (count collisions) 2) empty-tile)
+      (merge this empty-tile)
       :else
       this)))
 
@@ -78,8 +79,7 @@
         ^clojure.lang.LazySeq tp-collisions
         (map #(get (get % "data") (+ (int (:x this)) (* (:width scene) (int (:y this))))) (:teleport scene))]
     (cond
-      (and
-       (some #(not (= 0 %)) tp-collisions))
+      (some #(not (= 0 %)) tp-collisions)
       (let [target (nth (:teleport scene) (.indexOf tp-collisions (apply max tp-collisions)))
             tilewidth (:tilewidth scene)
             target-obj-name
@@ -107,14 +107,11 @@
               #(= (get % "name") "Default Spawn Point")
               (:objects (name->scene (keyword target-obj-name)))))]
         (if (and target-entrance-name target-obj-name target-obj)
-          (cond
-            target-obj
-            (shift
-            (merge this
-                   {:x (/ (get target-obj "x") tilewidth)
-                    :y (/ (get target-obj "y") tilewidth)
-                    :scene (keyword target-obj-name)}))
-            :else (shift (merge this (find-empty-tile target-obj-name))))
+          (shift
+           (merge this
+                  {:x (/ (get target-obj "x") tilewidth)
+                   :y (/ (get target-obj "y") tilewidth)
+                   :scene (keyword target-obj-name)}))
           this)) ;if we can't find a target-obj, the scene we want doesn't exist.
       :else this)))
 ;;helpers
