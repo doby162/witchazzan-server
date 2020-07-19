@@ -132,10 +132,7 @@
                                         (filter
                                          #(not (= (:id this) (:id @%)))
                                          game-pieces)))))))
-
 ;;shared behavior
-;;defprotocol
-
 (defn hunger
   [this]
   (when (< (:energy this) 0) (die this))
@@ -273,10 +270,10 @@
         (merge {:milliseconds time})
         (merge {:delta delta})
         (photosynthesis)
-        (hunger)
-        (hit-points)
         (carrot-repro-decide)
-        (teleport))))
+        (teleport)
+        (hunger)
+        (hit-points))))
 
 (defmethod behavior :player
   [this]
@@ -286,8 +283,8 @@
         (merge {:milliseconds time})
         (merge {:delta delta})
         (cast-spell)
-        (hit-points)
-        (hunger))))
+        (hunger)
+        (hit-points))))
 
 (defmethod behavior :spell
   [this]
@@ -386,11 +383,11 @@
         (merge {:delta delta})
         (as-> t (if (and (:destination t) (first (:path t))) t (herbivore-choose-dest t)))
         (walk-step)
-        (hunger)
         (munch #{:carrot})
-        (hit-points)
         (carrot-repro-decide)
-        (teleport))))
+        (teleport)
+        (hunger)
+        (hit-points))))
 
 (defmulti die :type)
 
